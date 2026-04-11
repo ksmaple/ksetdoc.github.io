@@ -1,12 +1,57 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>咔咔不太卡的博客</title><link>https://ksmaple.github.io/</link><description>技术博客，记录学习与生活</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Fri, 10 Apr 2026 20:00:00 +0800</lastBuildDate><atom:link href="https://ksmaple.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>HTTP 协议演进：从 HTTP/1.1 到 HTTP/2 与 HTTPS</title><link>https://ksmaple.github.io/posts/http-protocols-guide/</link><pubDate>Fri, 10 Apr 2026 18:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/http-protocols-guide/</guid><description><![CDATA[<div class="featured-image">
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>咔咔不太卡的博客</title>
+        <link>http://localhost:1313/</link>
+        <description>技术博客，记录学习与生活</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Fri, 10 Apr 2026 20:00:00 &#43;0800</lastBuildDate>
+            <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+        <item>
+    <title>HTTP 协议演进：从 HTTP/1.1 到 HTTP/2 与 HTTPS</title>
+    <link>http://localhost:1313/posts/http-protocols-guide/</link>
+    <pubDate>Fri, 10 Apr 2026 18:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/http-protocols-guide/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-04.jpg" referrerpolicy="no-referrer">
-            </div><p>HTTP（超文本传输协议）是 Web 的基石。本文将深入解析 HTTP/1.1、HTTP/2 和 HTTPS 的核心概念、演进历程及性能差异。</p>]]></description></item><item><title>Java Web 技术演进：从 Servlet 到 Spring MVC 与阿里 ROP 全面对比</title><link>https://ksmaple.github.io/posts/java-web-frameworks-comparison/</link><pubDate>Fri, 10 Apr 2026 17:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-web-frameworks-comparison/</guid><description><![CDATA[<div class="featured-image">
+            </div><p>HTTP（超文本传输协议）是 Web 的基石。本文将深入解析 HTTP/1.1、HTTP/2 和 HTTPS 的核心概念、演进历程及性能差异。</p>]]></description>
+</item>
+<item>
+    <title>Java Web 技术演进：从 Servlet 到 Spring MVC 与阿里 ROP 全面对比</title>
+    <link>http://localhost:1313/posts/java-web-frameworks-comparison/</link>
+    <pubDate>Fri, 10 Apr 2026 17:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/java-web-frameworks-comparison/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-03.jpg" referrerpolicy="no-referrer">
-            </div><p>Java Web 开发技术经历了从传统的 Servlet/JSP 到 MVC 框架，再到 RESTful 服务框架的演进。本文深入对比 Tomcat Servlet、Struts2、Spring MVC 和阿里 ROP 四种技术方案。</p>]]></description></item><item><title>Java 核心特性详解：从基础到进阶</title><link>https://ksmaple.github.io/posts/java-features-guide/</link><pubDate>Fri, 10 Apr 2026 16:30:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-features-guide/</guid><description><![CDATA[<div class="featured-image">
+            </div><p>Java Web 开发技术经历了从传统的 Servlet/JSP 到 MVC 框架，再到 RESTful 服务框架的演进。本文深入对比 Tomcat Servlet、Struts2、Spring MVC 和阿里 ROP 四种技术方案。</p>]]></description>
+</item>
+<item>
+    <title>Java 核心特性详解：从基础到进阶</title>
+    <link>http://localhost:1313/posts/java-features-guide/</link>
+    <pubDate>Fri, 10 Apr 2026 16:30:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/java-features-guide/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-02.jpg" referrerpolicy="no-referrer">
-            </div><p>Java 作为一门历经二十余年依然活跃的编程语言，其设计理念和技术特性值得每一位开发者深入理解。本文将从核心特性出发，详细解析 Java 的技术优势与实现原理。</p>]]></description></item><item><title>Hugo + LoveIt + GitHub Pages 博客部署完整指南</title><link>https://ksmaple.github.io/posts/hugo-blog-deploy-guide/</link><pubDate>Fri, 10 Apr 2026 15:59:21 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/hugo-blog-deploy-guide/</guid><description><![CDATA[<div class="featured-image">
+            </div><p>Java 作为一门历经二十余年依然活跃的编程语言，其设计理念和技术特性值得每一位开发者深入理解。本文将从核心特性出发，详细解析 Java 的技术优势与实现原理。</p>]]></description>
+</item>
+<item>
+    <title>Hugo &#43; LoveIt &#43; GitHub Pages 博客部署完整指南</title>
+    <link>http://localhost:1313/posts/hugo-blog-deploy-guide/</link>
+    <pubDate>Fri, 10 Apr 2026 15:59:21 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/hugo-blog-deploy-guide/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-01.jpg" referrerpolicy="no-referrer">
-            </div><p>本文记录基于 Hugo + LoveIt 主题 + GitHub Pages 的博客部署全过程，包括配置步骤、遇到的问题及解决方案。</p>]]></description></item><item><title>Hello World</title><link>https://ksmaple.github.io/posts/hello-world/</link><pubDate>Thu, 09 Apr 2026 20:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/hello-world/</guid><description><![CDATA[<div class="featured-image">
+            </div><p>本文记录基于 Hugo + LoveIt 主题 + GitHub Pages 的博客部署全过程，包括配置步骤、遇到的问题及解决方案。</p>]]></description>
+</item>
+<item>
+    <title>Hello World</title>
+    <link>http://localhost:1313/posts/hello-world/</link>
+    <pubDate>Thu, 09 Apr 2026 20:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/hello-world/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-01.jpg" referrerpolicy="no-referrer">
             </div><p>欢迎来到 ksmaple 的博客！</p>
 <h2 id="关于这个博客">关于这个博客</h2>
@@ -38,7 +83,15 @@
 <li><i class="far fa-square" aria-hidden="true"></i> 记录生活点滴</li>
 <li><i class="far fa-square" aria-hidden="true"></i> 总结经验教训</li>
 </ul>
-<p>感谢你的访问！</p>]]></description></item><item><title>Java 异常处理机制详解</title><link>https://ksmaple.github.io/posts/java-exception/</link><pubDate>Thu, 09 Apr 2026 15:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-exception/</guid><description><![CDATA[<div class="featured-image">
+<p>感谢你的访问！</p>]]></description>
+</item>
+<item>
+    <title>Java 异常处理机制详解</title>
+    <link>http://localhost:1313/posts/java-exception/</link>
+    <pubDate>Thu, 09 Apr 2026 15:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/java-exception/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-03.jpg" referrerpolicy="no-referrer">
             </div><h2 id="异常概述">异常概述</h2>
 <p>异常（Exception）是程序运行过程中发生的不正常事件，中断了程序的正常执行流程。</p>
@@ -124,7 +177,15 @@
 </span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;其他异常&#34;</span><span class="p">);</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
-<p><strong>注意</strong>：子类异常在前，父类异常在后。</p>]]></description></item><item><title>Spring Boot 快速入门</title><link>https://ksmaple.github.io/posts/spring-boot-quickstart/</link><pubDate>Thu, 09 Apr 2026 14:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/spring-boot-quickstart/</guid><description><![CDATA[<div class="featured-image">
+<p><strong>注意</strong>：子类异常在前，父类异常在后。</p>]]></description>
+</item>
+<item>
+    <title>Spring Boot 快速入门</title>
+    <link>http://localhost:1313/posts/spring-boot-quickstart/</link>
+    <pubDate>Thu, 09 Apr 2026 14:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/spring-boot-quickstart/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-07.jpg" referrerpolicy="no-referrer">
             </div><h2 id="什么是-spring-boot">什么是 Spring Boot</h2>
 <p>Spring Boot 是 Spring 框架的扩展，简化了 Spring 应用的初始搭建和开发过程。它提供了自动配置、起步依赖和嵌入式服务器等功能。</p>
@@ -251,7 +312,15 @@
         <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
         <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
     </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">./mvnw spring-boot:run</span></span></code></pre></div></div>
-<p>访问 http://localhost:8080/api/hello</p>]]></description></item><item><title>Java Stream API 详解</title><link>https://ksmaple.github.io/posts/java-stream-api/</link><pubDate>Thu, 09 Apr 2026 13:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-stream-api/</guid><description><![CDATA[<div class="featured-image">
+<p>访问 http://localhost:8080/api/hello</p>]]></description>
+</item>
+<item>
+    <title>Java Stream API 详解</title>
+    <link>http://localhost:1313/posts/java-stream-api/</link>
+    <pubDate>Thu, 09 Apr 2026 13:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/java-stream-api/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-05.jpg" referrerpolicy="no-referrer">
             </div><h2 id="什么是-stream">什么是 Stream</h2>
 <p>Stream 是 Java 8 引入的函数式编程特性，用于对集合数据进行高效、声明式的操作。</p>
@@ -292,7 +361,15 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1">// 6. 空流</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">emptyStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Stream</span><span class="p">.</span><span class="na">empty</span><span class="p">();</span></span></span></code></pre></div></div>
 <h2 id="中间操作intermediate-operations">中间操作（Intermediate Operations）</h2>
-<p>中间操作返回新的 Stream，可以链式调用。</p>]]></description></item><item><title>JVM 垃圾回收机制详解</title><link>https://ksmaple.github.io/posts/java-jvm-gc/</link><pubDate>Thu, 09 Apr 2026 12:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-jvm-gc/</guid><description><![CDATA[<div class="featured-image">
+<p>中间操作返回新的 Stream，可以链式调用。</p>]]></description>
+</item>
+<item>
+    <title>JVM 垃圾回收机制详解</title>
+    <link>http://localhost:1313/posts/java-jvm-gc/</link>
+    <pubDate>Thu, 09 Apr 2026 12:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/java-jvm-gc/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-04.jpg" referrerpolicy="no-referrer">
             </div><h2 id="什么是垃圾回收">什么是垃圾回收</h2>
 <p>垃圾回收（Garbage Collection，GC）是 Java 虚拟机自动管理内存的机制，负责回收不再使用的对象，释放内存空间。</p>
@@ -318,7 +395,15 @@
 <p>每个对象维护一个引用计数器，引用为 0 时回收。</p>
 <p><strong>缺点</strong>：无法解决循环引用问题。</p>
 <h3 id="2-可达性分析算法java-采用">2. 可达性分析算法（Java 采用）</h3>
-<p>从 GC Roots 出发，不可达的对象可被回收。</p>]]></description></item><item><title>Java 线程池详解</title><link>https://ksmaple.github.io/posts/java-threadpool/</link><pubDate>Thu, 09 Apr 2026 11:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-threadpool/</guid><description><![CDATA[<div class="featured-image">
+<p>从 GC Roots 出发，不可达的对象可被回收。</p>]]></description>
+</item>
+<item>
+    <title>Java 线程池详解</title>
+    <link>http://localhost:1313/posts/java-threadpool/</link>
+    <pubDate>Thu, 09 Apr 2026 11:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/java-threadpool/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-06.jpg" referrerpolicy="no-referrer">
             </div><h2 id="为什么使用线程池">为什么使用线程池</h2>
 <p>创建和销毁线程是有开销的。线程池通过复用线程，减少了线程创建和销毁的开销，提高了系统性能。</p>
@@ -397,4 +482,7 @@
 </span></span></span><span class="line"><span class="cl"><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="c1">// 定时任务线程池</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="n">ScheduledExecutorService</span><span class="w"> </span><span class="n">scheduledPool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newScheduledThreadPool</span><span class="p">(</span><span class="n">5</span><span class="p">);</span></span></span></code></pre></div></div>
-<p><strong>为什么不推荐？</strong> Executors 创建的线程池有潜在风险：</p>]]></description></item></channel></rss>
+<p><strong>为什么不推荐？</strong> Executors 创建的线程池有潜在风险：</p>]]></description>
+</item>
+</channel>
+</rss>
