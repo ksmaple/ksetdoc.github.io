@@ -1,15 +1,4 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
-    <channel>
-        <title>Stream - 标签 - 咔咔不太卡的博客</title>
-        <link>http://localhost:1313/tags/stream/</link>
-        <description>Stream - 标签 - 咔咔不太卡的博客</description>
-        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 09 Apr 2026 13:00:00 &#43;0800</lastBuildDate><atom:link href="http://localhost:1313/tags/stream/" rel="self" type="application/rss+xml" /><item>
-    <title>Java Stream API 详解</title>
-    <link>http://localhost:1313/posts/java-stream-api/</link>
-    <pubDate>Thu, 09 Apr 2026 13:00:00 &#43;0800</pubDate>
-    <author>咔咔</author>
-    <guid>http://localhost:1313/posts/java-stream-api/</guid>
-    <description><![CDATA[<div class="featured-image">
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Stream - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/stream/</link><description>Stream - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 09 Apr 2026 13:00:00 +0800</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/stream/" rel="self" type="application/rss+xml"/><item><title>Java Stream API 详解</title><link>https://ksmaple.github.io/posts/java-stream-api/</link><pubDate>Thu, 09 Apr 2026 13:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-stream-api/</guid><description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-05.jpg" referrerpolicy="no-referrer">
             </div><h2 id="什么是-stream">什么是 Stream</h2>
 <p>Stream 是 Java 8 引入的函数式编程特性，用于对集合数据进行高效、声明式的操作。</p>
@@ -50,7 +39,4 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1">// 6. 空流</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">emptyStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Stream</span><span class="p">.</span><span class="na">empty</span><span class="p">();</span></span></span></code></pre></div></div>
 <h2 id="中间操作intermediate-operations">中间操作（Intermediate Operations）</h2>
-<p>中间操作返回新的 Stream，可以链式调用。</p>]]></description>
-</item>
-</channel>
-</rss>
+<p>中间操作返回新的 Stream，可以链式调用。</p>]]></description></item></channel></rss>
