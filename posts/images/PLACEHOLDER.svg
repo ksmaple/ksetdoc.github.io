@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <rect width="800" height="400" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+  <text x="400" y="180" font-family="Comic Sans MS, cursive" font-size="28" text-anchor="middle" fill="#495057">
+    Excalidraw 图表占位符
+  </text>
+  <text x="400" y="220" font-family="Comic Sans MS, cursive" font-size="18" text-anchor="middle" fill="#6c757d">
+    请在 excalidraw.com 创建图表并导出为 SVG
+  </text>
+  <text x="400" y="250" font-family="Comic Sans MS, cursive" font-size="16" text-anchor="middle" fill="#adb5bd">
+    参考 CHARTS_NEEDED.md 和 README.md 获取创建指南
+  </text>
+</svg>

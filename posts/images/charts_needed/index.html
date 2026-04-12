@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <title> - 咔咔不太卡的博客</title><meta name="Description" content="技术博客，记录学习与生活"><meta property="og:title" content=" - 咔咔不太卡的博客" />
+<meta property="og:description" content="技术博客，记录学习与生活" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://localhost:1313/posts/images/charts_needed/" />
+<meta name="twitter:title" content=" - 咔咔不太卡的博客"/>
+<meta name="twitter:description" content="技术博客，记录学习与生活"/><meta name="twitter:card" content="summary"/>
+<meta name="application-name" content="咔咔不太卡的技术博客">
+<meta name="apple-mobile-web-app-title" content="咔咔不太卡的技术博客">
+<meta name="referrer" content="no-referrer" /><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="icon" href="/favicon.svg"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="http://localhost:1313/posts/images/charts_needed/" /><link rel="prev" href="http://localhost:1313/posts/images/readme/" /><link rel="next" href="http://localhost:1313/posts/factory-pattern/" /><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" href="/lib/fontawesome-free/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="/lib/fontawesome-free/css/all.min.css"></noscript><link rel="preload" href="/lib/animate/animate.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "http:\/\/localhost:1313\/posts\/images\/charts_needed\/"
+        },"genre": "posts","wordcount":  227 ,
+        "url": "http:\/\/localhost:1313\/posts\/images\/charts_needed\/","publisher": {
+            "@type": "Organization",
+            "name": ""},"author": {
+                "@type": "Person",
+                "name": "咔咔"
+            },"description": ""
+    }
+    </script></head>
+    <body data-header-desktop="fixed" data-header-mobile="auto"><script>
+          const query = window.matchMedia('(prefers-color-scheme: dark)');
+          function applyTheme() {
+            let theme = window.localStorage?.getItem('theme') || 'auto';
+            let isDark = theme === 'dark' || (theme === 'auto' && query.matches);
+            document.body.setAttribute('theme', isDark? 'dark' : 'light');
+            document.body.setAttribute('cfg-theme', theme);
+          }
+
+          applyTheme();
+          query.addEventListener('change', applyTheme);
+        </script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="咔咔不太卡的博客">咔咔不太卡的技术博客</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/"> 首页 </a><a class="menu-item" href="/posts/"> 文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tech-stack/"> 技术栈 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle" aria-hidden="true"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust" aria-hidden="true"></i>
+                </a></div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="咔咔不太卡的博客">咔咔不太卡的技术博客</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle" aria-hidden="true"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/" title="">首页</a><a class="menu-item" href="/posts/" title="">文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tech-stack/" title="">技术栈</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust" aria-hidden="true"></i>
+            </a></div>
+    </div>
+</header><div class="search-dropdown desktop">
+        <div id="search-dropdown-desktop"></div>
+    </div>
+    <div class="search-dropdown mobile">
+        <div id="search-dropdown-mobile"></div>
+    </div><main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX"></h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel="author" class="author"><i class="fas fa-user-circle" aria-hidden="true"></i>咔咔</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt" aria-hidden="true"></i>&nbsp;<time datetime="0001-01-01">0001-01-01</time>&nbsp;<i class="fas fa-pencil-alt" aria-hidden="true"></i>&nbsp;约 227 字&nbsp;
+                <i class="far fa-clock" aria-hidden="true"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  data-kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right" aria-hidden="true"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#设计原则-design-principlesmd">设计原则 (design-principles.md)</a></li>
+    <li><a href="#单例模式-singleton-patternmd">单例模式 (singleton-pattern.md)</a></li>
+    <li><a href="#工厂模式-factory-patternmd">工厂模式 (factory-pattern.md)</a></li>
+    <li><a href="#观察者模式-observer-patternmd">观察者模式 (observer-pattern.md)</a></li>
+    <li><a href="#策略模式-strategy-patternmd">策略模式 (strategy-pattern.md)</a></li>
+    <li><a href="#代理模式-proxy-patternmd">代理模式 (proxy-pattern.md)</a></li>
+    <li><a href="#装饰器模式-decorator-patternmd">装饰器模式 (decorator-pattern.md)</a></li>
+    <li><a href="#java-集合-java-collectionsmd">Java 集合 (java-collections.md)</a></li>
+    <li><a href="#jvm-gc-java-jvm-gcmd">JVM GC (java-jvm-gc.md)</a></li>
+    <li><a href="#线程池-java-threadpoolmd">线程池 (java-threadpool.md)</a></li>
+    <li><a href="#http-协议-http-protocols-guidemd">HTTP 协议 (http-protocols-guide.md)</a></li>
+    <li><a href="#如何创建图表">如何创建图表</a></li>
+    <li><a href="#图表风格建议">图表风格建议</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h1 id="excalidraw-图表创建清单">Excalidraw 图表创建清单</h1>
+<p>本文档列出需要为文章创建的 Excalidraw 图表。</p>
+<h2 id="设计原则-design-principlesmd">设计原则 (design-principles.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>solid-principles.svg</code></td>
+          <td>SOLID 五个原则的关系图，中心是 SOLID，周围五个分支</td>
+          <td>800x350</td>
+      </tr>
+      <tr>
+          <td><code>srp-example.svg</code></td>
+          <td>对比图：左边是臃肿的 UserService 类，右边拆分为四个小类</td>
+          <td>800x300</td>
+      </tr>
+      <tr>
+          <td><code>ocp-example.svg</code></td>
+          <td>支付策略类图：PaymentStrategy 接口及其实现类</td>
+          <td>800x400</td>
+      </tr>
+      <tr>
+          <td><code>dip-example.svg</code></td>
+          <td>依赖倒置示意图：UserService 依赖 UserRepository 接口</td>
+          <td>800x350</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="单例模式-singleton-patternmd">单例模式 (singleton-pattern.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>singleton-uml.svg</code></td>
+          <td>单例模式 UML 类图</td>
+          <td>600x400</td>
+      </tr>
+      <tr>
+          <td><code>singleton-thread-safety.svg</code></td>
+          <td>多线程环境下单例创建示意图</td>
+          <td>700x300</td>
+      </tr>
+      <tr>
+          <td><code>singleton-memory.svg</code></td>
+          <td>内存中只有一个实例的示意图</td>
+          <td>500x250</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="工厂模式-factory-patternmd">工厂模式 (factory-pattern.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>factory-uml.svg</code></td>
+          <td>三种工厂模式对比图</td>
+          <td>900x500</td>
+      </tr>
+      <tr>
+          <td><code>payment-factory.svg</code></td>
+          <td>支付工厂实际应用类图</td>
+          <td>700x400</td>
+      </tr>
+      <tr>
+          <td><code>abstract-factory-ui.svg</code></td>
+          <td>抽象工厂创建 UI 组件示意图</td>
+          <td>800x450</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="观察者模式-observer-patternmd">观察者模式 (observer-pattern.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>observer-pattern.svg</code></td>
+          <td>观察者模式结构图：Subject、Observer、ConcreteObserver</td>
+          <td>700x400</td>
+      </tr>
+      <tr>
+          <td><code>spring-event-flow.svg</code></td>
+          <td>Spring Event 事件流转图</td>
+          <td>800x400</td>
+      </tr>
+      <tr>
+          <td><code>news-publisher.svg</code></td>
+          <td>新闻发布订阅示意图</td>
+          <td>600x350</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="策略模式-strategy-patternmd">策略模式 (strategy-pattern.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>strategy-pattern.svg</code></td>
+          <td>策略模式结构图：Context、Strategy、ConcreteStrategy</td>
+          <td>700x400</td>
+      </tr>
+      <tr>
+          <td><code>payment-strategy.svg</code></td>
+          <td>支付策略类图</td>
+          <td>700x350</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="代理模式-proxy-patternmd">代理模式 (proxy-pattern.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>proxy-pattern.svg</code></td>
+          <td>代理模式结构图：Subject、RealSubject、Proxy</td>
+          <td>700x400</td>
+      </tr>
+      <tr>
+          <td><code>jdk-dynamic-proxy.svg</code></td>
+          <td>JDK 动态代理原理图</td>
+          <td>800x450</td>
+      </tr>
+      <tr>
+          <td><code>spring-aop-proxy.svg</code></td>
+          <td>Spring AOP 代理调用链</td>
+          <td>800x400</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="装饰器模式-decorator-patternmd">装饰器模式 (decorator-pattern.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>decorator-pattern.svg</code></td>
+          <td>装饰器模式结构图：Component、ConcreteComponent、Decorator</td>
+          <td>800x450</td>
+      </tr>
+      <tr>
+          <td><code>coffee-decorator.svg</code></td>
+          <td>咖啡装饰器示例图</td>
+          <td>700x350</td>
+      </tr>
+      <tr>
+          <td><code>java-io-decorator.svg</code></td>
+          <td>Java IO 装饰器链示意图</td>
+          <td>800x300</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="java-集合-java-collectionsmd">Java 集合 (java-collections.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>collections-hierarchy.svg</code></td>
+          <td>Java 集合框架完整继承图</td>
+          <td>900x600</td>
+      </tr>
+      <tr>
+          <td><code>list-comparison.svg</code></td>
+          <td>ArrayList vs LinkedList 对比图</td>
+          <td>700x400</td>
+      </tr>
+      <tr>
+          <td><code>map-structure.svg</code></td>
+          <td>HashMap 底层结构图（数组+链表+红黑树）</td>
+          <td>800x450</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="jvm-gc-java-jvm-gcmd">JVM GC (java-jvm-gc.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>jvm-memory-model.svg</code></td>
+          <td>JVM 内存模型图（堆、栈、方法区等）</td>
+          <td>800x500</td>
+      </tr>
+      <tr>
+          <td><code>gc-process.svg</code></td>
+          <td>GC 垃圾回收流程图</td>
+          <td>700x400</td>
+      </tr>
+      <tr>
+          <td><code>gc-algorithms.svg</code></td>
+          <td>三种 GC 算法对比（标记清除、标记整理、复制）</td>
+          <td>900x400</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="线程池-java-threadpoolmd">线程池 (java-threadpool.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>threadpool-architecture.svg</code></td>
+          <td>线程池架构图：核心线程、任务队列、最大线程</td>
+          <td>800x450</td>
+      </tr>
+      <tr>
+          <td><code>threadpool-state.svg</code></td>
+          <td>线程池状态流转图（RUNNING、SHUTDOWN、STOP等）</td>
+          <td>700x350</td>
+      </tr>
+      <tr>
+          <td><code>task-flow.svg</code></td>
+          <td>任务提交流程图</td>
+          <td>700x400</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="http-协议-http-protocols-guidemd">HTTP 协议 (http-protocols-guide.md)</h2>
+<table>
+  <thead>
+      <tr>
+          <th>图表文件名</th>
+          <th>描述</th>
+          <th>参考尺寸</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>http-layers.svg</code></td>
+          <td>HTTP 在 TCP/IP 协议栈中的位置</td>
+          <td>600x400</td>
+      </tr>
+      <tr>
+          <td><code>http1-vs-http2.svg</code></td>
+          <td>HTTP/1.1 vs HTTP/2 对比图</td>
+          <td>900x500</td>
+      </tr>
+      <tr>
+          <td><code>https-handshake.svg</code></td>
+          <td>HTTPS TLS 握手流程图</td>
+          <td>800x500</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="如何创建图表">如何创建图表</h2>
+<ol>
+<li>访问 <a href="https://excalidraw.com" target="_blank" rel="noopener noreffer ">excalidraw.com</a></li>
+<li>使用手绘风格创建图表</li>
+<li>导出为 SVG 格式</li>
+<li>保存到 <code>content/posts/images/</code> 目录</li>
+<li>在文章中引用</li>
+</ol>
+<h2 id="图表风格建议">图表风格建议</h2>
+<ul>
+<li>使用 Excalidraw 默认的手绘风格</li>
+<li>颜色方案：
+<ul>
+<li>接口/抽象类：浅蓝色 (#a8d8ea)</li>
+<li>具体类：浅绿色 (#aa96da)</li>
+<li>重要元素：浅黄色 (#fcbad3)</li>
+<li>箭头和线条：深灰色 (#2c3e50)</li>
+</ul>
+</li>
+<li>字体：Comic Sans 或 Virgil</li>
+<li>添加适当的文字说明</li>
+</ul>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 0001-01-01</span>
+            </div></div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 X" data-sharer="x" data-url="http://localhost:1313/posts/images/charts_needed/" data-title=""><i class="fab fa-x-twitter" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Threads" data-sharer="threads" data-url="http://localhost:1313/posts/images/charts_needed/" data-title=""><i class="fab fa-threads" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="http://localhost:1313/posts/images/charts_needed/"><i class="fab fa-facebook-square" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Hacker News" data-sharer="hackernews" data-url="http://localhost:1313/posts/images/charts_needed/" data-title=""><i class="fab fa-hacker-news" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Line" data-sharer="line" data-url="http://localhost:1313/posts/images/charts_needed/" data-title=""><i data-svg-src="/lib/simple-icons/icons/line.min.svg" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="http://localhost:1313/posts/images/charts_needed/" data-title=""><i class="fab fa-weibo" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Diaspora" data-sharer="diaspora" data-url="http://localhost:1313/posts/images/charts_needed/" data-title="" data-description=""><i class="fab fa-diaspora" aria-hidden="true"></i></a><a href="https://t.me/share/url?url=http%3a%2f%2flocalhost%3a1313%2fposts%2fimages%2fcharts_needed%2f&amp;text=" target="_blank" title="分享到 Telegram"><i class="fab fa-telegram" aria-hidden="true"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/images/readme/" class="prev" rel="prev" title=""><i class="fas fa-angle-left" aria-hidden="true"></i></a>
+            <a href="/posts/factory-pattern/" class="next" rel="next" title=""><i class="fas fa-angle-right" aria-hidden="true"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line" itemscope itemtype="http://schema.org/CreativeWork"><i class="far fa-copyright" aria-hidden="true"></i><span itemprop="copyrightYear">2020 - 2026</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/" target="_blank">咔咔</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <div id="fixed-buttons-hidden"><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment" aria-hidden="true"></i>
+            </a>
+        </div><script src="/lib/autocomplete/autocomplete.min.js"></script><script src="/lib/lunr/lunr.min.js"></script><script src="/lib/lunr/lunr.stemmer.support.min.js"></script><script src="/lib/lunr/lunr.zh.min.js"></script><script src="/lib/lazysizes/lazysizes.min.js"></script><script src="/lib/clipboard/clipboard.min.js"></script><script src="/lib/sharer/sharer.min.js"></script><script>window.config={"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script src="/js/theme.js"></script></body>
+</html>

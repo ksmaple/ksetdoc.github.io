@@ -1,5 +1,16 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>进阶知识 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E8%BF%9B%E9%98%B6%E7%9F%A5%E8%AF%86/</link><description>进阶知识 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 09 Apr 2026 12:00:00 +0800</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E8%BF%9B%E9%98%B6%E7%9F%A5%E8%AF%86/" rel="self" type="application/rss+xml"/><item><title>JVM 垃圾回收机制详解</title><link>https://ksmaple.github.io/posts/java-jvm-gc/</link><pubDate>Thu, 09 Apr 2026 12:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-jvm-gc/</guid><description><![CDATA[<div class="featured-image">
-                <img src="/images/covers/cover-04.jpg" referrerpolicy="no-referrer">
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>进阶知识 - 分类 - 咔咔不太卡的博客</title>
+        <link>http://localhost:1313/categories/%E8%BF%9B%E9%98%B6%E7%9F%A5%E8%AF%86/</link>
+        <description>进阶知识 - 分类 - 咔咔不太卡的博客</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 09 Apr 2026 12:00:00 &#43;0800</lastBuildDate><atom:link href="http://localhost:1313/categories/%E8%BF%9B%E9%98%B6%E7%9F%A5%E8%AF%86/" rel="self" type="application/rss+xml" /><item>
+    <title>JVM 垃圾回收机制详解</title>
+    <link>http://localhost:1313/posts/java-jvm-gc/</link>
+    <pubDate>Thu, 09 Apr 2026 12:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/java-jvm-gc/</guid>
+    <description><![CDATA[<div class="featured-image">
+                <img src="/images/covers/cover-08.jpg" referrerpolicy="no-referrer">
             </div><h2 id="什么是垃圾回收">什么是垃圾回收</h2>
 <p>垃圾回收（Garbage Collection，GC）是 Java 虚拟机自动管理内存的机制，负责回收不再使用的对象，释放内存空间。</p>
 <h2 id="jvm-内存结构">JVM 内存结构</h2>
@@ -24,7 +35,15 @@
 <p>每个对象维护一个引用计数器，引用为 0 时回收。</p>
 <p><strong>缺点</strong>：无法解决循环引用问题。</p>
 <h3 id="2-可达性分析算法java-采用">2. 可达性分析算法（Java 采用）</h3>
-<p>从 GC Roots 出发，不可达的对象可被回收。</p>]]></description></item><item><title>Java 线程池详解</title><link>https://ksmaple.github.io/posts/java-threadpool/</link><pubDate>Thu, 09 Apr 2026 11:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-threadpool/</guid><description><![CDATA[<div class="featured-image">
+<p>从 GC Roots 出发，不可达的对象可被回收。</p>]]></description>
+</item>
+<item>
+    <title>Java 线程池详解</title>
+    <link>http://localhost:1313/posts/java-threadpool/</link>
+    <pubDate>Thu, 09 Apr 2026 11:00:00 &#43;0800</pubDate>
+    <author>咔咔</author>
+    <guid>http://localhost:1313/posts/java-threadpool/</guid>
+    <description><![CDATA[<div class="featured-image">
                 <img src="/images/covers/cover-06.jpg" referrerpolicy="no-referrer">
             </div><h2 id="为什么使用线程池">为什么使用线程池</h2>
 <p>创建和销毁线程是有开销的。线程池通过复用线程，减少了线程创建和销毁的开销，提高了系统性能。</p>
@@ -103,4 +122,7 @@
 </span></span></span><span class="line"><span class="cl"><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="c1">// 定时任务线程池</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="n">ScheduledExecutorService</span><span class="w"> </span><span class="n">scheduledPool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newScheduledThreadPool</span><span class="p">(</span><span class="n">5</span><span class="p">);</span></span></span></code></pre></div></div>
-<p><strong>为什么不推荐？</strong> Executors 创建的线程池有潜在风险：</p>]]></description></item></channel></rss>
+<p><strong>为什么不推荐？</strong> Executors 创建的线程池有潜在风险：</p>]]></description>
+</item>
+</channel>
+</rss>
