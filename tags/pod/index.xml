@@ -1,0 +1,119 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Pod - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/pod/</link><description>Pod - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/pod/" rel="self" type="application/rss+xml"/><item><title>Kubernetes</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/kubernetes/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/kubernetes/</guid><description><![CDATA[<h1 id="kubernetes">Kubernetes</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Kubernetes通过声明式API管理容器化应用，通过Pod、Service、Deployment等抽象提供自动化部署、弹性伸缩和自我修复能力，是容器编排的事实标准。</p>
+</blockquote>
+<hr>
+<h2 id="kubernetes通过控制循环实现声明式管理通过分层抽象简化容器编排">Kubernetes通过控制循环实现声明式管理，通过分层抽象简化容器编排</h2>
+<h3 id="核心对象">核心对象</h3>
+<table>
+  <thead>
+      <tr>
+          <th>对象</th>
+          <th>职责</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Pod</td>
+          <td>最小调度单元</td>
+          <td>包含一个或多个容器</td>
+      </tr>
+      <tr>
+          <td>Deployment</td>
+          <td>无状态应用管理</td>
+          <td>滚动更新、回滚、扩缩容</td>
+      </tr>
+      <tr>
+          <td>StatefulSet</td>
+          <td>有状态应用管理</td>
+          <td>稳定网络标识、有序部署</td>
+      </tr>
+      <tr>
+          <td>Service</td>
+          <td>服务发现</td>
+          <td>ClusterIP/NodePort/LoadBalancer</td>
+      </tr>
+      <tr>
+          <td>Ingress</td>
+          <td>七层路由</td>
+          <td>HTTP/HTTPS路由规则</td>
+      </tr>
+      <tr>
+          <td>ConfigMap/Secret</td>
+          <td>配置管理</td>
+          <td>配置与镜像分离</td>
+      </tr>
+      <tr>
+          <td>PV/PVC</td>
+          <td>存储管理</td>
+          <td>持久化存储抽象</td>
+      </tr>
+      <tr>
+          <td>HPA</td>
+          <td>自动伸缩</td>
+          <td>基于CPU/内存/自定义指标</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="deployment配置示例">Deployment配置示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Deployment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">registry/order-service:v1.0.0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;512Mi&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;500m&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">limits</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1Gi&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1000m&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">livenessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/actuator/health</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">30</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">readinessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/actuator/health</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">5</span></span></span></code></pre></div></div>
+<h3 id="pod生命周期与探针">Pod生命周期与探针</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Pending → Running → Succeeded/Failed/Unknown
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">探针类型：
+</span></span><span class="line"><span class="cl">- LivenessProbe：容器是否存活，失败则重启
+</span></span><span class="line"><span class="cl">- ReadinessProbe：容器是否就绪，失败则从Service摘除
+</span></span><span class="line"><span class="cl">- StartupProbe：容器是否启动完成，替代Liveness的initialDelay</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1pod频繁重启">问题1：Pod频繁重启</h3>
+<p><strong>根因</strong>：LivenessProbe配置不当或应用启动慢
+<strong>解决</strong>：调整探针参数、增加StartupProbe</p>]]></description></item></channel></rss>

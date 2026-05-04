@@ -1,0 +1,533 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>数据库 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/</link><description>数据库 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="self" type="application/rss+xml"/><item><title>MySQL存储引擎</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</guid><description><![CDATA[<h1 id="mysql存储引擎">MySQL存储引擎</h1>
+<blockquote>
+<p><strong>核心结论</strong>：InnoDB通过聚簇索引组织数据，通过MVCC实现无锁读，通过行锁和间隙锁实现并发控制，是MySQL生产环境的事实标准；MyISAM已逐步被InnoDB取代，仅在特殊读多写少场景考虑。</p>
+</blockquote>
+<hr>
+<h2 id="innodb通过聚簇索引mvcc行锁三大机制实现高并发事务安全是mysql生产环境的首选存储引擎">InnoDB通过聚簇索引、MVCC、行锁三大机制实现高并发事务安全，是MySQL生产环境的首选存储引擎</h2>
+<h3 id="innodb核心特性">InnoDB核心特性</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>实现</th>
+          <th>优势</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>聚簇索引</td>
+          <td>主键索引即数据</td>
+          <td>主键查询快，范围查询高效</td>
+      </tr>
+      <tr>
+          <td>MVCC</td>
+          <td>undo log + 事务ID</td>
+          <td>读不阻塞写，写不阻塞读</td>
+      </tr>
+      <tr>
+          <td>行级锁</td>
+          <td>记录锁 + 间隙锁</td>
+          <td>并发度高</td>
+      </tr>
+      <tr>
+          <td>外键</td>
+          <td>支持级联操作</td>
+          <td>数据完整性</td>
+      </tr>
+      <tr>
+          <td>崩溃恢复</td>
+          <td>Redo Log + Double Write</td>
+          <td>数据不丢失</td>
+      </tr>
+      <tr>
+          <td>缓冲池</td>
+          <td>内存缓存数据和索引</td>
+          <td>减少磁盘IO</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="mvcc多版本并发控制">MVCC：多版本并发控制</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">MVCC核心：每行数据有两个隐藏列
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">DB_TRX_ID（6字节）：最后修改该行的事务ID
+</span></span><span class="line"><span class="cl">DB_ROLL_PTR（7字节）：指向undo log的回滚指针
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Read View（快照）：事务开始时创建的一致性视图
+</span></span><span class="line"><span class="cl">  - creator_trx_id：创建该视图的事务ID
+</span></span><span class="line"><span class="cl">  - up_limit_id：活跃事务最小ID
+</span></span><span class="line"><span class="cl">  - low_limit_id：即将分配的下一个事务ID
+</span></span><span class="line"><span class="cl">  - trx_ids：活跃事务ID列表
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">可见性判断：
+</span></span><span class="line"><span class="cl">  1. DB_TRX_ID == creator_trx_id：可见（自己修改的）
+</span></span><span class="line"><span class="cl">  2. DB_TRX_ID &lt; up_limit_id：可见（事务已提交）
+</span></span><span class="line"><span class="cl">  3. DB_TRX_ID &gt;= low_limit_id：不可见（事务未开始）
+</span></span><span class="line"><span class="cl">  4. DB_TRX_ID在trx_ids中：不可见（事务活跃未提交）
+</span></span><span class="line"><span class="cl">  5. 其他情况：可见</span></span></code></pre></div></div>
+<p><strong>InnoDB的三种行记录格式</strong>：</p>]]></description></item><item><title>MySQL瓶颈与扩展</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E6%89%A9%E5%B1%95/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E6%89%A9%E5%B1%95/</guid><description><![CDATA[<h1 id="mysql瓶颈与扩展">MySQL瓶颈与扩展</h1>
+<blockquote>
+<p><strong>核心结论</strong>：MySQL单库的瓶颈在CPU、内存、磁盘IO和连接数四个维度，扩展路径从读写分离到分库分表逐步递进，每种方案都在一致性、复杂度和成本之间做权衡。</p>
+</blockquote>
+<hr>
+<h2 id="mysql单库存在cpu内存磁盘连接数四重瓶颈扩展路径为读写分离垂直拆分水平分表分库分表">MySQL单库存在CPU、内存、磁盘、连接数四重瓶颈，扩展路径为读写分离→垂直拆分→水平分表→分库分表</h2>
+<h3 id="单库瓶颈分析">单库瓶颈分析</h3>
+<table>
+  <thead>
+      <tr>
+          <th>瓶颈</th>
+          <th>表现</th>
+          <th>临时解决</th>
+          <th>根本解决</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>CPU</td>
+          <td>慢查询多、计算密集</td>
+          <td>优化SQL、加缓存</td>
+          <td>读写分离、分库</td>
+      </tr>
+      <tr>
+          <td>内存</td>
+          <td>缓冲池不足、频繁换页</td>
+          <td>增大内存</td>
+          <td>分库分散压力</td>
+      </tr>
+      <tr>
+          <td>磁盘IO</td>
+          <td>iowait高、磁盘满</td>
+          <td>SSD、加索引</td>
+          <td>分表、归档</td>
+      </tr>
+      <tr>
+          <td>连接数</td>
+          <td>Too many connections</td>
+          <td>增大max_connections</td>
+          <td>连接池、分库</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="读写分离一主多从架构">读写分离：一主多从架构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">写请求 → 主库（Master）→ 异步复制 → 从库（Slave）
+</span></span><span class="line"><span class="cl">读请求 → 从库1 / 从库2 / 从库N
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">复制方式：
+</span></span><span class="line"><span class="cl">  - 异步复制：主库写完即返回，延迟小但可能丢数据
+</span></span><span class="line"><span class="cl">  - 半同步复制：至少一个从库确认收到binlog才返回
+</span></span><span class="line"><span class="cl">  - 组复制（MGR）：Paxos协议，强一致性
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">延迟问题：
+</span></span><span class="line"><span class="cl">  - 主从延迟导致读取旧数据
+</span></span><span class="line"><span class="cl">  - 解决方案：强制走主库（关键读）、延迟阈值告警</span></span></code></pre></div></div>
+<h3 id="分库分表水平与垂直拆分">分库分表：水平与垂直拆分</h3>
+<p><strong>垂直拆分</strong>：按业务模块拆分</p>]]></description></item><item><title>MySQL索引与优化</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96/</guid><description><![CDATA[<h1 id="mysql索引与优化">MySQL索引与优化</h1>
+<blockquote>
+<p><strong>核心结论</strong>：MySQL索引通过B+树实现高效查找，索引设计的核心原则是减少回表、避免全表扫描，EXPLAIN是排查慢SQL的首要工具，理解索引下推和覆盖索引是优化的关键。</p>
+</blockquote>
+<hr>
+<h2 id="mysql通过b树索引加速查询索引设计决定查询性能上限explain是排查sql性能的首要工具">MySQL通过B+树索引加速查询，索引设计决定查询性能上限，EXPLAIN是排查SQL性能的首要工具</h2>
+<h3 id="b树索引结构与查询原理">B+树索引结构与查询原理</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">聚簇索引（主键索引）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        [10, 20, 30]
+</span></span><span class="line"><span class="cl">       /     |     \
+</span></span><span class="line"><span class="cl">  [5,7,9] [15,18] [25,28,29]
+</span></span><span class="line"><span class="cl">     ↓        ↓         ↓
+</span></span><span class="line"><span class="cl">   数据行   数据行    数据行
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">特点：叶子节点存储完整数据行，按主键排序
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">二级索引（非主键索引）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        [&#34;Alice&#34;, &#34;Bob&#34;, &#34;Charlie&#34;]
+</span></span><span class="line"><span class="cl">       /           |            \
+</span></span><span class="line"><span class="cl">  [...]         [...]          [...]
+</span></span><span class="line"><span class="cl">     ↓             ↓              ↓
+</span></span><span class="line"><span class="cl">   主键值10     主键值20       主键值30
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">特点：叶子节点存储索引列值 + 主键值
+</span></span><span class="line"><span class="cl">查询时需回表：先查二级索引获取主键 → 再查聚簇索引获取完整数据</span></span></code></pre></div></div>
+<p><strong>索引类型</strong>：</p>]]></description></item><item><title>PostgreSQL 架构原理与 MySQL 对比</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/postgresql%E6%B7%B1%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/postgresql%E6%B7%B1%E5%85%A5/</guid><description><![CDATA[<h1 id="postgresql-架构原理与-mysql-对比">PostgreSQL 架构原理与 MySQL 对比</h1>
+<blockquote>
+<p><strong>核心结论</strong>：PostgreSQL 通过<strong>进程模型</strong>实现连接隔离、通过<strong>统一存储层</strong>管理数据、通过<strong>多版本并发控制（MVCC）<strong>实现无锁读写、通过</strong>丰富的索引类型和扩展体系</strong>覆盖从 OLTP 到 AI 向量的全场景，其设计哲学是&quot;扩展优先、标准兼容、企业级可靠&quot;；而 MySQL 以&quot;简单优先、性能优先&quot;著称，两者在架构模型、MVCC 实现、索引体系和扩展能力上存在根本性差异。</p>
+</blockquote>
+<hr>
+<h2 id="postgresql-通过进程架构统一存储层mvcc-和扩展体系实现企业级可靠性">PostgreSQL 通过进程架构、统一存储层、MVCC 和扩展体系实现企业级可靠性</h2>
+<h3 id="进程架构每个连接独立进程崩溃隔离优于线程模型">进程架构：每个连接独立进程，崩溃隔离优于线程模型</h3>
+<h3 id="存储管理表空间--toast--页面结构大字段外置存储">存储管理：表空间 + TOAST + 页面结构，大字段外置存储</h3>
+<h3 id="mvcc-与事务快照隔离--可见性规则--vacuum-清理">MVCC 与事务：快照隔离 + 可见性规则 + Vacuum 清理</h3>
+<h3 id="索引体系b-tree--gin--gist--brin-覆盖全场景">索引体系：B-Tree / GIN / GiST / BRIN 覆盖全场景</h3>
+<h3 id="扩展生态pgvector--postgis--citus-等插件体系">扩展生态：pgvector / PostGIS / Citus 等插件体系</h3>
+<hr>
+<h2 id="实现原理与关键机制">实现原理与关键机制</h2>
+<h3 id="进程模型-vs-mysql-线程模型">进程模型 vs MySQL 线程模型</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">PostgreSQL 进程模型：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">┌──────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">│              Postmaster (主进程)           │
+</span></span><span class="line"><span class="cl">│   - 监听端口 5432                          │
+</span></span><span class="line"><span class="cl">│   - 管理所有子进程生命周期                  │
+</span></span><span class="line"><span class="cl">│   - 协调崩溃恢复                           │
+</span></span><span class="line"><span class="cl">└──────────────────────────────────────────┘
+</span></span><span class="line"><span class="cl">          │
+</span></span><span class="line"><span class="cl">    ┌─────┼─────┬─────────┬─────────┐
+</span></span><span class="line"><span class="cl">    ▼     ▼     ▼         ▼         ▼
+</span></span><span class="line"><span class="cl">  后端    后端   后端      后端       后端
+</span></span><span class="line"><span class="cl">  进程    进程   进程      进程       进程
+</span></span><span class="line"><span class="cl">  conn1   conn2  conn3    conn4      conn5
+</span></span><span class="line"><span class="cl">  ───────────────────────────────────────
+</span></span><span class="line"><span class="cl">  每个连接 = 独立进程 (fork)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">共享内存区域（所有进程共享）：
+</span></span><span class="line"><span class="cl">  ├── 缓冲池（Buffer Pool）     - 缓存表页和索引页
+</span></span><span class="line"><span class="cl">  ├── WAL 缓冲区                - 预写日志缓冲
+</span></span><span class="line"><span class="cl">  ├── 锁表（Lock Table）        - 进程间锁协调
+</span></span><span class="line"><span class="cl">  ├── 进程通信区                 - 进程间信号传递
+</span></span><span class="line"><span class="cl">  └── 事务状态数组               - 全局事务快照</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">MySQL (InnoDB) 线程模型：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">┌──────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">│           mysqld (单进程多线程)            │
+</span></span><span class="line"><span class="cl">│                                          │
+</span></span><span class="line"><span class="cl">│   主线程 ──→ 监听端口 3306                 │
+</span></span><span class="line"><span class="cl">│      │                                   │
+</span></span><span class="line"><span class="cl">│      ├──→ 连接线程池                      │
+</span></span><span class="line"><span class="cl">│      │    ├── 线程 1 (conn1)             │
+</span></span><span class="line"><span class="cl">│      │    ├── 线程 2 (conn2)             │
+</span></span><span class="line"><span class="cl">│      │    └── 线程 N (connN)             │
+</span></span><span class="line"><span class="cl">│      │                                   │
+</span></span><span class="line"><span class="cl">│      ├──→ 后台线程                      │
+</span></span><span class="line"><span class="cl">│      │    ├── IO 线程（读/写日志）        │
+</span></span><span class="line"><span class="cl">│      │    ├── Purge 线程                │
+</span></span><span class="line"><span class="cl">│      │    └── Page Cleaner 线程         │
+</span></span><span class="line"><span class="cl">│      │                                   │
+</span></span><span class="line"><span class="cl">│      └──→ 共享缓冲池（Buffer Pool）       │
+</span></span><span class="line"><span class="cl">│                                          │
+</span></span><span class="line"><span class="cl">│   所有线程共享同一地址空间                  │
+</span></span><span class="line"><span class="cl">└──────────────────────────────────────────┘</span></span></code></pre></div></div>
+<p><strong>核心差异</strong>：</p>]]></description></item><item><title>分库分表</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E7%89%87/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E7%89%87/</guid><description><![CDATA[<h1 id="分库分表">分库分表</h1>
+<blockquote>
+<p><strong>核心结论</strong>：分库分表通过水平拆分（数据分散）和垂直拆分（职责分离）突破单库性能瓶颈，但引入了分布式事务、跨分片查询、数据迁移等复杂度，应在单库优化无法满足需求时作为最后手段引入。</p>
+</blockquote>
+<hr>
+<h2 id="分库分表通过拆分策略将数据分布到多个节点以牺牲部分查询灵活性换取存储和性能扩展性">分库分表通过拆分策略将数据分布到多个节点，以牺牲部分查询灵活性换取存储和性能扩展性</h2>
+<h3 id="拆分策略">拆分策略</h3>
+<table>
+  <thead>
+      <tr>
+          <th>策略</th>
+          <th>方式</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>垂直分库</td>
+          <td>按业务拆分（用户库/订单库/商品库）</td>
+          <td>业务边界清晰，耦合低</td>
+      </tr>
+      <tr>
+          <td>垂直分表</td>
+          <td>大字段拆分（主表+扩展表）</td>
+          <td>单表字段过多，冷热数据分离</td>
+      </tr>
+      <tr>
+          <td>水平分库</td>
+          <td>同表数据分散到不同库</td>
+          <td>单库数据量过大</td>
+      </tr>
+      <tr>
+          <td>水平分表</td>
+          <td>同表数据分散到不同表</td>
+          <td>单表数据量过大，同一实例内</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">垂直分库                    水平分表
+</span></span><span class="line"><span class="cl">user_db                     db0: order_0, order_2
+</span></span><span class="line"><span class="cl">├── user                    db1: order_1, order_3
+</span></span><span class="line"><span class="cl">└── user_profile
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">order_db
+</span></span><span class="line"><span class="cl">└── order</span></span></code></pre></div></div>
+<h3 id="分片键选择">分片键选择</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方案</th>
+          <th>分片键</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>哈希分片</td>
+          <td>user_id % 4</td>
+          <td>数据均匀分布</td>
+          <td>范围查询需扫描全部分片</td>
+      </tr>
+      <tr>
+          <td>范围分片</td>
+          <td>create_time</td>
+          <td>支持范围查询</td>
+          <td>热点问题（新数据集中在最新分片）</td>
+      </tr>
+      <tr>
+          <td>混合分片</td>
+          <td>时间+哈希</td>
+          <td>兼顾均匀与范围</td>
+          <td>实现复杂</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// ShardingSphere哈希分片配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nl">sharding</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">tables</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t_order</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">actual</span><span class="o">-</span><span class="n">data</span><span class="o">-</span><span class="n">nodes</span><span class="p">:</span><span class="w"> </span><span class="n">ds$</span><span class="p">{</span><span class="n">0</span><span class="p">..</span><span class="na">1</span><span class="p">}.</span><span class="na">t_order_$</span><span class="p">{</span><span class="n">0</span><span class="p">..</span><span class="na">3</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">table</span><span class="o">-</span><span class="n">strategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">standard</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="n">sharding</span><span class="o">-</span><span class="n">column</span><span class="p">:</span><span class="w"> </span><span class="n">order_id</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="n">sharding</span><span class="o">-</span><span class="n">algorithm</span><span class="o">-</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">order</span><span class="o">-</span><span class="n">hash</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">sharding</span><span class="o">-</span><span class="n">algorithms</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">order</span><span class="o">-</span><span class="n">hash</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">type</span><span class="p">:</span><span class="w"> </span><span class="n">INLINE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">props</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">algorithm</span><span class="o">-</span><span class="n">expression</span><span class="p">:</span><span class="w"> </span><span class="n">t_order_$</span><span class="p">{</span><span class="n">order_id</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">4</span><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="分布式id">分布式ID</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方案</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>数据库自增</td>
+          <td>简单</td>
+          <td>性能瓶颈，不适合分片</td>
+      </tr>
+      <tr>
+          <td>Snowflake</td>
+          <td>高性能，趋势递增</td>
+          <td>时钟回拨问题</td>
+      </tr>
+      <tr>
+          <td>号段模式</td>
+          <td>批量获取，性能高</td>
+          <td>依赖数据库</td>
+      </tr>
+      <tr>
+          <td>UUID</td>
+          <td>无中心</td>
+          <td>无序，占用空间大</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Snowflake实现（位运算）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 64位 = 1位符号 + 41位时间戳 + 10位机器ID + 12位序列号</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="nf">nextId</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">long</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">((</span><span class="n">timestamp</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">EPOCH</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">TIMESTAMP_LEFT</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">datacenterId</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">DATACENTER_LEFT</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">workerId</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">WORKER_LEFT</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">sequence</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="shardingsphere集成">ShardingSphere集成</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">spring</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">shardingsphere</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">datasource</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">names</span><span class="p">:</span><span class="w"> </span><span class="l">ds0, ds1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">ds0</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">com.zaxxer.hikari.HikariDataSource</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">driver-class-name</span><span class="p">:</span><span class="w"> </span><span class="l">com.mysql.cj.jdbc.Driver</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">jdbc-url</span><span class="p">:</span><span class="w"> </span><span class="l">jdbc:mysql://localhost:3306/db0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">ds1</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">com.zaxxer.hikari.HikariDataSource</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">driver-class-name</span><span class="p">:</span><span class="w"> </span><span class="l">com.mysql.cj.jdbc.Driver</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">jdbc-url</span><span class="p">:</span><span class="w"> </span><span class="l">jdbc:mysql://localhost:3306/db1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">sharding</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">tables</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">t_order</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">actual-data-nodes</span><span class="p">:</span><span class="w"> </span><span class="l">ds${0..1}.t_order_${0..3}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">key-generate-strategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="l">order_id</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">key-generator-name</span><span class="p">:</span><span class="w"> </span><span class="l">snowflake</span></span></span></code></pre></div></div>
+<h3 id="分片后的挑战">分片后的挑战</h3>
+<table>
+  <thead>
+      <tr>
+          <th>问题</th>
+          <th>说明</th>
+          <th>解决方案</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>跨分片JOIN</td>
+          <td>无法直接JOIN不同分片的数据</td>
+          <td>全局表广播、应用层聚合、宽表冗余</td>
+      </tr>
+      <tr>
+          <td>跨分片排序分页</td>
+          <td>ORDER BY + LIMIT需全局排序</td>
+          <td>应用层归并、限制深度分页</td>
+      </tr>
+      <tr>
+          <td>分布式事务</td>
+          <td>跨库事务无法保证ACID</td>
+          <td>Seata AT模式、最终一致性</td>
+      </tr>
+      <tr>
+          <td>数据迁移</td>
+          <td>扩容需重新分片</td>
+          <td>双写过渡、增量同步</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="分页优化">分页优化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 问题：limit 1000000, 10 需全局扫描大量数据</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 优化1：限制分页深度</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pageNum</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">1000</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BizException</span><span class="p">(</span><span class="s">&#34;不支持深分页，请使用搜索条件缩小范围&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 优化2：游标分页（基于排序键）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FROM</span><span class="w"> </span><span class="n">t_order</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="n">WHERE</span><span class="w"> </span><span class="n">create_time</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="err">#</span><span class="p">{</span><span class="n">lastTime</span><span class="p">}</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="n">ORDER</span><span class="w"> </span><span class="n">BY</span><span class="w"> </span><span class="n">create_time</span><span class="w"> </span><span class="n">DESC</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="n">LIMIT</span><span class="w"> </span><span class="n">10</span><span class="p">;</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1过早引入分库分表">问题1：过早引入分库分表</h3>
+<p><strong>根因</strong>：单表几百万数据就开始拆分，增加不必要复杂度
+<strong>解决</strong>：先尝试索引优化、读写分离、归档历史数据，单表千万级以上再考虑拆分</p>]]></description></item><item><title>数据库范式</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A7%84%E8%8C%83%E5%8C%96/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A7%84%E8%8C%83%E5%8C%96/</guid><description><![CDATA[<h1 id="数据库范式">数据库范式</h1>
+<blockquote>
+<p><strong>核心结论</strong>：数据库范式通过消除冗余和异常将表结构设计到合理的规范化程度，生产环境通常以3NF为目标，但为性能考虑会适当反规范化，理解范式原则才能做出合理的取舍。</p>
+</blockquote>
+<hr>
+<h2 id="数据库范式通过消除数据冗余和更新异常来规范表结构3nf是生产环境最常见的平衡点">数据库范式通过消除数据冗余和更新异常来规范表结构，3NF是生产环境最常见的平衡点</h2>
+<h3 id="范式定义与递进关系">范式定义与递进关系</h3>
+<table>
+  <thead>
+      <tr>
+          <th>范式</th>
+          <th>要求</th>
+          <th>解决的问题</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>1NF</td>
+          <td>列不可再分，每列原子性</td>
+          <td>重复组、多值属性</td>
+      </tr>
+      <tr>
+          <td>2NF</td>
+          <td>满足1NF，非主键列完全依赖主键</td>
+          <td>部分依赖</td>
+      </tr>
+      <tr>
+          <td>3NF</td>
+          <td>满足2NF，非主键列不传递依赖主键</td>
+          <td>传递依赖</td>
+      </tr>
+      <tr>
+          <td>BCNF</td>
+          <td>满足3NF，每个决定因素都是候选键</td>
+          <td>主属性对候选键的部分依赖</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">范式递进关系：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1NF ⊃ 2NF ⊃ 3NF ⊃ BCNF ⊃ 4NF ⊃ 5NF
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">越高的范式：冗余越少，但表越多，Join越多</span></span></code></pre></div></div>
+<h3 id="各范式详解">各范式详解</h3>
+<p><strong>1NF：原子性</strong></p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">违反1NF：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">学生表
+</span></span><span class="line"><span class="cl">| id | name | phones          |
+</span></span><span class="line"><span class="cl">|----|------|-----------------|
+</span></span><span class="line"><span class="cl">| 1  | Tom  | 138001, 139002  |  ← 一列多值
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">符合1NF：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">学生表
+</span></span><span class="line"><span class="cl">| id | name |
+</span></span><span class="line"><span class="cl">|----|------|
+</span></span><span class="line"><span class="cl">| 1  | Tom  |
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">学生电话表
+</span></span><span class="line"><span class="cl">| student_id | phone     |
+</span></span><span class="line"><span class="cl">|------------|-----------|
+</span></span><span class="line"><span class="cl">| 1          | 138001    |
+</span></span><span class="line"><span class="cl">| 1          | 139002    |</span></span></code></pre></div></div>
+<p><strong>2NF：消除部分依赖</strong></p>]]></description></item></channel></rss>

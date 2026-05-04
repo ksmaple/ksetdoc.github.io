@@ -1,0 +1,33 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>优化 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E4%BC%98%E5%8C%96/</link><description>优化 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E4%BC%98%E5%8C%96/" rel="self" type="application/rss+xml"/><item><title>MySQL索引与优化</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96/</guid><description><![CDATA[<h1 id="mysql索引与优化">MySQL索引与优化</h1>
+<blockquote>
+<p><strong>核心结论</strong>：MySQL索引通过B+树实现高效查找，索引设计的核心原则是减少回表、避免全表扫描，EXPLAIN是排查慢SQL的首要工具，理解索引下推和覆盖索引是优化的关键。</p>
+</blockquote>
+<hr>
+<h2 id="mysql通过b树索引加速查询索引设计决定查询性能上限explain是排查sql性能的首要工具">MySQL通过B+树索引加速查询，索引设计决定查询性能上限，EXPLAIN是排查SQL性能的首要工具</h2>
+<h3 id="b树索引结构与查询原理">B+树索引结构与查询原理</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">聚簇索引（主键索引）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        [10, 20, 30]
+</span></span><span class="line"><span class="cl">       /     |     \
+</span></span><span class="line"><span class="cl">  [5,7,9] [15,18] [25,28,29]
+</span></span><span class="line"><span class="cl">     ↓        ↓         ↓
+</span></span><span class="line"><span class="cl">   数据行   数据行    数据行
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">特点：叶子节点存储完整数据行，按主键排序
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">二级索引（非主键索引）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        [&#34;Alice&#34;, &#34;Bob&#34;, &#34;Charlie&#34;]
+</span></span><span class="line"><span class="cl">       /           |            \
+</span></span><span class="line"><span class="cl">  [...]         [...]          [...]
+</span></span><span class="line"><span class="cl">     ↓             ↓              ↓
+</span></span><span class="line"><span class="cl">   主键值10     主键值20       主键值30
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">特点：叶子节点存储索引列值 + 主键值
+</span></span><span class="line"><span class="cl">查询时需回表：先查二级索引获取主键 → 再查聚簇索引获取完整数据</span></span></code></pre></div></div>
+<p><strong>索引类型</strong>：</p>]]></description></item></channel></rss>

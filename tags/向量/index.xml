@@ -1,0 +1,163 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>向量 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%90%91%E9%87%8F/</link><description>向量 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%90%91%E9%87%8F/" rel="self" type="application/rss+xml"/><item><title>LLM与Embedding</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/llm%E5%B5%8C%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/llm%E5%B5%8C%E5%85%A5/</guid><description><![CDATA[<h1 id="llm与embedding">LLM与Embedding</h1>
+<blockquote>
+<p><strong>核心结论</strong>：大语言模型通过Transformer架构和海量预训练获得语言理解与生成能力，Embedding将语义转化为稠密向量实现语义搜索和相似度计算，两者结合是RAG等AI应用的基础。</p>
+</blockquote>
+<hr>
+<h2 id="llm通过自注意力机制捕捉长距离依赖embedding将离散符号映射到连续向量空间">LLM通过自注意力机制捕捉长距离依赖，Embedding将离散符号映射到连续向量空间</h2>
+<h3 id="transformer核心机制">Transformer核心机制</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">输入文本 → Tokenizer分词 → Embedding → 多层Transformer → 输出
+</span></span><span class="line"><span class="cl">                                     ↓
+</span></span><span class="line"><span class="cl">                              自注意力机制
+</span></span><span class="line"><span class="cl">                              Query × Key → 注意力权重 × Value</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>组件</th>
+          <th>作用</th>
+          <th>关键特征</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>自注意力</td>
+          <td>计算词与词之间的关联度</td>
+          <td>并行计算，捕捉长距离依赖</td>
+      </tr>
+      <tr>
+          <td>多头注意力</td>
+          <td>多组注意力并行</td>
+          <td>关注不同维度的语义关系</td>
+      </tr>
+      <tr>
+          <td>位置编码</td>
+          <td>注入序列顺序信息</td>
+          <td>弥补自注意力无序性的缺陷</td>
+      </tr>
+      <tr>
+          <td>前馈网络</td>
+          <td>非线性变换</td>
+          <td>增强模型表达能力</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="llm能力层级">LLM能力层级</h3>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>能力</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>基础能力</td>
+          <td>文本生成、翻译、摘要</td>
+          <td>写文章、翻译文档</td>
+      </tr>
+      <tr>
+          <td>推理能力</td>
+          <td>逻辑推理、数学计算</td>
+          <td>解应用题、代码逻辑分析</td>
+      </tr>
+      <tr>
+          <td>知识能力</td>
+          <td>事实问答、领域知识</td>
+          <td>医学问答、法律条款解释</td>
+      </tr>
+      <tr>
+          <td>工具使用</td>
+          <td>调用API、代码执行</td>
+          <td>查天气、运行Python代码</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="embedding原理与应用">Embedding原理与应用</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">文本 → Embedding模型 → 稠密向量（如1536维）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&#34;猫&#34;    → [0.12, -0.34, 0.89, ...]
+</span></span><span class="line"><span class="cl">&#34; kitten&#34; → [0.11, -0.33, 0.88, ...]  ← 语义相近，向量距离近
+</span></span><span class="line"><span class="cl">&#34;汽车&#34;  → [-0.76, 0.45, -0.21, ...]  ← 语义不同，向量距离远</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>应用</th>
+          <th>原理</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>语义搜索</td>
+          <td>向量相似度检索</td>
+          <td>用户搜&quot;苹果手机&quot;匹配&quot;iPhone&quot;</td>
+      </tr>
+      <tr>
+          <td>文本分类</td>
+          <td>向量聚类</td>
+          <td>新闻自动分类</td>
+      </tr>
+      <tr>
+          <td>推荐系统</td>
+          <td>用户/物品向量匹配</td>
+          <td>相似商品推荐</td>
+      </tr>
+      <tr>
+          <td>RAG检索</td>
+          <td>文档切片向量化</td>
+          <td>问答系统召回相关段落</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="主流embedding模型">主流Embedding模型</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模型</th>
+          <th>维度</th>
+          <th>特点</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>text-embedding-3</td>
+          <td>1536/3072</td>
+          <td>OpenAI官方</td>
+          <td>通用场景</td>
+      </tr>
+      <tr>
+          <td>bge-m3</td>
+          <td>1024</td>
+          <td>多语言、长文本</td>
+          <td>中文场景</td>
+      </tr>
+      <tr>
+          <td>m3e</td>
+          <td>768</td>
+          <td>开源中文</td>
+          <td>国内部署</td>
+      </tr>
+      <tr>
+          <td>e5</td>
+          <td>768/1024</td>
+          <td>微软开源</td>
+          <td>多语言检索</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1embedding模型与业务场景不匹配">问题1：Embedding模型与业务场景不匹配</h3>
+<p><strong>根因</strong>：通用Embedding在垂直领域语义捕捉不准确
+<strong>解决</strong>：使用领域特化模型，或对通用模型做微调</p>]]></description></item></channel></rss>

@@ -1,0 +1,159 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Envoy - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/envoy/</link><description>Envoy - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/envoy/" rel="self" type="application/rss+xml"/><item><title>Service Mesh</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%A6%82%E5%BF%B5/service-mesh/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%A6%82%E5%BF%B5/service-mesh/</guid><description><![CDATA[<h1 id="service-mesh">Service Mesh</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Service Mesh通过Sidecar代理将服务间通信从业务代码中剥离，实现流量治理、安全通信和可观测性的基础设施化，是微服务治理的演进方向。</p>
+</blockquote>
+<hr>
+<h2 id="service-mesh通过sidecar代理统一接管服务间流量在业务无感知的情况下实现治理与观测">Service Mesh通过Sidecar代理统一接管服务间流量，在业务无感知的情况下实现治理与观测</h2>
+<h3 id="核心架构">核心架构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">传统微服务                        Service Mesh
+</span></span><span class="line"><span class="cl">业务A ←→ 业务B                    业务A → Sidecar → Sidecar → 业务B
+</span></span><span class="line"><span class="cl">  ↓  服务发现/熔断/重试               ↑         ↑         ↑
+</span></span><span class="line"><span class="cl">  ↓  负载均衡/链路追踪             (治理能力下沉到基础设施层)
+</span></span><span class="line"><span class="cl">  ↓  全写在业务代码里</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>组件</th>
+          <th>职责</th>
+          <th>代表产品</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>数据面</td>
+          <td>Sidecar代理，实际转发流量</td>
+          <td>Envoy、Linkerd-proxy</td>
+      </tr>
+      <tr>
+          <td>控制面</td>
+          <td>配置下发、证书管理、策略控制</td>
+          <td>Istio、Linkerd、Consul</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="核心能力">核心能力</h3>
+<table>
+  <thead>
+      <tr>
+          <th>能力</th>
+          <th>说明</th>
+          <th>配置方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>流量路由</td>
+          <td>按版本/权重/Header分发</td>
+          <td>VirtualService</td>
+      </tr>
+      <tr>
+          <td>灰度发布</td>
+          <td>金丝雀、蓝绿部署</td>
+          <td>流量比例控制</td>
+      </tr>
+      <tr>
+          <td>熔断降级</td>
+          <td>失败率/慢请求触发熔断</td>
+          <td>DestinationRule</td>
+      </tr>
+      <tr>
+          <td>超时重试</td>
+          <td>自动重试与超时控制</td>
+          <td>路由规则</td>
+      </tr>
+      <tr>
+          <td>mTLS</td>
+          <td>服务间自动双向TLS</td>
+          <td>PeerAuthentication</td>
+      </tr>
+      <tr>
+          <td>可观测性</td>
+          <td>自动生成指标、日志、追踪</td>
+          <td>无需埋点</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="istio配置示例">Istio配置示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># 流量路由：将 v2 版本 10% 流量分配给 reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.istio.io/v1beta1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">VirtualService</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">route</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">destination</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">subset</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="m">90</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">destination</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">subset</span><span class="p">:</span><span class="w"> </span><span class="l">v2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c"># 熔断配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.istio.io/v1beta1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">DestinationRule</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">trafficPolicy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">connectionPool</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">tcp</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">maxConnections</span><span class="p">:</span><span class="w"> </span><span class="m">100</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">http1MaxPendingRequests</span><span class="p">:</span><span class="w"> </span><span class="m">50</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">outlierDetection</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">consecutiveErrors</span><span class="p">:</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l">30s</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">baseEjectionTime</span><span class="p">:</span><span class="w"> </span><span class="l">30s</span></span></span></code></pre></div></div>
+<h3 id="sidecar模式演进">Sidecar模式演进</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>延迟</th>
+          <th>资源占用</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Sidecar（传统）</td>
+          <td>1-2ms</td>
+          <td>每Pod一个代理</td>
+          <td>通用场景</td>
+      </tr>
+      <tr>
+          <td>Sidecarless（Ambient）</td>
+          <td>&lt;1ms</td>
+          <td>节点级代理</td>
+          <td>大规模集群</td>
+      </tr>
+      <tr>
+          <td>eBPF</td>
+          <td>接近零</td>
+          <td>内核态处理</td>
+          <td>高性能要求</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1引入service-mesh后延迟增加">问题1：引入Service Mesh后延迟增加</h3>
+<p><strong>根因</strong>：流量多经过Sidecar一跳，mTLS增加握手开销
+<strong>解决</strong>：Ambient模式减少代理数量，连接池复用，选择性关闭mTLS</p>]]></description></item></channel></rss>

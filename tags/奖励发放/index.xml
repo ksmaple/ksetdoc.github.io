@@ -1,0 +1,81 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>奖励发放 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%A5%96%E5%8A%B1%E5%8F%91%E6%94%BE/</link><description>奖励发放 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%A5%96%E5%8A%B1%E5%8F%91%E6%94%BE/" rel="self" type="application/rss+xml"/><item><title>活动系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%B4%BB%E5%8A%A8%E7%B3%BB%E7%BB%9F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%B4%BB%E5%8A%A8%E7%B3%BB%E7%BB%9F/</guid><description><![CDATA[<h1 id="活动系统">活动系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：活动系统通过配置化规则引擎支撑多变的运营需求，通过库存控制和发放流水保障奖品安全，通过防刷策略拦截恶意用户，核心挑战是灵活性与稳定性的平衡。</p>
+</blockquote>
+<hr>
+<h2 id="活动系统通过规则引擎实现灵活配置通过库存和流水保障奖励安全通过多层防刷策略保障公平">活动系统通过规则引擎实现灵活配置，通过库存和流水保障奖励安全，通过多层防刷策略保障公平</h2>
+<h3 id="核心模块">核心模块</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模块</th>
+          <th>职责</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>活动配置</td>
+          <td>活动时间、参与条件、奖品配置</td>
+      </tr>
+      <tr>
+          <td>规则引擎</td>
+          <td>判断用户是否满足参与条件</td>
+      </tr>
+      <tr>
+          <td>奖品发放</td>
+          <td>库存扣减、发放记录、到账通知</td>
+      </tr>
+      <tr>
+          <td>防刷控制</td>
+          <td>频次限制、设备/IP/账号维度风控</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="规则引擎设计">规则引擎设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">规则配置（JSON/DSL）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">  &#34;rules&#34;: [
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;time&#34;, &#34;start&#34;: &#34;2026-01-01&#34;, &#34;end&#34;: &#34;2026-01-07&#34; },
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;user_level&#34;, &#34;min&#34;: 3 },
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;daily_limit&#34;, &#34;count&#34;: 3 }
+</span></span><span class="line"><span class="cl">  ],
+</span></span><span class="line"><span class="cl">  &#34;rewards&#34;: [
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;coupon&#34;, &#34;id&#34;: &#34;COUPON_001&#34;, &#34;stock&#34;: 1000 },
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;points&#34;, &#34;amount&#34;: 100 }
+</span></span><span class="line"><span class="cl">  ]
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">规则执行：
+</span></span><span class="line"><span class="cl">  1. 时间规则 → 当前时间在活动期内？
+</span></span><span class="line"><span class="cl">  2. 用户等级规则 → 用户等级 &gt;= 3？
+</span></span><span class="line"><span class="cl">  3. 频次规则 → 今日参与次数 &lt; 3？
+</span></span><span class="line"><span class="cl">  4. 全部通过 → 参与成功</span></span></code></pre></div></div>
+<h3 id="奖品发放与防刷">奖品发放与防刷</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">发放流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 校验用户资格（规则引擎）
+</span></span><span class="line"><span class="cl">2. 扣减奖品库存（Redis DECR / DB乐观锁）
+</span></span><span class="line"><span class="cl">3. 记录发放流水（用户ID、奖品、时间）
+</span></span><span class="line"><span class="cl">4. 异步到账通知（MQ）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">防刷策略：
+</span></span><span class="line"><span class="cl">- 账号维度：同一账号频次限制
+</span></span><span class="line"><span class="cl">- 设备维度：同一设备参与次数限制
+</span></span><span class="line"><span class="cl">- IP维度：同一IP参与次数限制
+</span></span><span class="line"><span class="cl">- 行为维度：异常行为模式识别（如秒级连续参与）</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1奖品超发">问题1：奖品超发</h3>
+<p><strong>根因</strong>：并发扣减库存导致负数
+<strong>解决</strong>：Redis原子扣减 + DB最终一致性</p>]]></description></item></channel></rss>

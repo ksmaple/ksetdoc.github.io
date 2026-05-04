@@ -1,0 +1,72 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Innodb - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/innodb/</link><description>Innodb - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/innodb/" rel="self" type="application/rss+xml"/><item><title>MySQL存储引擎</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</guid><description><![CDATA[<h1 id="mysql存储引擎">MySQL存储引擎</h1>
+<blockquote>
+<p><strong>核心结论</strong>：InnoDB通过聚簇索引组织数据，通过MVCC实现无锁读，通过行锁和间隙锁实现并发控制，是MySQL生产环境的事实标准；MyISAM已逐步被InnoDB取代，仅在特殊读多写少场景考虑。</p>
+</blockquote>
+<hr>
+<h2 id="innodb通过聚簇索引mvcc行锁三大机制实现高并发事务安全是mysql生产环境的首选存储引擎">InnoDB通过聚簇索引、MVCC、行锁三大机制实现高并发事务安全，是MySQL生产环境的首选存储引擎</h2>
+<h3 id="innodb核心特性">InnoDB核心特性</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>实现</th>
+          <th>优势</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>聚簇索引</td>
+          <td>主键索引即数据</td>
+          <td>主键查询快，范围查询高效</td>
+      </tr>
+      <tr>
+          <td>MVCC</td>
+          <td>undo log + 事务ID</td>
+          <td>读不阻塞写，写不阻塞读</td>
+      </tr>
+      <tr>
+          <td>行级锁</td>
+          <td>记录锁 + 间隙锁</td>
+          <td>并发度高</td>
+      </tr>
+      <tr>
+          <td>外键</td>
+          <td>支持级联操作</td>
+          <td>数据完整性</td>
+      </tr>
+      <tr>
+          <td>崩溃恢复</td>
+          <td>Redo Log + Double Write</td>
+          <td>数据不丢失</td>
+      </tr>
+      <tr>
+          <td>缓冲池</td>
+          <td>内存缓存数据和索引</td>
+          <td>减少磁盘IO</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="mvcc多版本并发控制">MVCC：多版本并发控制</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">MVCC核心：每行数据有两个隐藏列
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">DB_TRX_ID（6字节）：最后修改该行的事务ID
+</span></span><span class="line"><span class="cl">DB_ROLL_PTR（7字节）：指向undo log的回滚指针
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Read View（快照）：事务开始时创建的一致性视图
+</span></span><span class="line"><span class="cl">  - creator_trx_id：创建该视图的事务ID
+</span></span><span class="line"><span class="cl">  - up_limit_id：活跃事务最小ID
+</span></span><span class="line"><span class="cl">  - low_limit_id：即将分配的下一个事务ID
+</span></span><span class="line"><span class="cl">  - trx_ids：活跃事务ID列表
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">可见性判断：
+</span></span><span class="line"><span class="cl">  1. DB_TRX_ID == creator_trx_id：可见（自己修改的）
+</span></span><span class="line"><span class="cl">  2. DB_TRX_ID &lt; up_limit_id：可见（事务已提交）
+</span></span><span class="line"><span class="cl">  3. DB_TRX_ID &gt;= low_limit_id：不可见（事务未开始）
+</span></span><span class="line"><span class="cl">  4. DB_TRX_ID在trx_ids中：不可见（事务活跃未提交）
+</span></span><span class="line"><span class="cl">  5. 其他情况：可见</span></span></code></pre></div></div>
+<p><strong>InnoDB的三种行记录格式</strong>：</p>]]></description></item></channel></rss>

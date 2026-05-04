@@ -1,0 +1,107 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>B+树 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/b+%E6%A0%91/</link><description>B+树 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/b+%E6%A0%91/" rel="self" type="application/rss+xml"/><item><title>MySQL索引与优化</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96/</guid><description><![CDATA[<h1 id="mysql索引与优化">MySQL索引与优化</h1>
+<blockquote>
+<p><strong>核心结论</strong>：MySQL索引通过B+树实现高效查找，索引设计的核心原则是减少回表、避免全表扫描，EXPLAIN是排查慢SQL的首要工具，理解索引下推和覆盖索引是优化的关键。</p>
+</blockquote>
+<hr>
+<h2 id="mysql通过b树索引加速查询索引设计决定查询性能上限explain是排查sql性能的首要工具">MySQL通过B+树索引加速查询，索引设计决定查询性能上限，EXPLAIN是排查SQL性能的首要工具</h2>
+<h3 id="b树索引结构与查询原理">B+树索引结构与查询原理</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">聚簇索引（主键索引）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        [10, 20, 30]
+</span></span><span class="line"><span class="cl">       /     |     \
+</span></span><span class="line"><span class="cl">  [5,7,9] [15,18] [25,28,29]
+</span></span><span class="line"><span class="cl">     ↓        ↓         ↓
+</span></span><span class="line"><span class="cl">   数据行   数据行    数据行
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">特点：叶子节点存储完整数据行，按主键排序
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">二级索引（非主键索引）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        [&#34;Alice&#34;, &#34;Bob&#34;, &#34;Charlie&#34;]
+</span></span><span class="line"><span class="cl">       /           |            \
+</span></span><span class="line"><span class="cl">  [...]         [...]          [...]
+</span></span><span class="line"><span class="cl">     ↓             ↓              ↓
+</span></span><span class="line"><span class="cl">   主键值10     主键值20       主键值30
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">特点：叶子节点存储索引列值 + 主键值
+</span></span><span class="line"><span class="cl">查询时需回表：先查二级索引获取主键 → 再查聚簇索引获取完整数据</span></span></code></pre></div></div>
+<p><strong>索引类型</strong>：</p>]]></description></item><item><title>树结构</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%A0%91%E7%BB%93%E6%9E%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%A0%91%E7%BB%93%E6%9E%84/</guid><description><![CDATA[<h1 id="树结构">树结构</h1>
+<blockquote>
+<p><strong>核心结论</strong>：红黑树通过颜色约束维持近似平衡保证O(log n)操作，B+树通过多叉结构降低磁盘IO成为数据库索引首选，跳表用概率平衡替代严格平衡实现简单高效的并发有序结构。</p>
+</blockquote>
+<hr>
+<h2 id="红黑树b树跳表分别通过颜色约束多叉节点和概率层级三种不同机制实现高效查找">红黑树、B+树、跳表分别通过颜色约束、多叉节点和概率层级三种不同机制实现高效查找</h2>
+<h3 id="红黑树近似平衡的二叉搜索树">红黑树：近似平衡的二叉搜索树</h3>
+<p><strong>红黑树的五条性质</strong>：</p>
+<ol>
+<li>节点是红色或黑色</li>
+<li>根节点是黑色</li>
+<li>所有叶子（NIL）是黑色</li>
+<li>红色节点的子节点必须是黑色（不能有两个连续红色）</li>
+<li>从任一节点到其叶子的所有路径包含相同数目的黑色节点</li>
+</ol>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">性质5的推论：最长路径不超过最短路径的2倍
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">最短路径：全黑节点        最长路径：红黑交替
+</span></span><span class="line"><span class="cl">    B                       B
+</span></span><span class="line"><span class="cl">   / \                     / \
+</span></span><span class="line"><span class="cl">  B   B                   R   B
+</span></span><span class="line"><span class="cl"> / \                     / \   \
+</span></span><span class="line"><span class="cl">B   B                   B   R   B
+</span></span><span class="line"><span class="cl">                            /
+</span></span><span class="line"><span class="cl">                           B
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">黑高=3，最短路径3，最长路径5（不超过2倍）</span></span></code></pre></div></div>
+<p><strong>红黑树的平衡调整</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>情况</th>
+          <th>触发条件</th>
+          <th>调整操作</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>左旋/右旋</td>
+          <td>局部不平衡</td>
+          <td>旋转节点，调整父子关系</td>
+      </tr>
+      <tr>
+          <td>变色</td>
+          <td>双红冲突</td>
+          <td>父、叔、祖父节点颜色翻转</td>
+      </tr>
+      <tr>
+          <td>LR/RL双旋</td>
+          <td>折线关系</td>
+          <td>先左旋/右旋，再右旋/左旋</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">插入调整示例（父节点红色，叔节点黑色）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    G(黑)              P(黑)
+</span></span><span class="line"><span class="cl">   /                  /    \
+</span></span><span class="line"><span class="cl">  P(红)    →        N(红)  G(红)
+</span></span><span class="line"><span class="cl">   \                       /
+</span></span><span class="line"><span class="cl">   N(红)                S(黑)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">情况：父红、叔黑、新节点是父的右孩子（折线）
+</span></span><span class="line"><span class="cl">调整：先对P左旋 → 再对G右旋 → 变色</span></span></code></pre></div></div>
+<p><strong>红黑树 vs AVL树</strong>：</p>]]></description></item></channel></rss>

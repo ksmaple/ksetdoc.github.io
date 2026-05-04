@@ -1,0 +1,189 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Caffeine - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/caffeine/</link><description>Caffeine - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/caffeine/" rel="self" type="application/rss+xml"/><item><title>本地缓存方案</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98/</guid><description><![CDATA[<h1 id="本地缓存方案">本地缓存方案</h1>
+<blockquote>
+<p><strong>核心结论</strong>：本地缓存通过避免网络IO和序列化开销提供纳秒级访问速度，Caffeine凭借W-TinyLFU算法和异步加载机制成为Java本地缓存的首选，与Redis配合使用形成多级缓存架构。</p>
+</blockquote>
+<hr>
+<h2 id="本地缓存通过避免网络开销提供极致性能caffeine基于w-tinylfu算法在命中率上领先与redis配合形成多级缓存">本地缓存通过避免网络开销提供极致性能，Caffeine基于W-TinyLFU算法在命中率上领先，与Redis配合形成多级缓存</h2>
+<h3 id="caffeine高性能本地缓存">Caffeine：高性能本地缓存</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Caffeine基本用法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">LoadingCache</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="n">userCache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Caffeine</span><span class="p">.</span><span class="na">newBuilder</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">maximumSize</span><span class="p">(</span><span class="n">10000</span><span class="p">)</span><span class="w">                          </span><span class="c1">// 最大条目数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">expireAfterWrite</span><span class="p">(</span><span class="n">10</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">MINUTES</span><span class="p">)</span><span class="w">      </span><span class="c1">// 写入后10分钟过期</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">refreshAfterWrite</span><span class="p">(</span><span class="n">1</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">MINUTES</span><span class="p">)</span><span class="w">      </span><span class="c1">// 1分钟后异步刷新</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">recordStats</span><span class="p">()</span><span class="w">                                </span><span class="c1">// 开启统计</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">loadUserFromDB</span><span class="p">(</span><span class="n">key</span><span class="p">));</span><span class="w">          </span><span class="c1">// 自动加载</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">userCache</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">&#34;user:1001&#34;</span><span class="p">);</span><span class="w">  </span><span class="o">//</span><span class="w"> </span><span class="n">存在则返回</span><span class="err">，</span><span class="n">不存在则自动加载</span></span></span></code></pre></div></div>
+<p><strong>Caffeine核心特性</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>W-TinyLFU淘汰策略</td>
+          <td>比LRU更高的命中率，适应访问频率变化</td>
+      </tr>
+      <tr>
+          <td>异步加载</td>
+          <td>缓存未命中时异步加载，不阻塞主线程</td>
+      </tr>
+      <tr>
+          <td>自动刷新</td>
+          <td>后台线程异步刷新过期缓存</td>
+      </tr>
+      <tr>
+          <td>弱引用支持</td>
+          <td>允许Key/Value被GC回收</td>
+      </tr>
+      <tr>
+          <td>事件监听</td>
+          <td>移除、过期事件回调</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>缓存淘汰策略对比</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>策略</th>
+          <th>原理</th>
+          <th>特点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>LRU</td>
+          <td>最近最少使用</td>
+          <td>实现简单，但对突发流量敏感</td>
+      </tr>
+      <tr>
+          <td>LFU</td>
+          <td>最少使用频率</td>
+          <td>历史频率高但不再访问的数据难以淘汰</td>
+      </tr>
+      <tr>
+          <td>W-TinyLFU</td>
+          <td>频率+时间窗口</td>
+          <td>兼顾历史频率和近期访问，自适应</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="guava-cachecaffeine的前身">Guava Cache：Caffeine的前身</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Guava Cache用法（与Caffeine类似）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">LoadingCache</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="n">cache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CacheBuilder</span><span class="p">.</span><span class="na">newBuilder</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">maximumSize</span><span class="p">(</span><span class="n">1000</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">expireAfterWrite</span><span class="p">(</span><span class="n">10</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">MINUTES</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">CacheLoader</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">User</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">loadUserFromDB</span><span class="p">(</span><span class="n">key</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">});</span></span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>Guava Cache</th>
+          <th>Caffeine</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>维护状态</td>
+          <td>停止新特性开发</td>
+          <td>活跃维护</td>
+      </tr>
+      <tr>
+          <td>性能</td>
+          <td>好</td>
+          <td>更好（6倍吞吐）</td>
+      </tr>
+      <tr>
+          <td>淘汰算法</td>
+          <td>LRU</td>
+          <td>W-TinyLFU</td>
+      </tr>
+      <tr>
+          <td>异步支持</td>
+          <td>有限</td>
+          <td>完善</td>
+      </tr>
+      <tr>
+          <td>推荐度</td>
+          <td>遗留项目</td>
+          <td>新项目首选</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="多级缓存架构">多级缓存架构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">请求 → L1本地缓存（Caffeine）→ hit → 返回（~纳秒级）
+</span></span><span class="line"><span class="cl">              ↓ miss
+</span></span><span class="line"><span class="cl">        L2分布式缓存（Redis）→ hit → 写L1 → 返回（~微秒级）
+</span></span><span class="line"><span class="cl">              ↓ miss
+</span></span><span class="line"><span class="cl">        DB → 写L2 → 写L1 → 返回（~毫秒级）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">一致性保障：
+</span></span><span class="line"><span class="cl">  - 写操作：先写DB，删Redis，广播通知各节点删本地缓存
+</span></span><span class="line"><span class="cl">  - 本地缓存TTL设置短于Redis（如Redis 10分钟，本地2分钟）</span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>方案</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>单节点应用</td>
+          <td>Caffeine</td>
+          <td>简单高效</td>
+      </tr>
+      <tr>
+          <td>微服务多节点</td>
+          <td>Caffeine + Redis</td>
+          <td>本地+分布式结合</td>
+      </tr>
+      <tr>
+          <td>需要持久化</td>
+          <td>Ehcache（磁盘缓存）</td>
+          <td>重启后数据不丢失</td>
+      </tr>
+      <tr>
+          <td>大对象缓存</td>
+          <td>软引用/弱引用</td>
+          <td>内存不足时自动回收</td>
+      </tr>
+      <tr>
+          <td>Spring生态</td>
+          <td>@Cacheable + Caffeine/Redis</td>
+          <td>注解驱动，解耦</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1本地缓存多节点不一致">问题1：本地缓存多节点不一致</h3>
+<p><strong>根因</strong>：每个节点独立管理缓存，更新后其他节点未感知
+<strong>解决</strong>：Redis Pub/Sub广播刷新、本地缓存设置短TTL、接受最终一致性</p>]]></description></item></channel></rss>

@@ -1,0 +1,155 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>培养路径 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%9F%B9%E5%85%BB%E8%B7%AF%E5%BE%84/</link><description>培养路径 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%9F%B9%E5%85%BB%E8%B7%AF%E5%BE%84/" rel="self" type="application/rss+xml"/><item><title>带新人</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%9B%A2%E9%98%9F%E4%B8%8E%E7%AE%A1%E7%90%86/%E6%96%B0%E4%BA%BA%E5%85%A5%E8%81%8C/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%9B%A2%E9%98%9F%E4%B8%8E%E7%AE%A1%E7%90%86/%E6%96%B0%E4%BA%BA%E5%85%A5%E8%81%8C/</guid><description><![CDATA[<h1 id="带新人">带新人</h1>
+<blockquote>
+<p><strong>核心结论</strong>：带新人的目标是在可控时间内让其独立交付价值，通过明确路径、及时反馈和适当放手，既保障业务产出又完成人才梯队建设。</p>
+</blockquote>
+<hr>
+<h2 id="新人培养通过分阶段目标具体任务和持续反馈实现从需要指导到独立交付的转化">新人培养通过分阶段目标、具体任务和持续反馈，实现从&quot;需要指导&quot;到&quot;独立交付&quot;的转化</h2>
+<h3 id="三阶段培养路径">三阶段培养路径</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">第1周：熟悉环境
+</span></span><span class="line"><span class="cl">├── 环境搭建（IDE、代码库、开发环境）
+</span></span><span class="line"><span class="cl">├── 代码规范阅读
+</span></span><span class="line"><span class="cl">├── 小Bug修复（2-3个）
+</span></span><span class="line"><span class="cl">└── 检查点：能独立编译运行项目
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">第2-4周：理解业务
+</span></span><span class="line"><span class="cl">├── 阅读核心模块代码
+</span></span><span class="line"><span class="cl">├── 参与Code Review
+</span></span><span class="line"><span class="cl">├── 独立完成小需求（1-2个）
+</span></span><span class="line"><span class="cl">└── 检查点：能理解代码Review意见并修改
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">第1-3月：独立交付
+</span></span><span class="line"><span class="cl">├── 承担完整需求（从设计到上线）
+</span></span><span class="line"><span class="cl">├── 参与技术方案讨论
+</span></span><span class="line"><span class="cl">├── 开始指导更新的人
+</span></span><span class="line"><span class="cl">└── 检查点：能独立负责一个功能模块</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>阶段</th>
+          <th>目标</th>
+          <th>导师动作</th>
+          <th>新人动作</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>融入期</td>
+          <td>熟悉环境和流程</td>
+          <td>1v1每天同步、分配保姆级任务</td>
+          <td>主动提问、记录踩坑</td>
+      </tr>
+      <tr>
+          <td>成长期</td>
+          <td>理解业务和代码</td>
+          <td>每周Review进展、讲解设计思路</td>
+          <td>写学习笔记、承担完整需求</td>
+      </tr>
+      <tr>
+          <td>独立期</td>
+          <td>自主交付价值</td>
+          <td>放手+关键节点把关</td>
+          <td>独立设计方案、反馈流程问题</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="任务设计原则">任务设计原则</h3>
+<table>
+  <thead>
+      <tr>
+          <th>原则</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>由简到难</td>
+          <td>先成功再挑战</td>
+          <td>先改文案，再改逻辑，再独立做需求</td>
+      </tr>
+      <tr>
+          <td>有明确产出</td>
+          <td>能看到效果</td>
+          <td>修复一个可见的Bug，而非纯阅读代码</td>
+      </tr>
+      <tr>
+          <td>允许犯错</td>
+          <td>安全环境试错</td>
+          <td>非核心功能的Bug修复，即使回退也无风险</td>
+      </tr>
+      <tr>
+          <td>与业务相关</td>
+          <td>理解业务价值</td>
+          <td>做真实需求而非Demo项目</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="反馈机制">反馈机制</h3>
+<table>
+  <thead>
+      <tr>
+          <th>频率</th>
+          <th>形式</th>
+          <th>内容</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>每天</td>
+          <td>即时反馈</td>
+          <td>代码Review意见、当天问题解答</td>
+      </tr>
+      <tr>
+          <td>每周</td>
+          <td>1v1沟通</td>
+          <td>进展、困难、下阶段计划</td>
+      </tr>
+      <tr>
+          <td>每月</td>
+          <td>阶段评估</td>
+          <td>能力成长、待改进点、目标调整</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="常见问题与应对">常见问题与应对</h3>
+<table>
+  <thead>
+      <tr>
+          <th>问题</th>
+          <th>表现</th>
+          <th>应对</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>不敢问</td>
+          <td>卡了很久不说</td>
+          <td>主动询问进度，营造&quot;提问安全&quot;氛围</td>
+      </tr>
+      <tr>
+          <td>过度依赖</td>
+          <td>每一步都要确认</td>
+          <td>逐步减少提示，让其先给出方案再讨论</td>
+      </tr>
+      <tr>
+          <td>进展慢</td>
+          <td>估时总是不准</td>
+          <td>任务拆更小，明确每个子任务的完成标准</td>
+      </tr>
+      <tr>
+          <td>融入难</td>
+          <td>团队协作不畅</td>
+          <td>安排Buddy（非导师）日常陪伴</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1让新人直接看代码熟悉没有具体任务">问题1：让新人直接看代码&quot;熟悉&quot;，没有具体任务</h3>
+<p><strong>根因</strong>：认为看代码就能理解系统
+<strong>解决</strong>：给具体问题和目标，在解决问题中理解代码，而非被动阅读</p>]]></description></item></channel></rss>

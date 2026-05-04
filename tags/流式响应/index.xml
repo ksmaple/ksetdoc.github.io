@@ -1,0 +1,293 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>流式响应 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E6%B5%81%E5%BC%8F%E5%93%8D%E5%BA%94/</link><description>流式响应 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E6%B5%81%E5%BC%8F%E5%93%8D%E5%BA%94/" rel="self" type="application/rss+xml"/><item><title>AI应用开发框架</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/ai%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/ai%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6/</guid><description><![CDATA[<h1 id="ai应用开发框架">AI应用开发框架</h1>
+<blockquote>
+<p><strong>核心结论</strong>：AI应用开发框架通过统一抽象封装不同大模型API的差异，提供流式响应、函数调用、RAG集成等能力，让开发者像使用普通SDK一样构建AI功能。</p>
+</blockquote>
+<hr>
+<h2 id="ai开发框架通过模型抽象提示词管理和工具编排降低ai能力集成到业务系统的复杂度">AI开发框架通过模型抽象、提示词管理和工具编排，降低AI能力集成到业务系统的复杂度</h2>
+<h3 id="主流框架对比">主流框架对比</h3>
+<table>
+  <thead>
+      <tr>
+          <th>框架</th>
+          <th>语言</th>
+          <th>特点</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Spring AI</td>
+          <td>Java</td>
+          <td>Spring生态集成</td>
+          <td>企业级Java后端</td>
+      </tr>
+      <tr>
+          <td>LangChain</td>
+          <td>Python/JS</td>
+          <td>生态最丰富</td>
+          <td>快速原型、复杂链路</td>
+      </tr>
+      <tr>
+          <td>LlamaIndex</td>
+          <td>Python/TS</td>
+          <td>专注RAG</td>
+          <td>知识库问答</td>
+      </tr>
+      <tr>
+          <td>Semantic Kernel</td>
+          <td>.NET/Python</td>
+          <td>微软出品</td>
+          <td>Azure生态</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="spring-ai核心概念">Spring AI核心概念</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Prompt（提示词）
+</span></span><span class="line"><span class="cl">  ├── SystemMessage：设定角色和行为边界
+</span></span><span class="line"><span class="cl">  ├── UserMessage：用户输入
+</span></span><span class="line"><span class="cl">  └── 可选：Function调用声明
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ChatClient（对话客户端）
+</span></span><span class="line"><span class="cl">  └── 统一接口，底层可切换 OpenAI/Claude/本地模型
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">VectorStore（向量存储）
+</span></span><span class="line"><span class="cl">  └── 接入ES、Redis、PgVector等存储Embedding</span></span></code></pre></div></div>
+<h3 id="流式响应实现">流式响应实现</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Server-Sent Events 流式输出</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@GetMapping</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;/stream&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">produces</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MediaType</span><span class="p">.</span><span class="na">TEXT_EVENT_STREAM_VALUE</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Flux</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">streamResponse</span><span class="p">(</span><span class="nd">@RequestParam</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">question</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">chatClient</span><span class="p">.</span><span class="na">prompt</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">user</span><span class="p">(</span><span class="n">question</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">stream</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">content</span><span class="p">();</span><span class="w">  </span><span class="c1">// 逐字返回，前端实时展示</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>响应模式</th>
+          <th>特点</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>同步阻塞</td>
+          <td>简单直接，用户体验差</td>
+          <td>后台任务</td>
+      </tr>
+      <tr>
+          <td>流式SSE</td>
+          <td>逐字输出，体验好</td>
+          <td>聊天对话</td>
+      </tr>
+      <tr>
+          <td>WebSocket</td>
+          <td>双向通信</td>
+          <td>多轮交互</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="function-calling工具调用">Function Calling（工具调用）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 定义可被AI调用的函数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">record</span> <span class="nc">WeatherRequest</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">city</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Bean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Function</span><span class="o">&lt;</span><span class="n">WeatherRequest</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">weatherFunction</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 调用天气API获取数据</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">weatherService</span><span class="p">.</span><span class="na">query</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="na">city</span><span class="p">(),</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="na">date</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// AI根据用户问题决定是否需要调用</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">chatClient</span><span class="p">.</span><span class="na">prompt</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">user</span><span class="p">(</span><span class="s">&#34;北京明天天气怎么样？&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">functions</span><span class="p">(</span><span class="s">&#34;weatherFunction&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">call</span><span class="p">();</span></span></span></code></pre></div></div>
+<h3 id="rag集成模式">RAG集成模式</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户问题 → Embedding → 向量检索（TopK文档）→ 拼接上下文 → LLM生成答案
+</span></span><span class="line"><span class="cl">                ↑
+</span></span><span class="line"><span class="cl">           文档预处理（分块、向量化、存储）</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>组件</th>
+          <th>选型</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>文档加载</td>
+          <td>PDF/Word/HTML解析器</td>
+          <td>原始文档转文本</td>
+      </tr>
+      <tr>
+          <td>文本分块</td>
+          <td>固定长度/语义分块</td>
+          <td>控制每块大小和边界</td>
+      </tr>
+      <tr>
+          <td>Embedding</td>
+          <td>text-embedding-3/bge</td>
+          <td>文本向量化</td>
+      </tr>
+      <tr>
+          <td>向量存储</td>
+          <td>ES/PgVector/Redis</td>
+          <td>近似近邻搜索</td>
+      </tr>
+      <tr>
+          <td>LLM</td>
+          <td>GPT-4/Claude/本地模型</td>
+          <td>生成最终回答</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1流式响应与业务事务冲突">问题1：流式响应与业务事务冲突</h3>
+<p><strong>根因</strong>：流式输出期间数据库连接未释放
+<strong>解决</strong>：在调用AI前完成所有数据查询，或调整连接池配置</p>]]></description></item><item><title>Spring AI 架构原理与底层实现</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/spring-ai%E6%B7%B1%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/spring-ai%E6%B7%B1%E5%85%A5/</guid><description><![CDATA[<h1 id="spring-ai-架构原理与底层实现">Spring AI 架构原理与底层实现</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Spring AI 通过 <code>Model</code> + <code>Prompt</code> + <code>OutputParser</code> 三层抽象统一了不同大模型供应商的 API 差异，底层基于 <code>RestClient</code> 和 <code>ReactiveChatClient</code> 实现同步/流式双模调用，其设计本质是<strong>将 AI 能力转换为 Spring 生态中可装配的标准 Bean</strong>。</p>
+</blockquote>
+<hr>
+<h2 id="spring-ai-通过分层架构解耦了模型协议调用方式与业务逻辑">Spring AI 通过分层架构解耦了模型协议、调用方式与业务逻辑</h2>
+<h3 id="整体架构五层模型设计">整体架构：五层模型设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">┌─────────────────────────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">│  应用层：业务代码调用 ChatClient / EmbeddingClient            │
+</span></span><span class="line"><span class="cl">├─────────────────────────────────────────────────────────────┤
+</span></span><span class="line"><span class="cl">│  API层：Prompt、ChatResponse、Generation 等通用模型           │
+</span></span><span class="line"><span class="cl">├─────────────────────────────────────────────────────────────┤
+</span></span><span class="line"><span class="cl">│  客户端层：ChatClient / StreamingChatClient 接口抽象          │
+</span></span><span class="line"><span class="cl">├─────────────────────────────────────────────────────────────┤
+</span></span><span class="line"><span class="cl">│  模型层：OpenAiChatModel / AnthropicChatModel / Ollama...    │
+</span></span><span class="line"><span class="cl">├─────────────────────────────────────────────────────────────┤
+</span></span><span class="line"><span class="cl">│  传输层：RestClient (同步) / WebClient (响应式流式)            │
+</span></span><span class="line"><span class="cl">└─────────────────────────────────────────────────────────────┘</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>职责</th>
+          <th>核心接口/类</th>
+          <th>设计意图</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>应用层</td>
+          <td>业务编排</td>
+          <td><code>ChatClient</code>, <code>Advisor</code></td>
+          <td>链式调用、AOP扩展</td>
+      </tr>
+      <tr>
+          <td>API层</td>
+          <td>协议无关的数据结构</td>
+          <td><code>Prompt</code>, <code>Message</code>, <code>ChatResponse</code></td>
+          <td>屏蔽供应商差异</td>
+      </tr>
+      <tr>
+          <td>客户端层</td>
+          <td>调用模式抽象</td>
+          <td><code>ChatClient</code>, <code>StreamingChatClient</code></td>
+          <td>统一同步/流式入口</td>
+      </tr>
+      <tr>
+          <td>模型层</td>
+          <td>供应商具体实现</td>
+          <td><code>OpenAiChatModel</code>, <code>AnthropicChatModel</code></td>
+          <td>协议转换、鉴权、序列化</td>
+      </tr>
+      <tr>
+          <td>传输层</td>
+          <td>HTTP通信</td>
+          <td><code>RestClient</code>, <code>WebClient</code></td>
+          <td>复用 Spring 6 HTTP 基础设施</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="与-spring-生态的集成点">与 Spring 生态的集成点</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Spring Boot 自动配置：只需引入 starter，注入即可用</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Autowired</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">ChatClient</span><span class="w"> </span><span class="n">chatClient</span><span class="p">;</span><span class="w">  </span><span class="c1">// 默认指向 spring.ai.default.chat 配置的模型</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 多模型配置：同时对接 OpenAI 和本地 Ollama</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Autowired</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Qualifier</span><span class="p">(</span><span class="s">&#34;openAiChatClient&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">ChatClient</span><span class="w"> </span><span class="n">openAiClient</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Autowired</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Qualifier</span><span class="p">(</span><span class="s">&#34;ollamaChatClient&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">ChatClient</span><span class="w"> </span><span class="n">localClient</span><span class="p">;</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># application.yml 多模型配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spring</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ai</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">openai</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">api-key</span><span class="p">:</span><span class="w"> </span><span class="l">${OPENAI_API_KEY}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">chat</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">options</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l">gpt-4o</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="m">0.7</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">ollama</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">base-url</span><span class="p">:</span><span class="w"> </span><span class="l">http://localhost:11434</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">chat</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">options</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l">llama3.2</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="api-层设计prompt-与-message-的协议无关抽象">API 层设计：Prompt 与 Message 的协议无关抽象</h2>
+<h3 id="message-体系统一表达对话上下文">Message 体系：统一表达对话上下文</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 核心接口：所有消息类型的基类</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">Message</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="nf">getContent</span><span class="p">();</span><span class="w">           </span><span class="c1">// 消息内容</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">MessageType</span><span class="w"> </span><span class="nf">getMessageType</span><span class="p">();</span><span class="w">  </span><span class="c1">// 枚举：USER/ASSISTANT/SYSTEM/TOOL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getMetadata</span><span class="p">();</span><span class="w">  </span><span class="c1">// 扩展元数据</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 具体实现</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">new</span><span class="w"> </span><span class="n">SystemMessage</span><span class="p">(</span><span class="s">&#34;你是一个专业的Java技术顾问&#34;</span><span class="p">);</span><span class="w">   </span><span class="c1">// 设定角色</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">new</span><span class="w"> </span><span class="n">UserMessage</span><span class="p">(</span><span class="s">&#34;解释一下Spring的AOP原理&#34;</span><span class="p">);</span><span class="w">        </span><span class="c1">// 用户输入</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">new</span><span class="w"> </span><span class="n">AssistantMessage</span><span class="p">(</span><span class="s">&#34;Spring AOP 基于动态代理...&#34;</span><span class="p">);</span><span class="w"> </span><span class="c1">// AI回复</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">new</span><span class="w"> </span><span class="n">ToolResponseMessage</span><span class="p">(</span><span class="s">&#34;tool_call_id&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;{\&#34;temp\&#34;:25}&#34;</span><span class="p">);</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">工具返回</span></span></span></code></pre></div></div>
+<p><strong>设计要点</strong>：<code>MessageType</code> 枚举确保了无论底层模型使用什么字段名（OpenAI 的 <code>role</code>/<code>content</code>，Claude 的 <code>type</code>/<code>text</code>），上层业务代码始终使用统一类型。</p>]]></description></item></channel></rss>

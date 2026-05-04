@@ -1,0 +1,146 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Docker - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/docker/</link><description>Docker - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/docker/" rel="self" type="application/rss+xml"/><item><title>Docker容器化</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/docker%E5%AE%B9%E5%99%A8%E5%8C%96/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/docker%E5%AE%B9%E5%99%A8%E5%8C%96/</guid><description><![CDATA[<h1 id="docker容器化">Docker容器化</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Docker通过容器技术实现应用与运行环境的打包隔离，通过镜像分层复用减少存储，通过容器运行时提供一致的部署体验，是云原生和微服务部署的基础。</p>
+</blockquote>
+<hr>
+<h2 id="docker通过镜像打包容器隔离分层存储实现应用的标准化交付">Docker通过镜像打包、容器隔离、分层存储实现应用的标准化交付</h2>
+<h3 id="核心概念镜像容器仓库">核心概念：镜像、容器、仓库</h3>
+<table>
+  <thead>
+      <tr>
+          <th>概念</th>
+          <th>说明</th>
+          <th>类比</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>镜像（Image）</td>
+          <td>只读模板，包含应用和依赖</td>
+          <td>类（Class）</td>
+      </tr>
+      <tr>
+          <td>容器（Container）</td>
+          <td>镜像的运行实例</td>
+          <td>对象（Object）</td>
+      </tr>
+      <tr>
+          <td>仓库（Registry）</td>
+          <td>镜像存储和分发</td>
+          <td>Maven仓库</td>
+      </tr>
+      <tr>
+          <td>Dockerfile</td>
+          <td>镜像构建脚本</td>
+          <td>构建脚本</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="dockerfile最佳实践">Dockerfile最佳实践</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-dockerfile">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-dockerfile" data-lang="dockerfile"><span class="line"><span class="cl"><span class="c"># 多阶段构建，减小最终镜像</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">FROM</span><span class="w"> </span><span class="s">maven:3.8</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">build</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">COPY</span> pom.xml .<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">RUN</span> mvn dependency:go-offline<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">COPY</span> src ./src<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">RUN</span> mvn clean package -DskipTests<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">FROM</span><span class="w"> </span><span class="s">eclipse-temurin:17-jre-alpine</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">COPY</span> --from<span class="o">=</span>build /app/target/*.jar app.jar<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">EXPOSE</span><span class="w"> </span><span class="s">8080</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">ENTRYPOINT</span> <span class="p">[</span><span class="s2">&#34;java&#34;</span><span class="p">,</span> <span class="s2">&#34;-jar&#34;</span><span class="p">,</span> <span class="s2">&#34;app.jar&#34;</span><span class="p">]</span></span></span></code></pre></div></div>
+<p><strong>优化原则</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>原则</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>多阶段构建</td>
+          <td>编译和运行分离，减小镜像</td>
+      </tr>
+      <tr>
+          <td>基础镜像选Alpine</td>
+          <td>体积小，安全面小</td>
+      </tr>
+      <tr>
+          <td>层缓存优化</td>
+          <td>不常变的指令放前面</td>
+      </tr>
+      <tr>
+          <td>非root运行</td>
+          <td>安全考虑</td>
+      </tr>
+      <tr>
+          <td>.dockerignore</td>
+          <td>排除不需要的文件</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="容器网络与存储">容器网络与存储</h3>
+<table>
+  <thead>
+      <tr>
+          <th>网络模式</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>bridge</td>
+          <td>默认，容器间通过网桥通信</td>
+          <td>单机多容器</td>
+      </tr>
+      <tr>
+          <td>host</td>
+          <td>共享宿主机网络</td>
+          <td>性能要求高</td>
+      </tr>
+      <tr>
+          <td>overlay</td>
+          <td>跨主机容器通信</td>
+          <td>Swarm/K8s</td>
+      </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+      <tr>
+          <th>存储方式</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>bind mount</td>
+          <td>挂载宿主机目录</td>
+          <td>开发调试</td>
+      </tr>
+      <tr>
+          <td>volume</td>
+          <td>Docker管理的数据卷</td>
+          <td>生产持久化</td>
+      </tr>
+      <tr>
+          <td>tmpfs</td>
+          <td>内存存储</td>
+          <td>敏感临时数据</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1镜像过大">问题1：镜像过大</h3>
+<p><strong>根因</strong>：包含不必要的依赖和文件
+<strong>解决</strong>：多阶段构建、Alpine基础镜像、清理缓存</p>]]></description></item></channel></rss>

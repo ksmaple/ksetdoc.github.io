@@ -1,0 +1,63 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>订单 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E8%AE%A2%E5%8D%95/</link><description>订单 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E8%AE%A2%E5%8D%95/" rel="self" type="application/rss+xml"/><item><title>虚拟商城</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E8%99%9A%E6%8B%9F%E5%95%86%E5%9F%8E/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E8%99%9A%E6%8B%9F%E5%95%86%E5%9F%8E/</guid><description><![CDATA[<h1 id="虚拟商城">虚拟商城</h1>
+<blockquote>
+<p><strong>核心结论</strong>：虚拟商城与实物电商的核心差异在于无需物流履约，库存为虚拟数字，重点在于商品定价策略、库存预扣与发放、以及虚拟道具的账户化管理。</p>
+</blockquote>
+<hr>
+<h2 id="虚拟商城通过虚拟库存管理和即时发放机制实现商品购买到账户到账的闭环">虚拟商城通过虚拟库存管理和即时发放机制，实现商品购买到账户到账的闭环</h2>
+<h3 id="核心模块">核心模块</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模块</th>
+          <th>职责</th>
+          <th>特点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>商品管理</td>
+          <td>虚拟商品上架、定价、分类</td>
+          <td>无SKU，无物流属性</td>
+      </tr>
+      <tr>
+          <td>库存管理</td>
+          <td>虚拟库存预扣、发放、回滚</td>
+          <td>数字增减，无限可超卖</td>
+      </tr>
+      <tr>
+          <td>订单系统</td>
+          <td>下单、支付、发货（到账）</td>
+          <td>即时到账</td>
+      </tr>
+      <tr>
+          <td>账户系统</td>
+          <td>虚拟资产（道具、皮肤、会员）</td>
+          <td>账户内管理</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="库存管理设计">库存管理设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">下单流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 用户下单 → 预扣库存
+</span></span><span class="line"><span class="cl">   UPDATE goods SET stock = stock - 1 WHERE id = ? AND stock &gt; 0
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">2. 用户支付 → 确认扣减（已预扣，无需再扣）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 支付超时 → 回滚库存
+</span></span><span class="line"><span class="cl">   UPDATE goods SET stock = stock + 1 WHERE id = ?
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">虚拟商品特点：
+</span></span><span class="line"><span class="cl">- 可超卖（如限量商品可设置实际库存+候补）
+</span></span><span class="line"><span class="cl">- 发放即到账，无物流
+</span></span><span class="line"><span class="cl">- 支持组合包（Bundle）</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1高并发下库存超卖">问题1：高并发下库存超卖</h3>
+<p><strong>根因</strong>：并发扣减库存导致负数
+<strong>解决</strong>：数据库乐观锁（版本号）、Redis预扣、队列串行化</p>]]></description></item></channel></rss>

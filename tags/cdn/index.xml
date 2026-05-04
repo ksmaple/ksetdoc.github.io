@@ -1,0 +1,81 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Cdn - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/cdn/</link><description>Cdn - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/cdn/" rel="self" type="application/rss+xml"/><item><title>DNS解析与CDN</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/dns%E4%B8%8Ecdn/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/dns%E4%B8%8Ecdn/</guid><description><![CDATA[<h1 id="dns解析与cdn">DNS解析与CDN</h1>
+<blockquote>
+<p><strong>核心结论</strong>：DNS通过分布式层级系统将域名解析为IP地址，CDN利用DNS的智能调度和边缘节点缓存，将内容分发到离用户最近的节点，二者结合是互联网性能优化的基础设施。</p>
+</blockquote>
+<hr>
+<h2 id="dns通过分布式层级数据库实现域名到ip的映射cdn在此基础上叠加边缘缓存和智能调度">DNS通过分布式层级数据库实现域名到IP的映射，CDN在此基础上叠加边缘缓存和智能调度</h2>
+<h3 id="dns域名空间树状层级结构">DNS域名空间：树状层级结构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">                    根域名服务器 (.)
+</span></span><span class="line"><span class="cl">                         │
+</span></span><span class="line"><span class="cl">    ┌────────────────────┼────────────────────┐
+</span></span><span class="line"><span class="cl">    │                    │                    │
+</span></span><span class="line"><span class="cl">   com                  org                  cn
+</span></span><span class="line"><span class="cl">    │                    │                    │
+</span></span><span class="line"><span class="cl"> example              wikipedia            baidu
+</span></span><span class="line"><span class="cl">    │                    │                    │
+</span></span><span class="line"><span class="cl">   www                 www                  www
+</span></span><span class="line"><span class="cl">    │
+</span></span><span class="line"><span class="cl">  记录: A 93.184.216.34
+</span></span><span class="line"><span class="cl">        CNAME example.cdn.com</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>根域名（Root）</td>
+          <td>最顶层，全球13组（字母A-M）</td>
+          <td><code>.</code></td>
+      </tr>
+      <tr>
+          <td>顶级域（TLD）</td>
+          <td>通用（gTLD）或国家/地区（ccTLD）</td>
+          <td><code>.com</code> <code>.org</code> <code>.cn</code></td>
+      </tr>
+      <tr>
+          <td>二级域</td>
+          <td>注册购买的主体域名</td>
+          <td><code>example.com</code></td>
+      </tr>
+      <tr>
+          <td>子域</td>
+          <td>二级域下的扩展</td>
+          <td><code>www.example.com</code> <code>api.example.com</code></td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="dns解析流程从递归查询到本地缓存">DNS解析流程：从递归查询到本地缓存</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户输入 www.example.com
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 浏览器缓存 → 检查是否最近解析过
+</span></span><span class="line"><span class="cl">2. 操作系统缓存 (/etc/hosts, DNS Client Service)
+</span></span><span class="line"><span class="cl">3. 本地DNS服务器（ISP或公共DNS如8.8.8.8）
+</span></span><span class="line"><span class="cl">   └── 递归查询开始 ──────────────────────────┐
+</span></span><span class="line"><span class="cl">                                              │
+</span></span><span class="line"><span class="cl">4. 本地DNS → 根域名服务器（.）                 │
+</span></span><span class="line"><span class="cl">   ← 返回 com 的NS记录                        │
+</span></span><span class="line"><span class="cl">                                              │
+</span></span><span class="line"><span class="cl">5. 本地DNS → com 顶级域服务器                  │
+</span></span><span class="line"><span class="cl">   ← 返回 example.com 的NS记录                │
+</span></span><span class="line"><span class="cl">                                              │
+</span></span><span class="line"><span class="cl">6. 本地DNS → example.com 权威DNS服务器         │
+</span></span><span class="line"><span class="cl">   ← 返回 www.example.com 的A记录: 93.184.216.34│
+</span></span><span class="line"><span class="cl">                                              │
+</span></span><span class="line"><span class="cl">7. 本地DNS缓存结果，返回给用户 ────────────────┘
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">总耗时：通常 20-120ms（取决于缓存命中率）</span></span></code></pre></div></div>
+<p><strong>DNS记录类型</strong>：</p>]]></description></item></channel></rss>

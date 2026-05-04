@@ -1,0 +1,240 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Traceroute - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/traceroute/</link><description>Traceroute - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/traceroute/" rel="self" type="application/rss+xml"/><item><title>网络延迟与稳定性排查</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/%E7%BD%91%E7%BB%9C%E5%BB%B6%E8%BF%9F%E6%8E%92%E6%9F%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/%E7%BD%91%E7%BB%9C%E5%BB%B6%E8%BF%9F%E6%8E%92%E6%9F%A5/</guid><description><![CDATA[<h1 id="网络延迟与稳定性排查">网络延迟与稳定性排查</h1>
+<blockquote>
+<p><strong>核心结论</strong>：网络延迟问题通常由DNS解析、路由跳变、TCP重传、带宽竞争或应用层超时配置不当引起，通过分层排查（物理层→网络层→传输层→应用层）可以快速定位根因。</p>
+</blockquote>
+<hr>
+<h2 id="问题现象">问题现象</h2>
+<p>线上服务出现间歇性超时：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Caused by: java.net.SocketTimeoutException: Read timed out
+</span></span><span class="line"><span class="cl">    at java.net.SocketInputStream.socketRead0(Native Method)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">HTTP调用P99从50ms上升到800ms
+</span></span><span class="line"><span class="cl">部分请求正常，部分请求超时</span></span></code></pre></div></div>
+<h3 id="影响范围">影响范围</h3>
+<ul>
+<li>服务间RPC调用超时率上升</li>
+<li>用户体验下降，接口响应变慢</li>
+<li>触发熔断，影响正常流量</li>
+</ul>
+<hr>
+<h2 id="排查过程">排查过程</h2>
+<h3 id="第一步确认问题层级">第一步：确认问题层级</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">OSI分层排查：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">应用层（L7）→ HTTP/RPC超时配置是否合理？
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">传输层（L4）→ TCP连接是否正常？是否有重传？
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">网络层（L3）→ 路由是否跳变？是否有丢包？
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">链路层（L2）→ 网卡/交换机是否有错误？
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">物理层（L1）→ 带宽是否打满？光纤/网线是否正常？</span></span></code></pre></div></div>
+<h3 id="第二步网络层排查命令">第二步：网络层排查命令</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 1. 测试连通性和延迟</span>
+</span></span><span class="line"><span class="cl">ping -c <span class="m">100</span> target-ip
+</span></span><span class="line"><span class="cl"><span class="c1"># 关注：丢包率、延迟波动</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 追踪路由路径</span>
+</span></span><span class="line"><span class="cl">traceroute target-ip
+</span></span><span class="line"><span class="cl"><span class="c1"># 关注：哪一跳延迟突增</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. 更详细的网络质量检测</span>
+</span></span><span class="line"><span class="cl">mtr --report --report-cycles <span class="m">100</span> target-ip
+</span></span><span class="line"><span class="cl"><span class="c1"># 关注：Loss%和Last列</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 4. TCP连接状态</span>
+</span></span><span class="line"><span class="cl">ss -tan <span class="p">|</span> awk <span class="s1">&#39;{print $1}&#39;</span> <span class="p">|</span> sort <span class="p">|</span> uniq -c
+</span></span><span class="line"><span class="cl"><span class="c1"># 关注：TIME_WAIT、CLOSE_WAIT数量</span></span></span></code></pre></div></div>
+<h3 id="第三步传输层排查">第三步：传输层排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 查看TCP重传率</span>
+</span></span><span class="line"><span class="cl">cat /proc/net/snmp <span class="p">|</span> grep Tcp:
+</span></span><span class="line"><span class="cl"><span class="c1"># RetransSegs / OutSegs = 重传率，&gt;1%需关注</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 抓包分析（生产慎用）</span>
+</span></span><span class="line"><span class="cl">tcpdump -i eth0 host target-ip -w capture.pcap
+</span></span><span class="line"><span class="cl"><span class="c1"># Wireshark分析：Filter tcp.analysis.retransmission</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 连接跟踪</span>
+</span></span><span class="line"><span class="cl">conntrack -L <span class="p">|</span> grep target-ip <span class="p">|</span> wc -l
+</span></span><span class="line"><span class="cl"><span class="c1"># 连接数是否超过阈值</span></span></span></code></pre></div></div>
+<h3 id="第四步应用层排查">第四步：应用层排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 检查连接池配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">HikariConfig</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HikariConfig</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setConnectionTimeout</span><span class="p">(</span><span class="n">5000</span><span class="p">);</span><span class="w">   </span><span class="c1">// 获取连接等待时间</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setMaxLifetime</span><span class="p">(</span><span class="n">1800000</span><span class="p">);</span><span class="w">      </span><span class="c1">// 连接最大生命周期</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setMaximumPoolSize</span><span class="p">(</span><span class="n">50</span><span class="p">);</span><span class="w">       </span><span class="c1">// 最大连接数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// HTTP客户端超时配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">RestTemplate</span><span class="w"> </span><span class="n">restTemplate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RestTemplate</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">SimpleClientHttpRequestFactory</span><span class="w"> </span><span class="n">factory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SimpleClientHttpRequestFactory</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">factory</span><span class="p">.</span><span class="na">setConnectTimeout</span><span class="p">(</span><span class="n">3000</span><span class="p">);</span><span class="w">     </span><span class="c1">// 建立连接超时</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">factory</span><span class="p">.</span><span class="na">setReadTimeout</span><span class="p">(</span><span class="n">5000</span><span class="p">);</span><span class="w">        </span><span class="c1">// 读取响应超时</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">restTemplate</span><span class="p">.</span><span class="na">setRequestFactory</span><span class="p">(</span><span class="n">factory</span><span class="p">);</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="根因分析">根因分析</h2>
+<table>
+  <thead>
+      <tr>
+          <th>根因</th>
+          <th>现象</th>
+          <th>验证方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>DNS解析慢</td>
+          <td>首次请求慢，后续正常</td>
+          <td>dig/nslookup看解析时间</td>
+      </tr>
+      <tr>
+          <td>路由跳变</td>
+          <td>traceroute路径不稳定</td>
+          <td>多次traceroute对比</td>
+      </tr>
+      <tr>
+          <td>TCP重传</td>
+          <td>网络丢包或拥塞</td>
+          <td>/proc/net/snmp重传率</td>
+      </tr>
+      <tr>
+          <td>带宽打满</td>
+          <td>延迟伴随丢包</td>
+          <td>iftop/nload看流量</td>
+      </tr>
+      <tr>
+          <td>连接数耗尽</td>
+          <td>大量TIME_WAIT/CLOSE_WAIT</td>
+          <td>ss -tan统计</td>
+      </tr>
+      <tr>
+          <td>超时配置不当</td>
+          <td>超时时间小于正常RTT</td>
+          <td>对比ping延迟和超时配置</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="解决方案">解决方案</h2>
+<h3 id="网络层优化">网络层优化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 1. DNS优化：使用本地缓存或IP直连</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 路由优化：调整BGP策略或使用专线</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. 内核参数调优</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 减少TIME_WAIT</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s1">&#39;net.ipv4.tcp_tw_reuse = 1&#39;</span> &gt;&gt; /etc/sysctl.conf
+</span></span><span class="line"><span class="cl"><span class="c1"># 增大连接跟踪表</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s1">&#39;net.netfilter.nf_conntrack_max = 655350&#39;</span> &gt;&gt; /etc/sysctl.conf
+</span></span><span class="line"><span class="cl">sysctl -p</span></span></code></pre></div></div>
+<h3 id="应用层优化">应用层优化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 1. 合理设置超时（基于P99 + 缓冲）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 若正常P99=100ms，设置readTimeout=300ms</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 2. 连接池预热</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@PostConstruct</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">warmUp</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 应用启动时预热连接池</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">dataSource</span><span class="p">.</span><span class="na">getConnection</span><span class="p">().</span><span class="na">close</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 3. 熔断降级</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;remoteService&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">fallbackMethod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;fallback&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Response</span><span class="w"> </span><span class="nf">callRemote</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">remoteClient</span><span class="p">.</span><span class="na">call</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="架构层优化">架构层优化</h3>
+<table>
+  <thead>
+      <tr>
+          <th>手段</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>就近部署</td>
+          <td>服务部署在同一可用区/机房</td>
+      </tr>
+      <tr>
+          <td>连接池复用</td>
+          <td>减少TCP握手开销</td>
+      </tr>
+      <tr>
+          <td>异步化</td>
+          <td>非关键调用改异步，降低延迟敏感度</td>
+      </tr>
+      <tr>
+          <td>本地缓存</td>
+          <td>减少跨网络调用次数</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="复盘与预防">复盘与预防</h2>
+<table>
+  <thead>
+      <tr>
+          <th>措施</th>
+          <th>执行方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>网络基线</td>
+          <td>定期记录各链路RTT和丢包率，建立正常基线</td>
+      </tr>
+      <tr>
+          <td>告警阈值</td>
+          <td>延迟超过基线200%时告警</td>
+      </tr>
+      <tr>
+          <td>超时设计</td>
+          <td>超时设置基于实际测量值，非拍脑袋</td>
+      </tr>
+      <tr>
+          <td>混沌工程</td>
+          <td>定期模拟网络延迟和丢包，验证系统韧性</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e7%bd%91%e7%bb%9c%e5%8d%8f%e8%ae%ae/tcp-udp.md" rel="">TCP vs UDP</a></li>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f/%e7%bd%91%e7%bb%9cIO%e6%a8%a1%e5%9e%8b.md" rel="">网络IO模型</a></li>
+</ul>]]></description></item></channel></rss>

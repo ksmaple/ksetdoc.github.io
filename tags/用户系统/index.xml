@@ -1,0 +1,102 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>用户系统 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E7%94%A8%E6%88%B7%E7%B3%BB%E7%BB%9F/</link><description>用户系统 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E7%94%A8%E6%88%B7%E7%B3%BB%E7%BB%9F/" rel="self" type="application/rss+xml"/><item><title>用户系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%94%A8%E6%88%B7%E7%B3%BB%E7%BB%9F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%94%A8%E6%88%B7%E7%B3%BB%E7%BB%9F/</guid><description><![CDATA[<h1 id="用户系统">用户系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：用户系统是业务平台的基础，核心能力包括身份认证（注册登录）、权限管控、用户画像三层，通过OAuth2/OpenID标准化第三方登录，通过RBAC模型管理权限，通过标签体系构建画像。</p>
+</blockquote>
+<hr>
+<h2 id="用户系统通过身份认证权限管控用户画像三层构建用户管理能力">用户系统通过身份认证、权限管控、用户画像三层构建用户管理能力</h2>
+<h3 id="注册登录设计">注册登录设计</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方式</th>
+          <th>实现</th>
+          <th>安全考量</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>手机号+验证码</td>
+          <td>短信服务商 + 验证码缓存</td>
+          <td>防刷（图形验证码、频次限制）</td>
+      </tr>
+      <tr>
+          <td>用户名+密码</td>
+          <td>密码哈希（BCrypt）+ Salt</td>
+          <td>防暴力破解、密码强度要求</td>
+      </tr>
+      <tr>
+          <td>第三方登录</td>
+          <td>OAuth2授权码模式</td>
+          <td>Token安全存储、绑定手机</td>
+      </tr>
+      <tr>
+          <td>一键登录</td>
+          <td>运营商网关取号</td>
+          <td>本机号码校验</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Token机制：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">登录成功 → 生成Access Token（短效，如2小时）+ Refresh Token（长效，如30天）
+</span></span><span class="line"><span class="cl">   ↓
+</span></span><span class="line"><span class="cl">Access Token过期 → 用Refresh Token换取新的Access Token
+</span></span><span class="line"><span class="cl">   ↓
+</span></span><span class="line"><span class="cl">Refresh Token过期 → 重新登录</span></span></code></pre></div></div>
+<h3 id="权限模型rbac">权限模型：RBAC</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">RBAC（Role-Based Access Control）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">用户 ←→ 角色 ←→ 权限
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">User: user_001
+</span></span><span class="line"><span class="cl">Role: admin, editor
+</span></span><span class="line"><span class="cl">Permission: user:create, user:delete, article:publish
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">判断权限：用户是否有角色，角色是否包含权限</span></span></code></pre></div></div>
+<h3 id="用户画像">用户画像</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>标签示例</th>
+          <th>用途</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>基础属性</td>
+          <td>性别、年龄、地域</td>
+          <td>基础分析</td>
+      </tr>
+      <tr>
+          <td>行为属性</td>
+          <td>活跃时段、消费偏好</td>
+          <td>精准推荐</td>
+      </tr>
+      <tr>
+          <td>价值属性</td>
+          <td>RFM模型、LTV</td>
+          <td>分层运营</td>
+      </tr>
+      <tr>
+          <td>风险属性</td>
+          <td>黑名单、异常行为</td>
+          <td>风控</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1token被盗用">问题1：Token被盗用</h3>
+<p><strong>根因</strong>：Token存储不安全或传输被截获
+<strong>解决</strong>：HTTPS、Token绑定设备指纹、异常登录检测</p>]]></description></item></channel></rss>

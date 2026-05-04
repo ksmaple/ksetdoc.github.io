@@ -1,0 +1,88 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>IO - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/io/</link><description>IO - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/io/" rel="self" type="application/rss+xml"/><item><title>Java常用标准库</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/java%E6%A0%87%E5%87%86%E5%BA%93/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/java%E6%A0%87%E5%87%86%E5%BA%93/</guid><description><![CDATA[<h1 id="java常用标准库">Java常用标准库</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Java标准库通过集合框架（数据结构）、IO/NIO（数据传输）、并发工具包（JUC，线程协作）三大支柱支撑日常开发，其中集合的选型直接决定程序的时间/空间复杂度，NIO的Channel+Buffer模型是高并发IO的关键。</p>
+</blockquote>
+<hr>
+<h2 id="java标准库通过集合ionio并发工具包三大支柱支撑日常开发选型决定性能基线">Java标准库通过集合、IO/NIO、并发工具包三大支柱支撑日常开发，选型决定性能基线</h2>
+<h3 id="集合框架数据结构的选择决定算法复杂度">集合框架：数据结构的选择决定算法复杂度</h3>
+<p>Java集合按单线程/多线程、有序/无序、允许重复/不允许等维度划分：</p>
+<table>
+  <thead>
+      <tr>
+          <th>接口</th>
+          <th>典型实现</th>
+          <th>底层结构</th>
+          <th>时间复杂度</th>
+          <th>线程安全</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>List</code></td>
+          <td><code>ArrayList</code></td>
+          <td>动态数组</td>
+          <td>查询O(1)，插入O(n)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>List</code></td>
+          <td><code>LinkedList</code></td>
+          <td>双向链表</td>
+          <td>查询O(n)，头尾插入O(1)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Set</code></td>
+          <td><code>HashSet</code></td>
+          <td><code>HashMap</code>封装</td>
+          <td>增删查O(1)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Set</code></td>
+          <td><code>TreeSet</code></td>
+          <td>红黑树</td>
+          <td>增删查O(log n)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Map</code></td>
+          <td><code>HashMap</code></td>
+          <td>数组+链表+红黑树</td>
+          <td>增删查O(1)~O(log n)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Map</code></td>
+          <td><code>TreeMap</code></td>
+          <td>红黑树</td>
+          <td>增删查O(log n)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Queue</code></td>
+          <td><code>PriorityQueue</code></td>
+          <td>小顶堆</td>
+          <td>入队O(log n)，出队O(1)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Queue</code></td>
+          <td><code>ArrayDeque</code></td>
+          <td>循环数组</td>
+          <td>双端操作O(1)</td>
+          <td>否</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// HashMap 关键源码：扰动函数减少哈希冲突</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">hash</span><span class="p">(</span><span class="n">Object</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">h</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">0</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="na">hashCode</span><span class="p">())</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">&gt;&gt;&gt;</span><span class="w"> </span><span class="n">16</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<p><strong>HashMap扩容机制</strong>：</p>]]></description></item></channel></rss>

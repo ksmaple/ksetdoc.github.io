@@ -1,0 +1,40 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Starter - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/starter/</link><description>Starter - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/starter/" rel="self" type="application/rss+xml"/><item><title>Spring Boot自动配置</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/spring-boot%E8%87%AA%E5%8A%A8%E9%85%8D%E7%BD%AE/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/spring-boot%E8%87%AA%E5%8A%A8%E9%85%8D%E7%BD%AE/</guid><description><![CDATA[<h1 id="spring-boot自动配置">Spring Boot自动配置</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Spring Boot通过条件注解判断类路径和环境，自动装配Bean，通过Starter封装常用依赖和默认配置，将Spring应用的初始化代码从数百行缩减到几乎为零。</p>
+</blockquote>
+<hr>
+<h2 id="spring-boot通过conditional条件判断--spi机制--外部化配置实现开箱即用的自动装配">Spring Boot通过@Conditional条件判断 + SPI机制 + 外部化配置，实现开箱即用的自动装配</h2>
+<h3 id="自动配置的本质条件化bean注册">自动配置的本质：条件化Bean注册</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Spring传统方式（大量配置）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">@Configuration
+</span></span><span class="line"><span class="cl">public class DataSourceConfig {
+</span></span><span class="line"><span class="cl">    @Bean
+</span></span><span class="line"><span class="cl">    public DataSource dataSource() {
+</span></span><span class="line"><span class="cl">        BasicDataSource ds = new BasicDataSource();
+</span></span><span class="line"><span class="cl">        ds.setUrl(&#34;jdbc:mysql://localhost:3306/db&#34;);
+</span></span><span class="line"><span class="cl">        ds.setUsername(&#34;root&#34;);
+</span></span><span class="line"><span class="cl">        ds.setPassword(&#34;123456&#34;);
+</span></span><span class="line"><span class="cl">        return ds;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    @Bean
+</span></span><span class="line"><span class="cl">    public JdbcTemplate jdbcTemplate(DataSource ds) {
+</span></span><span class="line"><span class="cl">        return new JdbcTemplate(ds);
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Spring Boot方式（零配置）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">application.properties:
+</span></span><span class="line"><span class="cl">  spring.datasource.url=jdbc:mysql://localhost:3306/db
+</span></span><span class="line"><span class="cl">  spring.datasource.username=root
+</span></span><span class="line"><span class="cl">  spring.datasource.password=123456
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">依赖引入spring-boot-starter-jdbc后，DataSource和JdbcTemplate自动配置</span></span></code></pre></div></div>
+<p><strong>核心注解</strong>：</p>]]></description></item></channel></rss>

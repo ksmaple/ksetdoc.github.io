@@ -1,0 +1,80 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Broker - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/broker/</link><description>Broker - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/broker/" rel="self" type="application/rss+xml"/><item><title>RocketMQ架构与使用</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/rocketmq/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/rocketmq/</guid><description><![CDATA[<h1 id="rocketmq架构与使用">RocketMQ架构与使用</h1>
+<blockquote>
+<p><strong>核心结论</strong>：RocketMQ通过NameServer无状态集群管理Broker路由，通过Broker主从架构保障高可用，通过顺序消息和事务消息满足复杂业务场景，是金融级高可靠消息队列的代表。</p>
+</blockquote>
+<hr>
+<h2 id="rocketmq通过nameserver管理路由broker存储消息producerconsumer协同工作支持顺序消息和事务消息">RocketMQ通过NameServer管理路由、Broker存储消息、Producer/Consumer协同工作，支持顺序消息和事务消息</h2>
+<h3 id="核心架构nameserver--broker--producer--consumer">核心架构：NameServer + Broker + Producer + Consumer</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">NameServer集群（无状态）
+</span></span><span class="line"><span class="cl">    ├── 维护Broker路由信息
+</span></span><span class="line"><span class="cl">    └── Producer/Consumer定时拉取路由
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Broker集群
+</span></span><span class="line"><span class="cl">    ├── Master（主节点，读写）
+</span></span><span class="line"><span class="cl">    │   └── Slave（从节点，同步复制）
+</span></span><span class="line"><span class="cl">    └── 存储消息，提供读写服务
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Producer（生产者）
+</span></span><span class="line"><span class="cl">    └── 发送消息到指定Topic的Broker
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Consumer（消费者）
+</span></span><span class="line"><span class="cl">    └── 订阅Topic，从Broker拉取消息</span></span></code></pre></div></div>
+<p><strong>核心组件职责</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>组件</th>
+          <th>职责</th>
+          <th>高可用</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>NameServer</td>
+          <td>服务注册与路由发现</td>
+          <td>多实例部署，无状态</td>
+      </tr>
+      <tr>
+          <td>Broker</td>
+          <td>消息存储与转发</td>
+          <td>主从复制，多Master多Slave</td>
+      </tr>
+      <tr>
+          <td>Producer</td>
+          <td>消息发送</td>
+          <td>客户端故障转移</td>
+      </tr>
+      <tr>
+          <td>Consumer</td>
+          <td>消息消费</td>
+          <td>集群消费自动重平衡</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="消息模型topic--messagequeue">消息模型：Topic + MessageQueue</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Topic: 消息主题，逻辑分类
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Topic: OrderTopic
+</span></span><span class="line"><span class="cl">├── MessageQueue-0（Broker-A）
+</span></span><span class="line"><span class="cl">├── MessageQueue-1（Broker-A）
+</span></span><span class="line"><span class="cl">├── MessageQueue-2（Broker-B）
+</span></span><span class="line"><span class="cl">└── MessageQueue-3（Broker-B）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Producer发送消息时：
+</span></span><span class="line"><span class="cl">  - 轮询选择MessageQueue（默认）
+</span></span><span class="line"><span class="cl">  - 或按Key哈希选择（保证同一Key进入同一队列）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Consumer消费时：
+</span></span><span class="line"><span class="cl">  - 集群模式：多个Consumer均分MessageQueue
+</span></span><span class="line"><span class="cl">  - 广播模式：每个Consumer消费全部消息</span></span></code></pre></div></div>
+<p><strong>发送方式</strong>：</p>]]></description></item></channel></rss>

@@ -1,0 +1,227 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>埋点 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%9F%8B%E7%82%B9/</link><description>埋点 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%9F%8B%E7%82%B9/" rel="self" type="application/rss+xml"/><item><title>CAT分布式监控</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/cat%E7%9B%91%E6%8E%A7/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/cat%E7%9B%91%E6%8E%A7/</guid><description><![CDATA[<h1 id="cat分布式监控">CAT分布式监控</h1>
+<blockquote>
+<p><strong>核心结论</strong>：CAT通过客户端埋点采集监控数据，通过消息树组织调用链，通过服务端聚合分析，实现从应用性能到业务指标的全链路监控，埋点规范和数据采样是落地关键。</p>
+</blockquote>
+<hr>
+<h2 id="cat通过客户端埋点采集消息树组织服务端聚合实现全链路监控和实时告警">CAT通过客户端埋点采集、消息树组织、服务端聚合，实现全链路监控和实时告警</h2>
+<h3 id="核心概念transactioneventheartbeatmetric">核心概念：Transaction、Event、Heartbeat、Metric</h3>
+<table>
+  <thead>
+      <tr>
+          <th>类型</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Transaction</td>
+          <td>有执行时间的嵌套结构</td>
+          <td>SQL执行、RPC调用、方法执行</td>
+      </tr>
+      <tr>
+          <td>Event</td>
+          <td>无执行时间的离散事件</td>
+          <td>异常、日志、用户行为</td>
+      </tr>
+      <tr>
+          <td>Heartbeat</td>
+          <td>周期性心跳</td>
+          <td>JVM状态、线程数、系统负载</td>
+      </tr>
+      <tr>
+          <td>Metric</td>
+          <td>指标统计</td>
+          <td>QPS、RT、成功率</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">消息树（Message Tree）结构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Root Transaction: URL-/api/order/create
+</span></span><span class="line"><span class="cl">├── Transaction: Service-createOrder (耗时50ms)
+</span></span><span class="line"><span class="cl">│   ├── Transaction: DAO-insertOrder (耗时10ms)
+</span></span><span class="line"><span class="cl">│   │   └── Event: SQL (INSERT INTO order ...)
+</span></span><span class="line"><span class="cl">│   ├── Transaction: Cache-getUser (耗时5ms)
+</span></span><span class="line"><span class="cl">│   └── Transaction: RPC-callPayment (耗时30ms)
+</span></span><span class="line"><span class="cl">│       └── Event: Request (payId=12345)
+</span></span><span class="line"><span class="cl">├── Event: OrderCreated (orderId=10001)
+</span></span><span class="line"><span class="cl">└── Metric: order.create (count=1)</span></span></code></pre></div></div>
+<h3 id="java埋点示例">Java埋点示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Transaction埋点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Transaction</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Cat</span><span class="p">.</span><span class="na">newTransaction</span><span class="p">(</span><span class="s">&#34;Service&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;createOrder&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Order</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orderService</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Cat</span><span class="p">.</span><span class="na">logEvent</span><span class="p">(</span><span class="s">&#34;OrderCreated&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">order</span><span class="p">.</span><span class="na">getId</span><span class="p">()));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="n">Transaction</span><span class="p">.</span><span class="na">SUCCESS</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Cat</span><span class="p">.</span><span class="na">logError</span><span class="p">(</span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">complete</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 简化方式（使用AOP或注解）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@CatTransaction</span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;Service&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;createOrder&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Order</span><span class="w"> </span><span class="nf">createOrder</span><span class="p">(</span><span class="n">OrderRequest</span><span class="w"> </span><span class="n">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">orderService</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>埋点策略</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>核心接口</td>
+          <td>全量Transaction</td>
+          <td>精确监控RT和成功率</td>
+      </tr>
+      <tr>
+          <td>高频调用</td>
+          <td>采样（1%）</td>
+          <td>减少性能开销</td>
+      </tr>
+      <tr>
+          <td>异常处理</td>
+          <td>必报Event</td>
+          <td>不遗漏错误</td>
+      </tr>
+      <tr>
+          <td>业务指标</td>
+          <td>Metric聚合</td>
+          <td>实时大盘</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1埋点过多影响性能">问题1：埋点过多影响性能</h3>
+<p><strong>根因</strong>：每个埋点都有创建和序列化开销
+<strong>解决</strong>：核心链路全量、非核心采样、异步上报</p>]]></description></item><item><title>统计系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%BB%9F%E8%AE%A1%E7%B3%BB%E7%BB%9F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%BB%9F%E8%AE%A1%E7%B3%BB%E7%BB%9F/</guid><description><![CDATA[<h1 id="统计系统">统计系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：统计系统通过埋点采集数据，通过实时链路（Flink/Kafka）提供秒级指标，通过离线链路（Hive/Spark）提供T+1精确报表，通过数据仓库分层实现数据治理。</p>
+</blockquote>
+<hr>
+<h2 id="统计系统通过埋点采集实时离线双链路计算支撑业务指标和运营决策">统计系统通过埋点采集、实时+离线双链路计算，支撑业务指标和运营决策</h2>
+<h3 id="数据采集埋点设计">数据采集：埋点设计</h3>
+<table>
+  <thead>
+      <tr>
+          <th>埋点类型</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>页面曝光</td>
+          <td>用户进入页面</td>
+          <td>page_view</td>
+      </tr>
+      <tr>
+          <td>点击事件</td>
+          <td>用户点击按钮</td>
+          <td>button_click</td>
+      </tr>
+      <tr>
+          <td>业务事件</td>
+          <td>核心业务流程</td>
+          <td>order_create, payment_success</td>
+      </tr>
+      <tr>
+          <td>性能事件</td>
+          <td>接口耗时、错误</td>
+          <td>api_latency, error_log</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">埋点数据格式：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">  &#34;event&#34;: &#34;order_create&#34;,
+</span></span><span class="line"><span class="cl">  &#34;timestamp&#34;: 1714400000000,
+</span></span><span class="line"><span class="cl">  &#34;user_id&#34;: &#34;10001&#34;,
+</span></span><span class="line"><span class="cl">  &#34;device_id&#34;: &#34;abc123&#34;,
+</span></span><span class="line"><span class="cl">  &#34;platform&#34;: &#34;iOS&#34;,
+</span></span><span class="line"><span class="cl">  &#34;params&#34;: {
+</span></span><span class="line"><span class="cl">    &#34;order_id&#34;: &#34;O2023001&#34;,
+</span></span><span class="line"><span class="cl">    &#34;amount&#34;: 199.00,
+</span></span><span class="line"><span class="cl">    &#34;category&#34;: &#34;electronics&#34;
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">}</span></span></code></pre></div></div>
+<h3 id="实时-vs-离线计算">实时 vs 离线计算</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>实时计算</th>
+          <th>离线计算</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>延迟</td>
+          <td>秒级~分钟级</td>
+          <td>小时级~天级</td>
+      </tr>
+      <tr>
+          <td>准确性</td>
+          <td>近似（可能丢数据）</td>
+          <td>精确（全量数据）</td>
+      </tr>
+      <tr>
+          <td>技术栈</td>
+          <td>Flink + Kafka</td>
+          <td>Spark + Hive</td>
+      </tr>
+      <tr>
+          <td>用途</td>
+          <td>实时监控、大屏</td>
+          <td>财务报表、对账</td>
+      </tr>
+      <tr>
+          <td>存储</td>
+          <td>Redis / Druid</td>
+          <td>Hive / ClickHouse</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="数据仓库分层">数据仓库分层</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">ODS（原始数据层）→ 埋点原始日志
+</span></span><span class="line"><span class="cl">  ↓ ETL清洗
+</span></span><span class="line"><span class="cl">DWD（明细数据层）→ 清洗后的业务明细
+</span></span><span class="line"><span class="cl">  ↓ 汇总
+</span></span><span class="line"><span class="cl">DWS（汇总数据层）→ 按维度汇总（日/周/月）
+</span></span><span class="line"><span class="cl">  ↓ 加工
+</span></span><span class="line"><span class="cl">ADS（应用数据层）→ 面向业务场景的报表数据</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1实时与离线数据不一致">问题1：实时与离线数据不一致</h3>
+<p><strong>根因</strong>：实时链路丢数据或计算逻辑差异
+<strong>解决</strong>：以离线为准，实时供参考，建立差异监控</p>]]></description></item></channel></rss>

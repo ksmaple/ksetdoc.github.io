@@ -1,0 +1,303 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>系统监控 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/</link><description>系统监控 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/" rel="self" type="application/rss+xml"/><item><title>CAT分布式监控</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/cat%E7%9B%91%E6%8E%A7/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/cat%E7%9B%91%E6%8E%A7/</guid><description><![CDATA[<h1 id="cat分布式监控">CAT分布式监控</h1>
+<blockquote>
+<p><strong>核心结论</strong>：CAT通过客户端埋点采集监控数据，通过消息树组织调用链，通过服务端聚合分析，实现从应用性能到业务指标的全链路监控，埋点规范和数据采样是落地关键。</p>
+</blockquote>
+<hr>
+<h2 id="cat通过客户端埋点采集消息树组织服务端聚合实现全链路监控和实时告警">CAT通过客户端埋点采集、消息树组织、服务端聚合，实现全链路监控和实时告警</h2>
+<h3 id="核心概念transactioneventheartbeatmetric">核心概念：Transaction、Event、Heartbeat、Metric</h3>
+<table>
+  <thead>
+      <tr>
+          <th>类型</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Transaction</td>
+          <td>有执行时间的嵌套结构</td>
+          <td>SQL执行、RPC调用、方法执行</td>
+      </tr>
+      <tr>
+          <td>Event</td>
+          <td>无执行时间的离散事件</td>
+          <td>异常、日志、用户行为</td>
+      </tr>
+      <tr>
+          <td>Heartbeat</td>
+          <td>周期性心跳</td>
+          <td>JVM状态、线程数、系统负载</td>
+      </tr>
+      <tr>
+          <td>Metric</td>
+          <td>指标统计</td>
+          <td>QPS、RT、成功率</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">消息树（Message Tree）结构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Root Transaction: URL-/api/order/create
+</span></span><span class="line"><span class="cl">├── Transaction: Service-createOrder (耗时50ms)
+</span></span><span class="line"><span class="cl">│   ├── Transaction: DAO-insertOrder (耗时10ms)
+</span></span><span class="line"><span class="cl">│   │   └── Event: SQL (INSERT INTO order ...)
+</span></span><span class="line"><span class="cl">│   ├── Transaction: Cache-getUser (耗时5ms)
+</span></span><span class="line"><span class="cl">│   └── Transaction: RPC-callPayment (耗时30ms)
+</span></span><span class="line"><span class="cl">│       └── Event: Request (payId=12345)
+</span></span><span class="line"><span class="cl">├── Event: OrderCreated (orderId=10001)
+</span></span><span class="line"><span class="cl">└── Metric: order.create (count=1)</span></span></code></pre></div></div>
+<h3 id="java埋点示例">Java埋点示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Transaction埋点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Transaction</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Cat</span><span class="p">.</span><span class="na">newTransaction</span><span class="p">(</span><span class="s">&#34;Service&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;createOrder&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Order</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orderService</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Cat</span><span class="p">.</span><span class="na">logEvent</span><span class="p">(</span><span class="s">&#34;OrderCreated&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">order</span><span class="p">.</span><span class="na">getId</span><span class="p">()));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="n">Transaction</span><span class="p">.</span><span class="na">SUCCESS</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Cat</span><span class="p">.</span><span class="na">logError</span><span class="p">(</span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">complete</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 简化方式（使用AOP或注解）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@CatTransaction</span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;Service&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;createOrder&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Order</span><span class="w"> </span><span class="nf">createOrder</span><span class="p">(</span><span class="n">OrderRequest</span><span class="w"> </span><span class="n">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">orderService</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>埋点策略</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>核心接口</td>
+          <td>全量Transaction</td>
+          <td>精确监控RT和成功率</td>
+      </tr>
+      <tr>
+          <td>高频调用</td>
+          <td>采样（1%）</td>
+          <td>减少性能开销</td>
+      </tr>
+      <tr>
+          <td>异常处理</td>
+          <td>必报Event</td>
+          <td>不遗漏错误</td>
+      </tr>
+      <tr>
+          <td>业务指标</td>
+          <td>Metric聚合</td>
+          <td>实时大盘</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1埋点过多影响性能">问题1：埋点过多影响性能</h3>
+<p><strong>根因</strong>：每个埋点都有创建和序列化开销
+<strong>解决</strong>：核心链路全量、非核心采样、异步上报</p>]]></description></item><item><title>JVM与系统问题排查</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/jvm%E7%B3%BB%E7%BB%9F%E6%8E%92%E6%9F%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/jvm%E7%B3%BB%E7%BB%9F%E6%8E%92%E6%9F%A5/</guid><description><![CDATA[<h1 id="jvm与系统问题排查">JVM与系统问题排查</h1>
+<blockquote>
+<p><strong>核心结论</strong>：JVM问题排查遵循&quot;监控发现→日志定位→工具分析→验证修复&quot;的流程，CPU高通常与热点代码或死循环有关，内存泄漏需通过堆dump分析对象引用链，GC问题需结合日志和可视化工具判断。</p>
+</blockquote>
+<hr>
+<h2 id="jvm问题排查遵循从监控到工具分析的系统化流程cpu内存gc是三大核心排查方向">JVM问题排查遵循从监控到工具分析的系统化流程，CPU、内存、GC是三大核心排查方向</h2>
+<h3 id="cpu高排查流程">CPU高排查流程</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 定位高CPU进程
+</span></span><span class="line"><span class="cl">   top / htop → 找到PID
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 定位高CPU线程
+</span></span><span class="line"><span class="cl">   top -Hp PID → 找到TID
+</span></span><span class="line"><span class="cl">   printf &#34;%x\n&#34; TID → 转换为十六进制
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 查看线程堆栈
+</span></span><span class="line"><span class="cl">   jstack PID | grep TID_HEX -A 30
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">4. 分析热点代码
+</span></span><span class="line"><span class="cl">   - 某方法执行时间长 → 优化算法
+</span></span><span class="line"><span class="cl">   - 频繁GC → 调整GC参数或内存
+</span></span><span class="line"><span class="cl">   - 死循环 → 修复代码</span></span></code></pre></div></div>
+<h3 id="内存泄漏排查">内存泄漏排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 发现内存增长
+</span></span><span class="line"><span class="cl">   jstat -gcutil PID 1000 → 观察老年代增长
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">2. 生成堆dump
+</span></span><span class="line"><span class="cl">   jmap -dump:format=b,file=heap.hprof PID
+</span></span><span class="line"><span class="cl">   或 -XX:+HeapDumpOnOutOfMemoryError
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 分析dump文件
+</span></span><span class="line"><span class="cl">   MAT（Eclipse Memory Analyzer）
+</span></span><span class="line"><span class="cl">   - Dominator Tree：查看大对象
+</span></span><span class="line"><span class="cl">   - Path to GC Roots：查看引用链
+</span></span><span class="line"><span class="cl">   - Leak Suspects：自动泄漏报告
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">常见泄漏源：
+</span></span><span class="line"><span class="cl">- 静态集合缓存未清理
+</span></span><span class="line"><span class="cl">- ThreadLocal未remove
+</span></span><span class="line"><span class="cl">- 未关闭的资源（流、连接）
+</span></span><span class="line"><span class="cl">- 监听器未注销</span></span></code></pre></div></div>
+<h3 id="gc问题排查">GC问题排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 启用GC日志
+</span></span><span class="line"><span class="cl">   -Xlog:gc*:file=gc.log:time:filecount=5,filesize=100m
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 分析GC日志
+</span></span><span class="line"><span class="cl">   - GCeasy（在线工具）
+</span></span><span class="line"><span class="cl">   - gceasy.io
+</span></span><span class="line"><span class="cl">   - GCViewer（本地工具）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 关键指标
+</span></span><span class="line"><span class="cl">   - GC频率：多久一次
+</span></span><span class="line"><span class="cl">   - GC耗时：STW时间
+</span></span><span class="line"><span class="cl">   - 内存回收率：每次回收多少
+</span></span><span class="line"><span class="cl">   - 晋升速率：对象进入老年代速度
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">调优方向：
+</span></span><span class="line"><span class="cl">- 堆太小 → 频繁GC → 增大堆
+</span></span><span class="line"><span class="cl">- 年轻代太小 → 对象过早晋升 → 增大新生代
+</span></span><span class="line"><span class="cl">- 大对象多 → 分配失败 → 调整大对象阈值</span></span></code></pre></div></div>
+<hr>
+<h2 id="常用排查命令速查">常用排查命令速查</h2>
+<table>
+  <thead>
+      <tr>
+          <th>问题</th>
+          <th>命令</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>CPU高</td>
+          <td>top + jstack</td>
+          <td>定位线程和热点代码</td>
+      </tr>
+      <tr>
+          <td>内存占用</td>
+          <td>jmap -heap</td>
+          <td>堆内存分布</td>
+      </tr>
+      <tr>
+          <td>内存泄漏</td>
+          <td>jmap -dump + MAT</td>
+          <td>分析对象引用</td>
+      </tr>
+      <tr>
+          <td>GC情况</td>
+          <td>jstat -gcutil</td>
+          <td>实时GC统计</td>
+      </tr>
+      <tr>
+          <td>线程死锁</td>
+          <td>jstack -l</td>
+          <td>查看死锁信息</td>
+      </tr>
+      <tr>
+          <td>类加载</td>
+          <td>jcmd PID VM.classloader_stats</td>
+          <td>类加载器统计</td>
+      </tr>
+      <tr>
+          <td>系统调用</td>
+          <td>strace -p PID</td>
+          <td>跟踪系统调用</td>
+      </tr>
+      <tr>
+          <td>网络连接</td>
+          <td>netstat -anp / ss -s</td>
+          <td>连接状态统计</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e7%bc%96%e7%a8%8b%e8%af%ad%e8%a8%80/JVM%e5%8e%9f%e7%90%86.md" rel="">JVM原理</a></li>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f/CPU%e8%b0%83%e5%ba%a6.md" rel="">CPU调度与上下文切换</a></li>
+<li><a href="./CAT%e7%9b%91%e6%8e%a7.md" rel="">CAT分布式监控</a></li>
+</ul>]]></description></item><item><title>SkyWalking链路追踪</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/skywalking/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/skywalking/</guid><description><![CDATA[<h1 id="skywalking链路追踪">SkyWalking链路追踪</h1>
+<blockquote>
+<p><strong>核心结论</strong>：SkyWalking通过探针自动采集调用链数据，通过OAP服务端分析聚合，通过UI可视化展示，支持无侵入式接入，是云原生环境下应用性能监控的标准方案。</p>
+</blockquote>
+<hr>
+<h2 id="skywalking通过探针自动采集oap分析ui可视化实现无侵入式全链路追踪">SkyWalking通过探针自动采集、OAP分析、UI可视化，实现无侵入式全链路追踪</h2>
+<h3 id="核心架构探针-oap-存储-ui">核心架构：探针-OAP-存储-UI</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">┌──────────┐      ┌─────────┐      ┌──────────┐      ┌────────┐
+</span></span><span class="line"><span class="cl">│  Agent   │ ───→ │   OAP   │ ───→ │ Storage  │ ←──→ │   UI   │
+</span></span><span class="line"><span class="cl">│ (探针)    │ gRPC │ (分析)   │      │ (ES/H2)  │      │ (可视化)│
+</span></span><span class="line"><span class="cl">└──────────┘      └─────────┘      └──────────┘      └────────┘
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">探针类型：
+</span></span><span class="line"><span class="cl">- Java Agent：字节码增强，无侵入
+</span></span><span class="line"><span class="cl">- Sidecar：Envoy/Service Mesh集成
+</span></span><span class="line"><span class="cl">- 语言探针：Go/Node.js/Python等</span></span></code></pre></div></div>
+<p><strong>自动采集的Span类型</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>Span类型</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Entry Span</td>
+          <td>请求入口（HTTP/RPC接收）</td>
+      </tr>
+      <tr>
+          <td>Exit Span</td>
+          <td>请求出口（HTTP/RPC发送）</td>
+      </tr>
+      <tr>
+          <td>Local Span</td>
+          <td>本地方法</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="java-agent接入">Java Agent接入</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># JVM启动参数</span>
+</span></span><span class="line"><span class="cl">-javaagent:/path/to/skywalking-agent.jar
+</span></span><span class="line"><span class="cl">-DSW_AGENT_NAME<span class="o">=</span>order-service
+</span></span><span class="line"><span class="cl">-DSW_AGENT_COLLECTOR_BACKEND_SERVICES<span class="o">=</span>127.0.0.1:11800</span></span></code></pre></div></div>
+<p><strong>自动拦截的组件</strong>：</p>]]></description></item></channel></rss>

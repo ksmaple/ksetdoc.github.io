@@ -1,0 +1,1650 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>软技能层 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/</link><description>软技能层 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/" rel="self" type="application/rss+xml"/><item><title>23种设计模式</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/23%E7%A7%8D%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/23%E7%A7%8D%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/</guid><description><![CDATA[<h1 id="23种设计模式">23种设计模式</h1>
+<blockquote>
+<p><strong>核心结论</strong>：23种设计模式按创建型、结构型、行为型三大类组织，解决对象创建、类/对象组合、对象交互三类问题，掌握其适用场景比记忆实现细节更重要。</p>
+</blockquote>
+<hr>
+<h2 id="设计模式是面向对象设计的经验总结在合适场景使用可提升代码复用性和可维护性">设计模式是面向对象设计的经验总结，在合适场景使用可提升代码复用性和可维护性</h2>
+<h3 id="创建型模式5种解耦对象创建">创建型模式（5种）：解耦对象创建</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>解决的问题</th>
+          <th>典型应用</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>单例</td>
+          <td>全局唯一实例</td>
+          <td>Spring Bean默认单例、配置中心</td>
+      </tr>
+      <tr>
+          <td>工厂方法</td>
+          <td>子类决定实例化哪个类</td>
+          <td>JDBC DriverManager、日志框架</td>
+      </tr>
+      <tr>
+          <td>抽象工厂</td>
+          <td>创建相关的产品族</td>
+          <td>UI组件库（跨平台按钮/文本框）</td>
+      </tr>
+      <tr>
+          <td>建造者</td>
+          <td>复杂对象的分步构建</td>
+          <td>StringBuilder、Lombok @Builder</td>
+      </tr>
+      <tr>
+          <td>原型</td>
+          <td>通过复制创建对象</td>
+          <td>Java clone()、Spring原型作用域</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 建造者模式示例</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Computer</span><span class="w"> </span><span class="n">computer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Computer</span><span class="p">.</span><span class="na">Builder</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">cpu</span><span class="p">(</span><span class="s">&#34;Intel i9&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">ram</span><span class="p">(</span><span class="s">&#34;32GB&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">ssd</span><span class="p">(</span><span class="s">&#34;1TB&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">();</span></span></span></code></pre></div></div>
+<h3 id="结构型模式7种组合类对象形成更大结构">结构型模式（7种）：组合类/对象形成更大结构</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>解决的问题</th>
+          <th>典型应用</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>适配器</td>
+          <td>接口不兼容的转换</td>
+          <td>Arrays.asList()、InputStreamReader</td>
+      </tr>
+      <tr>
+          <td>桥接</td>
+          <td>抽象与实现分离</td>
+          <td>JDBC驱动、不同数据库实现</td>
+      </tr>
+      <tr>
+          <td>组合</td>
+          <td>统一处理单个和组合对象</td>
+          <td>文件系统（文件+目录）、UI组件树</td>
+      </tr>
+      <tr>
+          <td>装饰器</td>
+          <td>动态添加职责</td>
+          <td>Java IO流（BufferedInputStream）</td>
+      </tr>
+      <tr>
+          <td>外观</td>
+          <td>简化复杂子系统接口</td>
+          <td>Spring的JdbcTemplate、工具类</td>
+      </tr>
+      <tr>
+          <td>享元</td>
+          <td>共享细粒度对象</td>
+          <td>字符串常量池、连接池、线程池</td>
+      </tr>
+      <tr>
+          <td>代理</td>
+          <td>控制对象访问</td>
+          <td>Spring AOP、MyBatis Mapper代理</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 装饰器模式：BufferedInputStream 包装 FileInputStream</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">InputStream</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BufferedInputStream</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">FileInputStream</span><span class="p">(</span><span class="s">&#34;file.txt&#34;</span><span class="p">));</span></span></span></code></pre></div></div>
+<h3 id="行为型模式11种对象间职责分配与交互">行为型模式（11种）：对象间职责分配与交互</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>解决的问题</th>
+          <th>典型应用</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>责任链</td>
+          <td>多对象依次处理请求</td>
+          <td>Servlet Filter链、审批流程</td>
+      </tr>
+      <tr>
+          <td>命令</td>
+          <td>请求参数化、可撤销</td>
+          <td>Runnable、线程池任务</td>
+      </tr>
+      <tr>
+          <td>解释器</td>
+          <td>定义文法解释器</td>
+          <td>正则表达式、EL表达式</td>
+      </tr>
+      <tr>
+          <td>迭代器</td>
+          <td>顺序访问聚合对象</td>
+          <td>Java Iterator、Stream</td>
+      </tr>
+      <tr>
+          <td>中介者</td>
+          <td>减少对象间直接交互</td>
+          <td>MVC中的Controller、消息队列</td>
+      </tr>
+      <tr>
+          <td>备忘录</td>
+          <td>捕获和恢复对象状态</td>
+          <td>游戏存档、数据库事务回滚</td>
+      </tr>
+      <tr>
+          <td>观察者</td>
+          <td>一对多依赖通知</td>
+          <td>Spring Event、消息订阅</td>
+      </tr>
+      <tr>
+          <td>状态</td>
+          <td>状态驱动行为变化</td>
+          <td>订单状态机、线程状态</td>
+      </tr>
+      <tr>
+          <td>策略</td>
+          <td>封装可互换算法</td>
+          <td>Comparator、支付策略</td>
+      </tr>
+      <tr>
+          <td>模板方法</td>
+          <td>算法骨架由子类实现</td>
+          <td>AbstractList、JUnit测试框架</td>
+      </tr>
+      <tr>
+          <td>访问者</td>
+          <td>分离算法与数据结构</td>
+          <td>ASM字节码操作、编译器</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 策略模式示例</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">interface</span> <span class="nc">PaymentStrategy</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">pay</span><span class="p">(</span><span class="kt">double</span><span class="w"> </span><span class="n">amount</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">class</span> <span class="nc">AlipayStrategy</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">PaymentStrategy</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">class</span> <span class="nc">WechatStrategy</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">PaymentStrategy</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 运行时切换策略</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">PaymentStrategy</span><span class="w"> </span><span class="n">strategy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">userPreferAlipay</span><span class="p">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">AlipayStrategy</span><span class="p">()</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">WechatStrategy</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">strategy</span><span class="p">.</span><span class="na">pay</span><span class="p">(</span><span class="n">100</span><span class="p">.</span><span class="na">0</span><span class="p">);</span></span></span></code></pre></div></div>
+<h3 id="模式选型速查">模式选型速查</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐模式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>需要全局唯一实例</td>
+          <td>单例</td>
+      </tr>
+      <tr>
+          <td>对象创建逻辑复杂</td>
+          <td>工厂/建造者</td>
+      </tr>
+      <tr>
+          <td>扩展功能不修改原类</td>
+          <td>装饰器/代理</td>
+      </tr>
+      <tr>
+          <td>统一处理树形结构</td>
+          <td>组合</td>
+      </tr>
+      <tr>
+          <td>运行时切换算法</td>
+          <td>策略</td>
+      </tr>
+      <tr>
+          <td>解耦发送者和接收者</td>
+          <td>观察者/命令</td>
+      </tr>
+      <tr>
+          <td>状态驱动不同行为</td>
+          <td>状态</td>
+      </tr>
+      <tr>
+          <td>简化复杂系统调用</td>
+          <td>外观</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1为使用模式而使用模式">问题1：为使用模式而使用模式</h3>
+<p><strong>根因</strong>：过度设计，简单问题复杂化
+<strong>解决</strong>：KISS优先，模式是解决重复问题的工具，不是目标</p>]]></description></item><item><title>AI研发流程思考</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/ai%E7%A0%94%E5%8F%91%E6%B5%81%E7%A8%8B/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/ai%E7%A0%94%E5%8F%91%E6%B5%81%E7%A8%8B/</guid><description><![CDATA[<h1 id="ai研发流程思考">AI研发流程思考</h1>
+<blockquote>
+<p><strong>核心结论</strong>：AI不是替代开发者的工具，而是放大开发者能力的杠杆——在需求分析、编码实现、测试验证各阶段合理运用AI，可显著提升交付效率，但关键决策和最终质量把控仍需人负责。</p>
+</blockquote>
+<hr>
+<h2 id="ai辅助研发通过人机协作重塑开发流程将重复性工作自动化让人聚焦创造性和判断性工作">AI辅助研发通过人机协作重塑开发流程，将重复性工作自动化，让人聚焦创造性和判断性工作</h2>
+<h3 id="ai在研发各阶段的应用">AI在研发各阶段的应用</h3>
+<table>
+  <thead>
+      <tr>
+          <th>阶段</th>
+          <th>传统方式</th>
+          <th>AI辅助方式</th>
+          <th>效率提升</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>需求分析</td>
+          <td>人工梳理、写文档</td>
+          <td>AI辅助梳理边界案例、生成PRD草稿</td>
+          <td>30-50%</td>
+      </tr>
+      <tr>
+          <td>技术方案</td>
+          <td>人工画图、写设计</td>
+          <td>AI生成方案对比、补充遗漏点</td>
+          <td>20-40%</td>
+      </tr>
+      <tr>
+          <td>编码实现</td>
+          <td>手敲代码</td>
+          <td>AI生成模板代码、自动补全、重构建议</td>
+          <td>40-70%</td>
+      </tr>
+      <tr>
+          <td>代码审查</td>
+          <td>人工逐行Review</td>
+          <td>AI预检常见问题、人工聚焦架构</td>
+          <td>30-50%</td>
+      </tr>
+      <tr>
+          <td>测试</td>
+          <td>手写用例</td>
+          <td>AI生成边界用例、自动化测试脚本</td>
+          <td>40-60%</td>
+      </tr>
+      <tr>
+          <td>问题排查</td>
+          <td>日志翻阅、复现</td>
+          <td>AI分析日志模式、定位异常根因</td>
+          <td>30-50%</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="人机协作最佳实践">人机协作最佳实践</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">高效模式：人定义问题 → AI生成方案 → 人评估选择 → AI细化实现 → 人验证把关
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">低效模式：完全依赖AI生成 → 不验证直接提交 → 线上故障</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>策略</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>分而治之</td>
+          <td>将大任务拆分为AI可独立完成的子任务</td>
+      </tr>
+      <tr>
+          <td>迭代精修</td>
+          <td>先让AI生成初稿，再逐步提出修改意见</td>
+      </tr>
+      <tr>
+          <td>示例驱动</td>
+          <td>提供具体示例（few-shot）让AI理解预期风格</td>
+      </tr>
+      <tr>
+          <td>边界约束</td>
+          <td>明确告诉AI什么不能做，避免过度发挥</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="ai辅助code-review">AI辅助Code Review</h3>
+<table>
+  <thead>
+      <tr>
+          <th>Review维度</th>
+          <th>AI能力</th>
+          <th>人工补充</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>语法规范</td>
+          <td>自动检查命名、格式、空指针</td>
+          <td>业务语义正确性</td>
+      </tr>
+      <tr>
+          <td>安全漏洞</td>
+          <td>SQL注入、XSS、硬编码密钥</td>
+          <td>业务逻辑漏洞</td>
+      </tr>
+      <tr>
+          <td>性能隐患</td>
+          <td>N+1查询、大对象创建</td>
+          <td>架构层面的性能设计</td>
+      </tr>
+      <tr>
+          <td>测试覆盖</td>
+          <td>检查分支覆盖、边界用例</td>
+          <td>复杂业务场景验证</td>
+      </tr>
+      <tr>
+          <td>设计模式</td>
+          <td>识别反模式、建议重构</td>
+          <td>领域模型合理性</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="风险与应对">风险与应对</h3>
+<table>
+  <thead>
+      <tr>
+          <th>风险</th>
+          <th>表现</th>
+          <th>应对</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>幻觉代码</td>
+          <td>AI生成不存在的方法或API</td>
+          <td>始终编译验证、单元测试</td>
+      </tr>
+      <tr>
+          <td>安全泄露</td>
+          <td>AI建议硬编码密钥或暴露敏感信息</td>
+          <td>安全扫描工具兜底、人工审计</td>
+      </tr>
+      <tr>
+          <td>过度设计</td>
+          <td>AI生成复杂抽象应对简单场景</td>
+          <td>保持简单原则、YAGNI</td>
+      </tr>
+      <tr>
+          <td>知识过时</td>
+          <td>AI训练数据有截止日期</td>
+          <td>提供最新文档作为上下文</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1用ai写代码后不再理解实现">问题1：用AI写代码后不再理解实现</h3>
+<p><strong>根因</strong>：复制粘贴AI输出而不深入理解
+<strong>解决</strong>：要求AI解释关键逻辑，自己复述一遍，确保能独立维护</p>]]></description></item><item><title>AI应用开发框架</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/ai%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/ai%E5%BC%80%E5%8F%91%E6%A1%86%E6%9E%B6/</guid><description><![CDATA[<h1 id="ai应用开发框架">AI应用开发框架</h1>
+<blockquote>
+<p><strong>核心结论</strong>：AI应用开发框架通过统一抽象封装不同大模型API的差异，提供流式响应、函数调用、RAG集成等能力，让开发者像使用普通SDK一样构建AI功能。</p>
+</blockquote>
+<hr>
+<h2 id="ai开发框架通过模型抽象提示词管理和工具编排降低ai能力集成到业务系统的复杂度">AI开发框架通过模型抽象、提示词管理和工具编排，降低AI能力集成到业务系统的复杂度</h2>
+<h3 id="主流框架对比">主流框架对比</h3>
+<table>
+  <thead>
+      <tr>
+          <th>框架</th>
+          <th>语言</th>
+          <th>特点</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Spring AI</td>
+          <td>Java</td>
+          <td>Spring生态集成</td>
+          <td>企业级Java后端</td>
+      </tr>
+      <tr>
+          <td>LangChain</td>
+          <td>Python/JS</td>
+          <td>生态最丰富</td>
+          <td>快速原型、复杂链路</td>
+      </tr>
+      <tr>
+          <td>LlamaIndex</td>
+          <td>Python/TS</td>
+          <td>专注RAG</td>
+          <td>知识库问答</td>
+      </tr>
+      <tr>
+          <td>Semantic Kernel</td>
+          <td>.NET/Python</td>
+          <td>微软出品</td>
+          <td>Azure生态</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="spring-ai核心概念">Spring AI核心概念</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Prompt（提示词）
+</span></span><span class="line"><span class="cl">  ├── SystemMessage：设定角色和行为边界
+</span></span><span class="line"><span class="cl">  ├── UserMessage：用户输入
+</span></span><span class="line"><span class="cl">  └── 可选：Function调用声明
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ChatClient（对话客户端）
+</span></span><span class="line"><span class="cl">  └── 统一接口，底层可切换 OpenAI/Claude/本地模型
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">VectorStore（向量存储）
+</span></span><span class="line"><span class="cl">  └── 接入ES、Redis、PgVector等存储Embedding</span></span></code></pre></div></div>
+<h3 id="流式响应实现">流式响应实现</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Server-Sent Events 流式输出</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@GetMapping</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;/stream&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">produces</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MediaType</span><span class="p">.</span><span class="na">TEXT_EVENT_STREAM_VALUE</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Flux</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">streamResponse</span><span class="p">(</span><span class="nd">@RequestParam</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">question</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">chatClient</span><span class="p">.</span><span class="na">prompt</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">user</span><span class="p">(</span><span class="n">question</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">stream</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">content</span><span class="p">();</span><span class="w">  </span><span class="c1">// 逐字返回，前端实时展示</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>响应模式</th>
+          <th>特点</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>同步阻塞</td>
+          <td>简单直接，用户体验差</td>
+          <td>后台任务</td>
+      </tr>
+      <tr>
+          <td>流式SSE</td>
+          <td>逐字输出，体验好</td>
+          <td>聊天对话</td>
+      </tr>
+      <tr>
+          <td>WebSocket</td>
+          <td>双向通信</td>
+          <td>多轮交互</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="function-calling工具调用">Function Calling（工具调用）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 定义可被AI调用的函数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">record</span> <span class="nc">WeatherRequest</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">city</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Bean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Function</span><span class="o">&lt;</span><span class="n">WeatherRequest</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">weatherFunction</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 调用天气API获取数据</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">weatherService</span><span class="p">.</span><span class="na">query</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="na">city</span><span class="p">(),</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="na">date</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// AI根据用户问题决定是否需要调用</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">chatClient</span><span class="p">.</span><span class="na">prompt</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">user</span><span class="p">(</span><span class="s">&#34;北京明天天气怎么样？&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">functions</span><span class="p">(</span><span class="s">&#34;weatherFunction&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">call</span><span class="p">();</span></span></span></code></pre></div></div>
+<h3 id="rag集成模式">RAG集成模式</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户问题 → Embedding → 向量检索（TopK文档）→ 拼接上下文 → LLM生成答案
+</span></span><span class="line"><span class="cl">                ↑
+</span></span><span class="line"><span class="cl">           文档预处理（分块、向量化、存储）</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>组件</th>
+          <th>选型</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>文档加载</td>
+          <td>PDF/Word/HTML解析器</td>
+          <td>原始文档转文本</td>
+      </tr>
+      <tr>
+          <td>文本分块</td>
+          <td>固定长度/语义分块</td>
+          <td>控制每块大小和边界</td>
+      </tr>
+      <tr>
+          <td>Embedding</td>
+          <td>text-embedding-3/bge</td>
+          <td>文本向量化</td>
+      </tr>
+      <tr>
+          <td>向量存储</td>
+          <td>ES/PgVector/Redis</td>
+          <td>近似近邻搜索</td>
+      </tr>
+      <tr>
+          <td>LLM</td>
+          <td>GPT-4/Claude/本地模型</td>
+          <td>生成最终回答</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1流式响应与业务事务冲突">问题1：流式响应与业务事务冲突</h3>
+<p><strong>根因</strong>：流式输出期间数据库连接未释放
+<strong>解决</strong>：在调用AI前完成所有数据查询，或调整连接池配置</p>]]></description></item><item><title>Claude Code与Agents</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/claude-code-agents/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/claude-code-agents/</guid><description><![CDATA[<h1 id="claude-code与agents">Claude Code与Agents</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Claude Code通过Skills定义可复用的任务模板、Rules约束行为边界、MCP扩展外部工具能力，将AI从问答助手升级为可执行复杂工程任务的Agent。</p>
+</blockquote>
+<hr>
+<h2 id="claude-code通过结构化指令和工具扩展将大模型能力封装为可重复执行的工程工作流">Claude Code通过结构化指令和工具扩展，将大模型能力封装为可重复执行的工程工作流</h2>
+<h3 id="skills可复用任务模板">Skills：可复用任务模板</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Skill = 触发词 + 上下文 + 执行逻辑
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">用户输入：/tech-doc learn Redis
+</span></span><span class="line"><span class="cl">Claude加载：.claude/skills/tech-doc.md 中定义的 learn 模板
+</span></span><span class="line"><span class="cl">执行结果：按模板格式生成学习笔记文档</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>Skill类型</th>
+          <th>用途</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>文档生成</td>
+          <td>按模板创建技术文档</td>
+          <td>/tech-doc <type> <topic></td>
+      </tr>
+      <tr>
+          <td>代码审查</td>
+          <td>按检查清单Review代码</td>
+          <td>/review security,performance</td>
+      </tr>
+      <tr>
+          <td>问题诊断</td>
+          <td>按排查流程定位问题</td>
+          <td>/debug memory-leak</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="rules行为约束与上下文">Rules：行为约束与上下文</h3>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>位置</th>
+          <th>作用范围</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>全局规则</td>
+          <td><code>~/.claude/CLAUDE.md</code></td>
+          <td>所有项目</td>
+      </tr>
+      <tr>
+          <td>项目规则</td>
+          <td><code>项目根目录/CLAUDE.md</code></td>
+          <td>当前项目</td>
+      </tr>
+      <tr>
+          <td>会话规则</td>
+          <td>对话中直接说明</td>
+          <td>当前会话</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-markdown">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl"><span class="gh"># CLAUDE.md 示例
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 编码规范
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 优先使用Java 17新特性
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 所有API接口必须标注 <span class="ni">@Operation</span> 注解
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 数据库操作使用MyBatis-Plus
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 常用命令
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 构建：mvn clean package
+</span></span><span class="line"><span class="cl">- 测试：mvn test -Dtest=ClassName<span class="ni">#methodName</span></span></span></code></pre></div></div>
+<h3 id="mcp外部工具扩展">MCP：外部工具扩展</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Claude Code ←→ MCP协议 ←→ 外部工具
+</span></span><span class="line"><span class="cl">                   ↓
+</span></span><span class="line"><span class="cl">            ├── 文件系统（读写代码）
+</span></span><span class="line"><span class="cl">            ├── 数据库（查询表结构）
+</span></span><span class="line"><span class="cl">            ├── API服务（调用内部接口）
+</span></span><span class="line"><span class="cl">            └── 版本控制（git操作）</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>能力</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>文件操作</td>
+          <td>读写、搜索、批量修改</td>
+          <td>代码重构</td>
+      </tr>
+      <tr>
+          <td>命令执行</td>
+          <td>运行测试、构建、部署</td>
+          <td>CI/CD集成</td>
+      </tr>
+      <tr>
+          <td>浏览器</td>
+          <td>抓取网页、验证UI</td>
+          <td>前端开发</td>
+      </tr>
+      <tr>
+          <td>数据库</td>
+          <td>查询schema、执行SQL</td>
+          <td>后端开发</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="agent协作模式">Agent协作模式</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>单Agent</td>
+          <td>一个Claude实例处理完整任务</td>
+          <td>常规编码任务</td>
+      </tr>
+      <tr>
+          <td>多Agent</td>
+          <td>多个实例分工协作</td>
+          <td>复杂系统设计和实现</td>
+      </tr>
+      <tr>
+          <td>人机协同</td>
+          <td>AI生成草稿，人工审核确认</td>
+          <td>关键业务代码</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1ai生成代码未经验证直接使用">问题1：AI生成代码未经验证直接使用</h3>
+<p><strong>根因</strong>：过度信任AI输出，未进行测试和审查
+<strong>解决</strong>：始终运行测试验证，关键逻辑人工Review，将AI输出视为草稿而非终稿</p>]]></description></item><item><title>LLM与Embedding</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/llm%E5%B5%8C%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/llm%E5%B5%8C%E5%85%A5/</guid><description><![CDATA[<h1 id="llm与embedding">LLM与Embedding</h1>
+<blockquote>
+<p><strong>核心结论</strong>：大语言模型通过Transformer架构和海量预训练获得语言理解与生成能力，Embedding将语义转化为稠密向量实现语义搜索和相似度计算，两者结合是RAG等AI应用的基础。</p>
+</blockquote>
+<hr>
+<h2 id="llm通过自注意力机制捕捉长距离依赖embedding将离散符号映射到连续向量空间">LLM通过自注意力机制捕捉长距离依赖，Embedding将离散符号映射到连续向量空间</h2>
+<h3 id="transformer核心机制">Transformer核心机制</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">输入文本 → Tokenizer分词 → Embedding → 多层Transformer → 输出
+</span></span><span class="line"><span class="cl">                                     ↓
+</span></span><span class="line"><span class="cl">                              自注意力机制
+</span></span><span class="line"><span class="cl">                              Query × Key → 注意力权重 × Value</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>组件</th>
+          <th>作用</th>
+          <th>关键特征</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>自注意力</td>
+          <td>计算词与词之间的关联度</td>
+          <td>并行计算，捕捉长距离依赖</td>
+      </tr>
+      <tr>
+          <td>多头注意力</td>
+          <td>多组注意力并行</td>
+          <td>关注不同维度的语义关系</td>
+      </tr>
+      <tr>
+          <td>位置编码</td>
+          <td>注入序列顺序信息</td>
+          <td>弥补自注意力无序性的缺陷</td>
+      </tr>
+      <tr>
+          <td>前馈网络</td>
+          <td>非线性变换</td>
+          <td>增强模型表达能力</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="llm能力层级">LLM能力层级</h3>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>能力</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>基础能力</td>
+          <td>文本生成、翻译、摘要</td>
+          <td>写文章、翻译文档</td>
+      </tr>
+      <tr>
+          <td>推理能力</td>
+          <td>逻辑推理、数学计算</td>
+          <td>解应用题、代码逻辑分析</td>
+      </tr>
+      <tr>
+          <td>知识能力</td>
+          <td>事实问答、领域知识</td>
+          <td>医学问答、法律条款解释</td>
+      </tr>
+      <tr>
+          <td>工具使用</td>
+          <td>调用API、代码执行</td>
+          <td>查天气、运行Python代码</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="embedding原理与应用">Embedding原理与应用</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">文本 → Embedding模型 → 稠密向量（如1536维）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&#34;猫&#34;    → [0.12, -0.34, 0.89, ...]
+</span></span><span class="line"><span class="cl">&#34; kitten&#34; → [0.11, -0.33, 0.88, ...]  ← 语义相近，向量距离近
+</span></span><span class="line"><span class="cl">&#34;汽车&#34;  → [-0.76, 0.45, -0.21, ...]  ← 语义不同，向量距离远</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>应用</th>
+          <th>原理</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>语义搜索</td>
+          <td>向量相似度检索</td>
+          <td>用户搜&quot;苹果手机&quot;匹配&quot;iPhone&quot;</td>
+      </tr>
+      <tr>
+          <td>文本分类</td>
+          <td>向量聚类</td>
+          <td>新闻自动分类</td>
+      </tr>
+      <tr>
+          <td>推荐系统</td>
+          <td>用户/物品向量匹配</td>
+          <td>相似商品推荐</td>
+      </tr>
+      <tr>
+          <td>RAG检索</td>
+          <td>文档切片向量化</td>
+          <td>问答系统召回相关段落</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="主流embedding模型">主流Embedding模型</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模型</th>
+          <th>维度</th>
+          <th>特点</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>text-embedding-3</td>
+          <td>1536/3072</td>
+          <td>OpenAI官方</td>
+          <td>通用场景</td>
+      </tr>
+      <tr>
+          <td>bge-m3</td>
+          <td>1024</td>
+          <td>多语言、长文本</td>
+          <td>中文场景</td>
+      </tr>
+      <tr>
+          <td>m3e</td>
+          <td>768</td>
+          <td>开源中文</td>
+          <td>国内部署</td>
+      </tr>
+      <tr>
+          <td>e5</td>
+          <td>768/1024</td>
+          <td>微软开源</td>
+          <td>多语言检索</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1embedding模型与业务场景不匹配">问题1：Embedding模型与业务场景不匹配</h3>
+<p><strong>根因</strong>：通用Embedding在垂直领域语义捕捉不准确
+<strong>解决</strong>：使用领域特化模型，或对通用模型做微调</p>]]></description></item><item><title>Spring AI 架构原理与底层实现</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/spring-ai%E6%B7%B1%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/spring-ai%E6%B7%B1%E5%85%A5/</guid><description><![CDATA[<h1 id="spring-ai-架构原理与底层实现">Spring AI 架构原理与底层实现</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Spring AI 通过 <code>Model</code> + <code>Prompt</code> + <code>OutputParser</code> 三层抽象统一了不同大模型供应商的 API 差异，底层基于 <code>RestClient</code> 和 <code>ReactiveChatClient</code> 实现同步/流式双模调用，其设计本质是<strong>将 AI 能力转换为 Spring 生态中可装配的标准 Bean</strong>。</p>
+</blockquote>
+<hr>
+<h2 id="spring-ai-通过分层架构解耦了模型协议调用方式与业务逻辑">Spring AI 通过分层架构解耦了模型协议、调用方式与业务逻辑</h2>
+<h3 id="整体架构五层模型设计">整体架构：五层模型设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">┌─────────────────────────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">│  应用层：业务代码调用 ChatClient / EmbeddingClient            │
+</span></span><span class="line"><span class="cl">├─────────────────────────────────────────────────────────────┤
+</span></span><span class="line"><span class="cl">│  API层：Prompt、ChatResponse、Generation 等通用模型           │
+</span></span><span class="line"><span class="cl">├─────────────────────────────────────────────────────────────┤
+</span></span><span class="line"><span class="cl">│  客户端层：ChatClient / StreamingChatClient 接口抽象          │
+</span></span><span class="line"><span class="cl">├─────────────────────────────────────────────────────────────┤
+</span></span><span class="line"><span class="cl">│  模型层：OpenAiChatModel / AnthropicChatModel / Ollama...    │
+</span></span><span class="line"><span class="cl">├─────────────────────────────────────────────────────────────┤
+</span></span><span class="line"><span class="cl">│  传输层：RestClient (同步) / WebClient (响应式流式)            │
+</span></span><span class="line"><span class="cl">└─────────────────────────────────────────────────────────────┘</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>职责</th>
+          <th>核心接口/类</th>
+          <th>设计意图</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>应用层</td>
+          <td>业务编排</td>
+          <td><code>ChatClient</code>, <code>Advisor</code></td>
+          <td>链式调用、AOP扩展</td>
+      </tr>
+      <tr>
+          <td>API层</td>
+          <td>协议无关的数据结构</td>
+          <td><code>Prompt</code>, <code>Message</code>, <code>ChatResponse</code></td>
+          <td>屏蔽供应商差异</td>
+      </tr>
+      <tr>
+          <td>客户端层</td>
+          <td>调用模式抽象</td>
+          <td><code>ChatClient</code>, <code>StreamingChatClient</code></td>
+          <td>统一同步/流式入口</td>
+      </tr>
+      <tr>
+          <td>模型层</td>
+          <td>供应商具体实现</td>
+          <td><code>OpenAiChatModel</code>, <code>AnthropicChatModel</code></td>
+          <td>协议转换、鉴权、序列化</td>
+      </tr>
+      <tr>
+          <td>传输层</td>
+          <td>HTTP通信</td>
+          <td><code>RestClient</code>, <code>WebClient</code></td>
+          <td>复用 Spring 6 HTTP 基础设施</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="与-spring-生态的集成点">与 Spring 生态的集成点</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Spring Boot 自动配置：只需引入 starter，注入即可用</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Autowired</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">ChatClient</span><span class="w"> </span><span class="n">chatClient</span><span class="p">;</span><span class="w">  </span><span class="c1">// 默认指向 spring.ai.default.chat 配置的模型</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 多模型配置：同时对接 OpenAI 和本地 Ollama</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Autowired</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Qualifier</span><span class="p">(</span><span class="s">&#34;openAiChatClient&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">ChatClient</span><span class="w"> </span><span class="n">openAiClient</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Autowired</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Qualifier</span><span class="p">(</span><span class="s">&#34;ollamaChatClient&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">ChatClient</span><span class="w"> </span><span class="n">localClient</span><span class="p">;</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># application.yml 多模型配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spring</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ai</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">openai</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">api-key</span><span class="p">:</span><span class="w"> </span><span class="l">${OPENAI_API_KEY}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">chat</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">options</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l">gpt-4o</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="m">0.7</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">ollama</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">base-url</span><span class="p">:</span><span class="w"> </span><span class="l">http://localhost:11434</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">chat</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">options</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l">llama3.2</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="api-层设计prompt-与-message-的协议无关抽象">API 层设计：Prompt 与 Message 的协议无关抽象</h2>
+<h3 id="message-体系统一表达对话上下文">Message 体系：统一表达对话上下文</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 核心接口：所有消息类型的基类</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">Message</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="nf">getContent</span><span class="p">();</span><span class="w">           </span><span class="c1">// 消息内容</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">MessageType</span><span class="w"> </span><span class="nf">getMessageType</span><span class="p">();</span><span class="w">  </span><span class="c1">// 枚举：USER/ASSISTANT/SYSTEM/TOOL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getMetadata</span><span class="p">();</span><span class="w">  </span><span class="c1">// 扩展元数据</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 具体实现</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">new</span><span class="w"> </span><span class="n">SystemMessage</span><span class="p">(</span><span class="s">&#34;你是一个专业的Java技术顾问&#34;</span><span class="p">);</span><span class="w">   </span><span class="c1">// 设定角色</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">new</span><span class="w"> </span><span class="n">UserMessage</span><span class="p">(</span><span class="s">&#34;解释一下Spring的AOP原理&#34;</span><span class="p">);</span><span class="w">        </span><span class="c1">// 用户输入</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">new</span><span class="w"> </span><span class="n">AssistantMessage</span><span class="p">(</span><span class="s">&#34;Spring AOP 基于动态代理...&#34;</span><span class="p">);</span><span class="w"> </span><span class="c1">// AI回复</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">new</span><span class="w"> </span><span class="n">ToolResponseMessage</span><span class="p">(</span><span class="s">&#34;tool_call_id&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;{\&#34;temp\&#34;:25}&#34;</span><span class="p">);</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">工具返回</span></span></span></code></pre></div></div>
+<p><strong>设计要点</strong>：<code>MessageType</code> 枚举确保了无论底层模型使用什么字段名（OpenAI 的 <code>role</code>/<code>content</code>，Claude 的 <code>type</code>/<code>text</code>），上层业务代码始终使用统一类型。</p>]]></description></item><item><title>常见算法与场景</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3/%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3/%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95/</guid><description><![CDATA[<h1 id="常见算法与场景">常见算法与场景</h1>
+<blockquote>
+<p><strong>核心结论</strong>：不同密码学算法有各自的适用场景和权衡点，选型时需综合考虑安全性、性能、合规性和生态系统成熟度。</p>
+</blockquote>
+<hr>
+<h2 id="密码学算法选型需匹配场景的安全需求和性能约束避免过度设计或不足">密码学算法选型需匹配场景的安全需求和性能约束，避免过度设计或不足</h2>
+<h3 id="对称加密算法选型">对称加密算法选型</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐算法</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>通用数据加密</td>
+          <td>AES-256-GCM</td>
+          <td>安全、支持认证加密、硬件加速</td>
+      </tr>
+      <tr>
+          <td>国内合规系统</td>
+          <td>SM4</td>
+          <td>国密要求</td>
+      </tr>
+      <tr>
+          <td>低功耗IoT设备</td>
+          <td>AES-128</td>
+          <td>计算量小，安全性足够</td>
+      </tr>
+      <tr>
+          <td>文件系统加密</td>
+          <td>AES-XTS</td>
+          <td>针对块设备优化</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// AES-GCM 加密示例</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Cipher</span><span class="w"> </span><span class="n">cipher</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Cipher</span><span class="p">.</span><span class="na">getInstance</span><span class="p">(</span><span class="s">&#34;AES/GCM/NoPadding&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">SecretKeySpec</span><span class="w"> </span><span class="n">keySpec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SecretKeySpec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;AES&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">cipher</span><span class="p">.</span><span class="na">init</span><span class="p">(</span><span class="n">Cipher</span><span class="p">.</span><span class="na">ENCRYPT_MODE</span><span class="p">,</span><span class="w"> </span><span class="n">keySpec</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GCMParameterSpec</span><span class="p">(</span><span class="n">128</span><span class="p">,</span><span class="w"> </span><span class="n">iv</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kt">byte</span><span class="o">[]</span><span class="w"> </span><span class="n">encrypted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cipher</span><span class="p">.</span><span class="na">doFinal</span><span class="p">(</span><span class="n">plainText</span><span class="p">);</span></span></span></code></pre></div></div>
+<h3 id="非对称加密算法选型">非对称加密算法选型</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐算法</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>HTTPS/TLS证书</td>
+          <td>RSA-2048 / ECDSA P-256</td>
+          <td>广泛兼容</td>
+      </tr>
+      <tr>
+          <td>移动端API签名</td>
+          <td>ECDSA</td>
+          <td>签名短、验证快</td>
+      </tr>
+      <tr>
+          <td>国内金融系统</td>
+          <td>SM2</td>
+          <td>国密合规</td>
+      </tr>
+      <tr>
+          <td>区块链/数字货币</td>
+          <td>ECDSA / Ed25519</td>
+          <td>签名短小高效</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="哈希算法选型">哈希算法选型</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐算法</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>密码存储</td>
+          <td>bcrypt / scrypt / Argon2</td>
+          <td>计算慢可防暴力破解</td>
+      </tr>
+      <tr>
+          <td>数据完整性校验</td>
+          <td>SHA-256</td>
+          <td>快速且安全</td>
+      </tr>
+      <tr>
+          <td>数字签名</td>
+          <td>SHA-256 + RSA/ECDSA</td>
+          <td>标准组合</td>
+      </tr>
+      <tr>
+          <td>国内合规</td>
+          <td>SM3</td>
+          <td>国密要求</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="典型组合场景">典型组合场景</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>组合方式</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>HTTPS通信</td>
+          <td>RSA/ECDHE + AES-GCM + SHA-256</td>
+          <td>密钥交换 + 对称加密 + 完整性校验</td>
+      </tr>
+      <tr>
+          <td>JWT签名</td>
+          <td>HS256(RSA) / ES256(ECDSA)</td>
+          <td>Header.Payload 用私钥签名</td>
+      </tr>
+      <tr>
+          <td>文件加密</td>
+          <td>AES-256 + RSA</td>
+          <td>随机AES密钥加密文件，RSA加密AES密钥</td>
+      </tr>
+      <tr>
+          <td>数字证书</td>
+          <td>私钥签名 + 公钥验签 + 证书链</td>
+          <td>CA用私钥签发，浏览器用CA公钥验证</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="国密算法体系">国密算法体系</h3>
+<table>
+  <thead>
+      <tr>
+          <th>算法</th>
+          <th>类型</th>
+          <th>用途</th>
+          <th>替代的国际算法</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>SM2</td>
+          <td>非对称加密</td>
+          <td>加密、签名、密钥交换</td>
+          <td>RSA、ECDSA</td>
+      </tr>
+      <tr>
+          <td>SM3</td>
+          <td>哈希</td>
+          <td>数据摘要、签名</td>
+          <td>SHA-256</td>
+      </tr>
+      <tr>
+          <td>SM4</td>
+          <td>对称加密</td>
+          <td>数据加密</td>
+          <td>AES</td>
+      </tr>
+      <tr>
+          <td>SM9</td>
+          <td>标识密码</td>
+          <td>基于标识的加密和签名</td>
+          <td>IBE方案</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1密钥长度过短">问题1：密钥长度过短</h3>
+<p><strong>根因</strong>：使用1024位RSA或128位以下AES以追求性能
+<strong>解决</strong>：RSA至少2048位，AES至少128位，密码学安全不能妥协</p>]]></description></item><item><title>带新人</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%9B%A2%E9%98%9F%E4%B8%8E%E7%AE%A1%E7%90%86/%E6%96%B0%E4%BA%BA%E5%85%A5%E8%81%8C/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%9B%A2%E9%98%9F%E4%B8%8E%E7%AE%A1%E7%90%86/%E6%96%B0%E4%BA%BA%E5%85%A5%E8%81%8C/</guid><description><![CDATA[<h1 id="带新人">带新人</h1>
+<blockquote>
+<p><strong>核心结论</strong>：带新人的目标是在可控时间内让其独立交付价值，通过明确路径、及时反馈和适当放手，既保障业务产出又完成人才梯队建设。</p>
+</blockquote>
+<hr>
+<h2 id="新人培养通过分阶段目标具体任务和持续反馈实现从需要指导到独立交付的转化">新人培养通过分阶段目标、具体任务和持续反馈，实现从&quot;需要指导&quot;到&quot;独立交付&quot;的转化</h2>
+<h3 id="三阶段培养路径">三阶段培养路径</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">第1周：熟悉环境
+</span></span><span class="line"><span class="cl">├── 环境搭建（IDE、代码库、开发环境）
+</span></span><span class="line"><span class="cl">├── 代码规范阅读
+</span></span><span class="line"><span class="cl">├── 小Bug修复（2-3个）
+</span></span><span class="line"><span class="cl">└── 检查点：能独立编译运行项目
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">第2-4周：理解业务
+</span></span><span class="line"><span class="cl">├── 阅读核心模块代码
+</span></span><span class="line"><span class="cl">├── 参与Code Review
+</span></span><span class="line"><span class="cl">├── 独立完成小需求（1-2个）
+</span></span><span class="line"><span class="cl">└── 检查点：能理解代码Review意见并修改
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">第1-3月：独立交付
+</span></span><span class="line"><span class="cl">├── 承担完整需求（从设计到上线）
+</span></span><span class="line"><span class="cl">├── 参与技术方案讨论
+</span></span><span class="line"><span class="cl">├── 开始指导更新的人
+</span></span><span class="line"><span class="cl">└── 检查点：能独立负责一个功能模块</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>阶段</th>
+          <th>目标</th>
+          <th>导师动作</th>
+          <th>新人动作</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>融入期</td>
+          <td>熟悉环境和流程</td>
+          <td>1v1每天同步、分配保姆级任务</td>
+          <td>主动提问、记录踩坑</td>
+      </tr>
+      <tr>
+          <td>成长期</td>
+          <td>理解业务和代码</td>
+          <td>每周Review进展、讲解设计思路</td>
+          <td>写学习笔记、承担完整需求</td>
+      </tr>
+      <tr>
+          <td>独立期</td>
+          <td>自主交付价值</td>
+          <td>放手+关键节点把关</td>
+          <td>独立设计方案、反馈流程问题</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="任务设计原则">任务设计原则</h3>
+<table>
+  <thead>
+      <tr>
+          <th>原则</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>由简到难</td>
+          <td>先成功再挑战</td>
+          <td>先改文案，再改逻辑，再独立做需求</td>
+      </tr>
+      <tr>
+          <td>有明确产出</td>
+          <td>能看到效果</td>
+          <td>修复一个可见的Bug，而非纯阅读代码</td>
+      </tr>
+      <tr>
+          <td>允许犯错</td>
+          <td>安全环境试错</td>
+          <td>非核心功能的Bug修复，即使回退也无风险</td>
+      </tr>
+      <tr>
+          <td>与业务相关</td>
+          <td>理解业务价值</td>
+          <td>做真实需求而非Demo项目</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="反馈机制">反馈机制</h3>
+<table>
+  <thead>
+      <tr>
+          <th>频率</th>
+          <th>形式</th>
+          <th>内容</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>每天</td>
+          <td>即时反馈</td>
+          <td>代码Review意见、当天问题解答</td>
+      </tr>
+      <tr>
+          <td>每周</td>
+          <td>1v1沟通</td>
+          <td>进展、困难、下阶段计划</td>
+      </tr>
+      <tr>
+          <td>每月</td>
+          <td>阶段评估</td>
+          <td>能力成长、待改进点、目标调整</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="常见问题与应对">常见问题与应对</h3>
+<table>
+  <thead>
+      <tr>
+          <th>问题</th>
+          <th>表现</th>
+          <th>应对</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>不敢问</td>
+          <td>卡了很久不说</td>
+          <td>主动询问进度，营造&quot;提问安全&quot;氛围</td>
+      </tr>
+      <tr>
+          <td>过度依赖</td>
+          <td>每一步都要确认</td>
+          <td>逐步减少提示，让其先给出方案再讨论</td>
+      </tr>
+      <tr>
+          <td>进展慢</td>
+          <td>估时总是不准</td>
+          <td>任务拆更小，明确每个子任务的完成标准</td>
+      </tr>
+      <tr>
+          <td>融入难</td>
+          <td>团队协作不畅</td>
+          <td>安排Buddy（非导师）日常陪伴</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1让新人直接看代码熟悉没有具体任务">问题1：让新人直接看代码&quot;熟悉&quot;，没有具体任务</h3>
+<p><strong>根因</strong>：认为看代码就能理解系统
+<strong>解决</strong>：给具体问题和目标，在解决问题中理解代码，而非被动阅读</p>]]></description></item><item><title>技术写作</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E6%96%87%E6%A1%A3%E4%B8%8E%E8%A1%A8%E8%BE%BE/%E6%8A%80%E6%9C%AF%E5%86%99%E4%BD%9C/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E6%96%87%E6%A1%A3%E4%B8%8E%E8%A1%A8%E8%BE%BE/%E6%8A%80%E6%9C%AF%E5%86%99%E4%BD%9C/</guid><description><![CDATA[<h1 id="技术写作">技术写作</h1>
+<blockquote>
+<p><strong>核心结论</strong>：技术写作的核心目标是降低知识传递成本，通过结构化表达让不同背景的读者快速理解复杂概念，好文档的标准是&quot;只看标题和代码就能懂&quot;。</p>
+</blockquote>
+<hr>
+<h2 id="技术文档通过分层信息结构和可视化手段让受众按需获取所需深度">技术文档通过分层信息结构和可视化手段，让受众按需获取所需深度</h2>
+<h3 id="文档分层阅读设计">文档分层阅读设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">第一层（30秒）：标题 + 核心结论 → 了解是什么
+</span></span><span class="line"><span class="cl">第二层（3分钟）：小标题 + 表格/列表 → 了解关键点
+</span></span><span class="line"><span class="cl">第三层（15分钟）：代码示例 + 详细说明 → 了解怎么做
+</span></span><span class="line"><span class="cl">第四层（按需）：参考链接 + 扩展阅读 → 深入了解原理</span></span></code></pre></div></div>
+<h3 id="技术文档结构模板">技术文档结构模板</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-markdown">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl"><span class="gh"># 标题（结论性陈述）
+</span></span></span><span class="line"><span class="cl"><span class="k">
+</span></span></span><span class="line"><span class="cl"><span class="k">&gt; </span><span class="ge">核心结论：1-3句话概括全文要点
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 一、上层概括（以上统下）
+</span></span></span><span class="line"><span class="cl"><span class="gu">### 子标题1
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 要点
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 要点
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">### 子标题2
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 要点
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 要点
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 二、常见问题与误区
+</span></span></span><span class="line"><span class="cl"><span class="gu">### 问题1：...
+</span></span></span><span class="line"><span class="cl">**根因**：...
+</span></span><span class="line"><span class="cl"><span class="gs">**解决**</span>：...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 三、参考
+</span></span></span><span class="line"><span class="cl">- [<span class="nt">相关文档</span>](<span class="na">./link.md</span>)</span></span></code></pre></div></div>
+<h3 id="表达技巧">表达技巧</h3>
+<table>
+  <thead>
+      <tr>
+          <th>技巧</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>结论先行</td>
+          <td>先说结果，再说过程</td>
+          <td>&ldquo;连接池不足导致超时，解决方案是…&rdquo;</td>
+      </tr>
+      <tr>
+          <td>数据说话</td>
+          <td>用数字代替&quot;很多&quot;&ldquo;很快&rdquo;</td>
+          <td>&ldquo;QPS从1000提升到5000&rdquo;</td>
+      </tr>
+      <tr>
+          <td>对比呈现</td>
+          <td>好坏对照</td>
+          <td>❌错误写法 / ✅正确写法</td>
+      </tr>
+      <tr>
+          <td>代码说话</td>
+          <td>用示例代替长描述</td>
+          <td>直接给出配置代码</td>
+      </tr>
+      <tr>
+          <td>图表辅助</td>
+          <td>一图胜千言</td>
+          <td>架构图、流程图、时序图</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="图表运用">图表运用</h3>
+<table>
+  <thead>
+      <tr>
+          <th>图表类型</th>
+          <th>适用场景</th>
+          <th>工具</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>架构图</td>
+          <td>系统组成和依赖</td>
+          <td>Draw.io、PlantUML</td>
+      </tr>
+      <tr>
+          <td>流程图</td>
+          <td>操作步骤、决策路径</td>
+          <td>Mermaid、Visio</td>
+      </tr>
+      <tr>
+          <td>时序图</td>
+          <td>交互顺序</td>
+          <td>PlantUML、Mermaid</td>
+      </tr>
+      <tr>
+          <td>表格</td>
+          <td>多方案对比</td>
+          <td>Markdown表格</td>
+      </tr>
+      <tr>
+          <td>思维导图</td>
+          <td>知识分类和关联</td>
+          <td>XMind、Obsidian画布</td>
+      </tr>
+  </tbody>
+</table>
+<div class="mermaid" id="id-3">sequenceDiagram
+    participant C as Client
+    participant G as Gateway
+    participant S as Service
+    C-&gt;&gt;G: Request
+    G-&gt;&gt;S: Forward
+    S--&gt;&gt;G: Response
+    G--&gt;&gt;C: Return</div><h3 id="文档类型与侧重点">文档类型与侧重点</h3>
+<table>
+  <thead>
+      <tr>
+          <th>类型</th>
+          <th>目标读者</th>
+          <th>重点内容</th>
+          <th>篇幅</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>学习笔记</td>
+          <td>未来的自己</td>
+          <td>原理、对比、个人理解</td>
+          <td>不限</td>
+      </tr>
+      <tr>
+          <td>设计方案</td>
+          <td>团队成员</td>
+          <td>背景、方案对比、决策依据</td>
+          <td>5-10页</td>
+      </tr>
+      <tr>
+          <td>使用手册</td>
+          <td>用户/接入方</td>
+          <td>快速上手、API说明、示例</td>
+          <td>按需</td>
+      </tr>
+      <tr>
+          <td>故障复盘</td>
+          <td>团队</td>
+          <td>现象、根因、改进措施</td>
+          <td>2-3页</td>
+      </tr>
+      <tr>
+          <td>技术分享</td>
+          <td>同行</td>
+          <td>亮点、实践经验、可复用方案</td>
+          <td>演讲稿式</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1文档写成了流水账">问题1：文档写成了流水账</h3>
+<p><strong>根因</strong>：按时间顺序记录，没有提炼结构
+<strong>解决</strong>：先列提纲确定逻辑框架，再填充内容</p>]]></description></item><item><title>金字塔原理</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E6%96%87%E6%A1%A3%E4%B8%8E%E8%A1%A8%E8%BE%BE/%E9%87%91%E5%AD%97%E5%A1%94%E5%8E%9F%E7%90%86/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E6%96%87%E6%A1%A3%E4%B8%8E%E8%A1%A8%E8%BE%BE/%E9%87%91%E5%AD%97%E5%A1%94%E5%8E%9F%E7%90%86/</guid><description><![CDATA[<h1 id="金字塔原理">金字塔原理</h1>
+<blockquote>
+<p><strong>核心结论</strong>：金字塔原理通过&quot;结论先行、以上统下、归类分组、逻辑递进&quot;四个原则组织信息，让受众在最短时间内理解核心观点，是技术写作和口头表达的基础方法论。</p>
+</blockquote>
+<hr>
+<h2 id="金字塔结构通过纵向概括和横向分组将复杂信息系统化呈现">金字塔结构通过纵向概括和横向分组，将复杂信息系统化呈现</h2>
+<h3 id="核心四原则">核心四原则</h3>
+<table>
+  <thead>
+      <tr>
+          <th>原则</th>
+          <th>含义</th>
+          <th>实践方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>结论先行</td>
+          <td>先说结论，再说依据</td>
+          <td>首句点明观点，不绕弯子</td>
+      </tr>
+      <tr>
+          <td>以上统下</td>
+          <td>上层是下层的概括</td>
+          <td>标题是段落的总结，能单独读懂</td>
+      </tr>
+      <tr>
+          <td>归类分组（MECE）</td>
+          <td>相互独立，完全穷尽</td>
+          <td>检查分类是否有遗漏和重叠</td>
+      </tr>
+      <tr>
+          <td>逻辑递进</td>
+          <td>按顺序排列</td>
+          <td>时间、结构、重要性、演绎</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="金字塔结构示例">金字塔结构示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">                    核心结论
+</span></span><span class="line"><span class="cl">                   （电梯演讲）
+</span></span><span class="line"><span class="cl">                        |
+</span></span><span class="line"><span class="cl">        +---------------+---------------+
+</span></span><span class="line"><span class="cl">        |               |               |
+</span></span><span class="line"><span class="cl">    论点A           论点B           论点C
+</span></span><span class="line"><span class="cl">    （Why）        （What）        （How）
+</span></span><span class="line"><span class="cl">        |               |               |
+</span></span><span class="line"><span class="cl">    证据A1          证据B1          证据C1
+</span></span><span class="line"><span class="cl">    证据A2          证据B2          证据C2</span></span></code></pre></div></div>
+<h3 id="技术文档中的应用">技术文档中的应用</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-markdown">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl"><span class="gh"># 性能优化方案
+</span></span></span><span class="line"><span class="cl"><span class="k">
+</span></span></span><span class="line"><span class="cl"><span class="k">&gt; </span><span class="ge">核心结论：通过连接池优化+SQL索引+缓存三层策略，
+</span></span></span><span class="line"><span class="cl"><span class="k">&gt; </span><span class="ge">预期接口P99从800ms降至150ms。
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 一、连接池优化（解决获取连接慢）
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 当前问题：HikariCP最大连接数200，频繁等待
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 优化方案：调整至500，增加连接超时检测
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 二、SQL索引优化（解决查询慢）
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 当前问题：订单表全表扫描
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 优化方案：联合索引 (user_id, create_time)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 三、本地缓存（解决热点数据重复查询）
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 当前问题：商品基础信息每次查库
+</span></span><span class="line"><span class="cl">- 优化方案：Caffeine缓存，TTL 5分钟</span></span></code></pre></div></div>
+<h3 id="逻辑递进四种方式">逻辑递进四种方式</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方式</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>时间顺序</td>
+          <td>按步骤或阶段</td>
+          <td>先…再…最后…</td>
+      </tr>
+      <tr>
+          <td>结构顺序</td>
+          <td>按组成部分</td>
+          <td>架构分接入层、服务层、存储层</td>
+      </tr>
+      <tr>
+          <td>重要性顺序</td>
+          <td>按优先级</td>
+          <td>高优/中优/低优</td>
+      </tr>
+      <tr>
+          <td>演绎顺序</td>
+          <td>大前提→小前提→结论</td>
+          <td>所有A是B，C是A，所以C是B</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="mece检查方法">MECE检查方法</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">分类是否MECE？
+</span></span><span class="line"><span class="cl">├── 是否有遗漏？（漏了移动端适配问题）
+</span></span><span class="line"><span class="cl">└── 是否有重叠？（性能问题和慢查询问题其实是一回事）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">修正后：
+</span></span><span class="line"><span class="cl">├── 功能缺陷
+</span></span><span class="line"><span class="cl">├── 性能问题
+</span></span><span class="line"><span class="cl">├── 安全漏洞
+</span></span><span class="line"><span class="cl">└── 兼容性问题</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1罗列细节没有结论">问题1：罗列细节没有结论</h3>
+<p><strong>根因</strong>：怕说错，不敢下结论
+<strong>解决</strong>：即使不确定，也给出倾向性结论并标注风险点</p>]]></description></item></channel></rss>

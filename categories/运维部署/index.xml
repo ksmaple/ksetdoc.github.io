@@ -1,0 +1,358 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>运维部署 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/</link><description>运维部署 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/" rel="self" type="application/rss+xml"/><item><title>Docker容器化</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/docker%E5%AE%B9%E5%99%A8%E5%8C%96/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/docker%E5%AE%B9%E5%99%A8%E5%8C%96/</guid><description><![CDATA[<h1 id="docker容器化">Docker容器化</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Docker通过容器技术实现应用与运行环境的打包隔离，通过镜像分层复用减少存储，通过容器运行时提供一致的部署体验，是云原生和微服务部署的基础。</p>
+</blockquote>
+<hr>
+<h2 id="docker通过镜像打包容器隔离分层存储实现应用的标准化交付">Docker通过镜像打包、容器隔离、分层存储实现应用的标准化交付</h2>
+<h3 id="核心概念镜像容器仓库">核心概念：镜像、容器、仓库</h3>
+<table>
+  <thead>
+      <tr>
+          <th>概念</th>
+          <th>说明</th>
+          <th>类比</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>镜像（Image）</td>
+          <td>只读模板，包含应用和依赖</td>
+          <td>类（Class）</td>
+      </tr>
+      <tr>
+          <td>容器（Container）</td>
+          <td>镜像的运行实例</td>
+          <td>对象（Object）</td>
+      </tr>
+      <tr>
+          <td>仓库（Registry）</td>
+          <td>镜像存储和分发</td>
+          <td>Maven仓库</td>
+      </tr>
+      <tr>
+          <td>Dockerfile</td>
+          <td>镜像构建脚本</td>
+          <td>构建脚本</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="dockerfile最佳实践">Dockerfile最佳实践</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-dockerfile">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-dockerfile" data-lang="dockerfile"><span class="line"><span class="cl"><span class="c"># 多阶段构建，减小最终镜像</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">FROM</span><span class="w"> </span><span class="s">maven:3.8</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">build</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">COPY</span> pom.xml .<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">RUN</span> mvn dependency:go-offline<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">COPY</span> src ./src<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">RUN</span> mvn clean package -DskipTests<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">FROM</span><span class="w"> </span><span class="s">eclipse-temurin:17-jre-alpine</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">COPY</span> --from<span class="o">=</span>build /app/target/*.jar app.jar<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">EXPOSE</span><span class="w"> </span><span class="s">8080</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">ENTRYPOINT</span> <span class="p">[</span><span class="s2">&#34;java&#34;</span><span class="p">,</span> <span class="s2">&#34;-jar&#34;</span><span class="p">,</span> <span class="s2">&#34;app.jar&#34;</span><span class="p">]</span></span></span></code></pre></div></div>
+<p><strong>优化原则</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>原则</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>多阶段构建</td>
+          <td>编译和运行分离，减小镜像</td>
+      </tr>
+      <tr>
+          <td>基础镜像选Alpine</td>
+          <td>体积小，安全面小</td>
+      </tr>
+      <tr>
+          <td>层缓存优化</td>
+          <td>不常变的指令放前面</td>
+      </tr>
+      <tr>
+          <td>非root运行</td>
+          <td>安全考虑</td>
+      </tr>
+      <tr>
+          <td>.dockerignore</td>
+          <td>排除不需要的文件</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="容器网络与存储">容器网络与存储</h3>
+<table>
+  <thead>
+      <tr>
+          <th>网络模式</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>bridge</td>
+          <td>默认，容器间通过网桥通信</td>
+          <td>单机多容器</td>
+      </tr>
+      <tr>
+          <td>host</td>
+          <td>共享宿主机网络</td>
+          <td>性能要求高</td>
+      </tr>
+      <tr>
+          <td>overlay</td>
+          <td>跨主机容器通信</td>
+          <td>Swarm/K8s</td>
+      </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+      <tr>
+          <th>存储方式</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>bind mount</td>
+          <td>挂载宿主机目录</td>
+          <td>开发调试</td>
+      </tr>
+      <tr>
+          <td>volume</td>
+          <td>Docker管理的数据卷</td>
+          <td>生产持久化</td>
+      </tr>
+      <tr>
+          <td>tmpfs</td>
+          <td>内存存储</td>
+          <td>敏感临时数据</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1镜像过大">问题1：镜像过大</h3>
+<p><strong>根因</strong>：包含不必要的依赖和文件
+<strong>解决</strong>：多阶段构建、Alpine基础镜像、清理缓存</p>]]></description></item><item><title>Kubernetes</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/kubernetes/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/kubernetes/</guid><description><![CDATA[<h1 id="kubernetes">Kubernetes</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Kubernetes通过声明式API管理容器化应用，通过Pod、Service、Deployment等抽象提供自动化部署、弹性伸缩和自我修复能力，是容器编排的事实标准。</p>
+</blockquote>
+<hr>
+<h2 id="kubernetes通过控制循环实现声明式管理通过分层抽象简化容器编排">Kubernetes通过控制循环实现声明式管理，通过分层抽象简化容器编排</h2>
+<h3 id="核心对象">核心对象</h3>
+<table>
+  <thead>
+      <tr>
+          <th>对象</th>
+          <th>职责</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Pod</td>
+          <td>最小调度单元</td>
+          <td>包含一个或多个容器</td>
+      </tr>
+      <tr>
+          <td>Deployment</td>
+          <td>无状态应用管理</td>
+          <td>滚动更新、回滚、扩缩容</td>
+      </tr>
+      <tr>
+          <td>StatefulSet</td>
+          <td>有状态应用管理</td>
+          <td>稳定网络标识、有序部署</td>
+      </tr>
+      <tr>
+          <td>Service</td>
+          <td>服务发现</td>
+          <td>ClusterIP/NodePort/LoadBalancer</td>
+      </tr>
+      <tr>
+          <td>Ingress</td>
+          <td>七层路由</td>
+          <td>HTTP/HTTPS路由规则</td>
+      </tr>
+      <tr>
+          <td>ConfigMap/Secret</td>
+          <td>配置管理</td>
+          <td>配置与镜像分离</td>
+      </tr>
+      <tr>
+          <td>PV/PVC</td>
+          <td>存储管理</td>
+          <td>持久化存储抽象</td>
+      </tr>
+      <tr>
+          <td>HPA</td>
+          <td>自动伸缩</td>
+          <td>基于CPU/内存/自定义指标</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="deployment配置示例">Deployment配置示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Deployment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">registry/order-service:v1.0.0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;512Mi&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;500m&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">limits</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1Gi&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1000m&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">livenessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/actuator/health</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">30</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">readinessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/actuator/health</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">5</span></span></span></code></pre></div></div>
+<h3 id="pod生命周期与探针">Pod生命周期与探针</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Pending → Running → Succeeded/Failed/Unknown
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">探针类型：
+</span></span><span class="line"><span class="cl">- LivenessProbe：容器是否存活，失败则重启
+</span></span><span class="line"><span class="cl">- ReadinessProbe：容器是否就绪，失败则从Service摘除
+</span></span><span class="line"><span class="cl">- StartupProbe：容器是否启动完成，替代Liveness的initialDelay</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1pod频繁重启">问题1：Pod频繁重启</h3>
+<p><strong>根因</strong>：LivenessProbe配置不当或应用启动慢
+<strong>解决</strong>：调整探针参数、增加StartupProbe</p>]]></description></item><item><title>网关架构</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/%E7%BD%91%E5%85%B3%E6%9E%B6%E6%9E%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/%E7%BD%91%E5%85%B3%E6%9E%B6%E6%9E%84/</guid><description><![CDATA[<h1 id="网关架构">网关架构</h1>
+<blockquote>
+<p><strong>核心结论</strong>：生产环境的网关通常采用LBS云网关、Nginx分发网关、业务网关三层架构，每层负责不同粒度的流量管理，共同实现高可用、高性能、安全的流量入口。</p>
+</blockquote>
+<hr>
+<h2 id="三层网关架构分层处理流量从外到内职责逐步聚焦">三层网关架构分层处理流量，从外到内职责逐步聚焦</h2>
+<h3 id="三层网关职责划分">三层网关职责划分</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户请求
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">LBS云网关（第一层）
+</span></span><span class="line"><span class="cl">  - 全局负载均衡（DNS/GSLB）
+</span></span><span class="line"><span class="cl">  - DDoS防护
+</span></span><span class="line"><span class="cl">  - SSL卸载
+</span></span><span class="line"><span class="cl">  - 边缘缓存（CDN）
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">Nginx分发网关（第二层）
+</span></span><span class="line"><span class="cl">  - 七层负载均衡
+</span></span><span class="line"><span class="cl">  - 静态资源服务
+</span></span><span class="line"><span class="cl">  - 限流（连接数/速率）
+</span></span><span class="line"><span class="cl">  - 灰度发布
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">业务网关（第三层）
+</span></span><span class="line"><span class="cl">  - 鉴权认证
+</span></span><span class="line"><span class="cl">  - 路由转发
+</span></span><span class="line"><span class="cl">  - API治理
+</span></span><span class="line"><span class="cl">  - 熔断降级
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">业务服务集群</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>代表产品</th>
+          <th>核心能力</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>LBS</td>
+          <td>阿里云SLB、AWS ALB</td>
+          <td>四层负载均衡、健康检查</td>
+      </tr>
+      <tr>
+          <td>Nginx</td>
+          <td>OpenResty、Nginx Plus</td>
+          <td>七层路由、Lua扩展</td>
+      </tr>
+      <tr>
+          <td>业务网关</td>
+          <td>Spring Cloud Gateway、Kong</td>
+          <td>API治理、微服务路由</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="nginx核心配置">Nginx核心配置</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-nginx">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-nginx" data-lang="nginx"><span class="line"><span class="cl"><span class="k">upstream</span> <span class="s">backend</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">least_conn</span><span class="p">;</span>                    <span class="c1"># 最少连接算法
+</span></span></span><span class="line"><span class="cl">    <span class="kn">server</span> <span class="n">10.0.1.10</span><span class="p">:</span><span class="mi">8080</span> <span class="s">weight=5</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server</span> <span class="n">10.0.1.11</span><span class="p">:</span><span class="mi">8080</span> <span class="s">weight=5</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server</span> <span class="n">10.0.1.12</span><span class="p">:</span><span class="mi">8080</span> <span class="s">backup</span><span class="p">;</span>  <span class="c1"># 备用节点
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">server</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">listen</span> <span class="mi">80</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server_name</span> <span class="s">api.example.com</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">limit_req</span> <span class="s">zone=api_limit</span> <span class="s">burst=20</span> <span class="s">nodelay</span><span class="p">;</span>  <span class="c1"># 限流
+</span></span></span><span class="line"><span class="cl">        <span class="kn">proxy_pass</span> <span class="s">http://backend</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_set_header</span> <span class="s">Host</span> <span class="nv">$host</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_set_header</span> <span class="s">X-Real-IP</span> <span class="nv">$remote_addr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_connect_timeout</span> <span class="s">5s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_read_timeout</span> <span class="s">10s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="kn">location</span> <span class="s">/static</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">alias</span> <span class="s">/var/www/static</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">expires</span> <span class="s">30d</span><span class="p">;</span>               <span class="c1"># 静态缓存
+</span></span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1单点网关故障">问题1：单点网关故障</h3>
+<p><strong>根因</strong>：网关未集群部署
+<strong>解决</strong>：网关多实例+Keepalived VIP、云厂商负载均衡</p>]]></description></item></channel></rss>

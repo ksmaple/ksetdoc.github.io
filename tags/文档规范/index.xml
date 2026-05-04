@@ -1,0 +1,173 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>文档规范 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E6%96%87%E6%A1%A3%E8%A7%84%E8%8C%83/</link><description>文档规范 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E6%96%87%E6%A1%A3%E8%A7%84%E8%8C%83/" rel="self" type="application/rss+xml"/><item><title>技术写作</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E6%96%87%E6%A1%A3%E4%B8%8E%E8%A1%A8%E8%BE%BE/%E6%8A%80%E6%9C%AF%E5%86%99%E4%BD%9C/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E6%96%87%E6%A1%A3%E4%B8%8E%E8%A1%A8%E8%BE%BE/%E6%8A%80%E6%9C%AF%E5%86%99%E4%BD%9C/</guid><description><![CDATA[<h1 id="技术写作">技术写作</h1>
+<blockquote>
+<p><strong>核心结论</strong>：技术写作的核心目标是降低知识传递成本，通过结构化表达让不同背景的读者快速理解复杂概念，好文档的标准是&quot;只看标题和代码就能懂&quot;。</p>
+</blockquote>
+<hr>
+<h2 id="技术文档通过分层信息结构和可视化手段让受众按需获取所需深度">技术文档通过分层信息结构和可视化手段，让受众按需获取所需深度</h2>
+<h3 id="文档分层阅读设计">文档分层阅读设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">第一层（30秒）：标题 + 核心结论 → 了解是什么
+</span></span><span class="line"><span class="cl">第二层（3分钟）：小标题 + 表格/列表 → 了解关键点
+</span></span><span class="line"><span class="cl">第三层（15分钟）：代码示例 + 详细说明 → 了解怎么做
+</span></span><span class="line"><span class="cl">第四层（按需）：参考链接 + 扩展阅读 → 深入了解原理</span></span></code></pre></div></div>
+<h3 id="技术文档结构模板">技术文档结构模板</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-markdown">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl"><span class="gh"># 标题（结论性陈述）
+</span></span></span><span class="line"><span class="cl"><span class="k">
+</span></span></span><span class="line"><span class="cl"><span class="k">&gt; </span><span class="ge">核心结论：1-3句话概括全文要点
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 一、上层概括（以上统下）
+</span></span></span><span class="line"><span class="cl"><span class="gu">### 子标题1
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 要点
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 要点
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">### 子标题2
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 要点
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 要点
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 二、常见问题与误区
+</span></span></span><span class="line"><span class="cl"><span class="gu">### 问题1：...
+</span></span></span><span class="line"><span class="cl">**根因**：...
+</span></span><span class="line"><span class="cl"><span class="gs">**解决**</span>：...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 三、参考
+</span></span></span><span class="line"><span class="cl">- [<span class="nt">相关文档</span>](<span class="na">./link.md</span>)</span></span></code></pre></div></div>
+<h3 id="表达技巧">表达技巧</h3>
+<table>
+  <thead>
+      <tr>
+          <th>技巧</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>结论先行</td>
+          <td>先说结果，再说过程</td>
+          <td>&ldquo;连接池不足导致超时，解决方案是…&rdquo;</td>
+      </tr>
+      <tr>
+          <td>数据说话</td>
+          <td>用数字代替&quot;很多&quot;&ldquo;很快&rdquo;</td>
+          <td>&ldquo;QPS从1000提升到5000&rdquo;</td>
+      </tr>
+      <tr>
+          <td>对比呈现</td>
+          <td>好坏对照</td>
+          <td>❌错误写法 / ✅正确写法</td>
+      </tr>
+      <tr>
+          <td>代码说话</td>
+          <td>用示例代替长描述</td>
+          <td>直接给出配置代码</td>
+      </tr>
+      <tr>
+          <td>图表辅助</td>
+          <td>一图胜千言</td>
+          <td>架构图、流程图、时序图</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="图表运用">图表运用</h3>
+<table>
+  <thead>
+      <tr>
+          <th>图表类型</th>
+          <th>适用场景</th>
+          <th>工具</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>架构图</td>
+          <td>系统组成和依赖</td>
+          <td>Draw.io、PlantUML</td>
+      </tr>
+      <tr>
+          <td>流程图</td>
+          <td>操作步骤、决策路径</td>
+          <td>Mermaid、Visio</td>
+      </tr>
+      <tr>
+          <td>时序图</td>
+          <td>交互顺序</td>
+          <td>PlantUML、Mermaid</td>
+      </tr>
+      <tr>
+          <td>表格</td>
+          <td>多方案对比</td>
+          <td>Markdown表格</td>
+      </tr>
+      <tr>
+          <td>思维导图</td>
+          <td>知识分类和关联</td>
+          <td>XMind、Obsidian画布</td>
+      </tr>
+  </tbody>
+</table>
+<div class="mermaid" id="id-3">sequenceDiagram
+    participant C as Client
+    participant G as Gateway
+    participant S as Service
+    C-&gt;&gt;G: Request
+    G-&gt;&gt;S: Forward
+    S--&gt;&gt;G: Response
+    G--&gt;&gt;C: Return</div><h3 id="文档类型与侧重点">文档类型与侧重点</h3>
+<table>
+  <thead>
+      <tr>
+          <th>类型</th>
+          <th>目标读者</th>
+          <th>重点内容</th>
+          <th>篇幅</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>学习笔记</td>
+          <td>未来的自己</td>
+          <td>原理、对比、个人理解</td>
+          <td>不限</td>
+      </tr>
+      <tr>
+          <td>设计方案</td>
+          <td>团队成员</td>
+          <td>背景、方案对比、决策依据</td>
+          <td>5-10页</td>
+      </tr>
+      <tr>
+          <td>使用手册</td>
+          <td>用户/接入方</td>
+          <td>快速上手、API说明、示例</td>
+          <td>按需</td>
+      </tr>
+      <tr>
+          <td>故障复盘</td>
+          <td>团队</td>
+          <td>现象、根因、改进措施</td>
+          <td>2-3页</td>
+      </tr>
+      <tr>
+          <td>技术分享</td>
+          <td>同行</td>
+          <td>亮点、实践经验、可复用方案</td>
+          <td>演讲稿式</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1文档写成了流水账">问题1：文档写成了流水账</h3>
+<p><strong>根因</strong>：按时间顺序记录，没有提炼结构
+<strong>解决</strong>：先列提纲确定逻辑框架，再填充内容</p>]]></description></item></channel></rss>

@@ -1,0 +1,75 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>BCNF - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/bcnf/</link><description>BCNF - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/bcnf/" rel="self" type="application/rss+xml"/><item><title>数据库范式</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A7%84%E8%8C%83%E5%8C%96/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A7%84%E8%8C%83%E5%8C%96/</guid><description><![CDATA[<h1 id="数据库范式">数据库范式</h1>
+<blockquote>
+<p><strong>核心结论</strong>：数据库范式通过消除冗余和异常将表结构设计到合理的规范化程度，生产环境通常以3NF为目标，但为性能考虑会适当反规范化，理解范式原则才能做出合理的取舍。</p>
+</blockquote>
+<hr>
+<h2 id="数据库范式通过消除数据冗余和更新异常来规范表结构3nf是生产环境最常见的平衡点">数据库范式通过消除数据冗余和更新异常来规范表结构，3NF是生产环境最常见的平衡点</h2>
+<h3 id="范式定义与递进关系">范式定义与递进关系</h3>
+<table>
+  <thead>
+      <tr>
+          <th>范式</th>
+          <th>要求</th>
+          <th>解决的问题</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>1NF</td>
+          <td>列不可再分，每列原子性</td>
+          <td>重复组、多值属性</td>
+      </tr>
+      <tr>
+          <td>2NF</td>
+          <td>满足1NF，非主键列完全依赖主键</td>
+          <td>部分依赖</td>
+      </tr>
+      <tr>
+          <td>3NF</td>
+          <td>满足2NF，非主键列不传递依赖主键</td>
+          <td>传递依赖</td>
+      </tr>
+      <tr>
+          <td>BCNF</td>
+          <td>满足3NF，每个决定因素都是候选键</td>
+          <td>主属性对候选键的部分依赖</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">范式递进关系：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1NF ⊃ 2NF ⊃ 3NF ⊃ BCNF ⊃ 4NF ⊃ 5NF
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">越高的范式：冗余越少，但表越多，Join越多</span></span></code></pre></div></div>
+<h3 id="各范式详解">各范式详解</h3>
+<p><strong>1NF：原子性</strong></p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">违反1NF：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">学生表
+</span></span><span class="line"><span class="cl">| id | name | phones          |
+</span></span><span class="line"><span class="cl">|----|------|-----------------|
+</span></span><span class="line"><span class="cl">| 1  | Tom  | 138001, 139002  |  ← 一列多值
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">符合1NF：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">学生表
+</span></span><span class="line"><span class="cl">| id | name |
+</span></span><span class="line"><span class="cl">|----|------|
+</span></span><span class="line"><span class="cl">| 1  | Tom  |
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">学生电话表
+</span></span><span class="line"><span class="cl">| student_id | phone     |
+</span></span><span class="line"><span class="cl">|------------|-----------|
+</span></span><span class="line"><span class="cl">| 1          | 138001    |
+</span></span><span class="line"><span class="cl">| 1          | 139002    |</span></span></code></pre></div></div>
+<p><strong>2NF：消除部分依赖</strong></p>]]></description></item></channel></rss>

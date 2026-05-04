@@ -1,0 +1,186 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>加密场景 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%8A%A0%E5%AF%86%E5%9C%BA%E6%99%AF/</link><description>加密场景 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%8A%A0%E5%AF%86%E5%9C%BA%E6%99%AF/" rel="self" type="application/rss+xml"/><item><title>常见算法与场景</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3/%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3/%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95/</guid><description><![CDATA[<h1 id="常见算法与场景">常见算法与场景</h1>
+<blockquote>
+<p><strong>核心结论</strong>：不同密码学算法有各自的适用场景和权衡点，选型时需综合考虑安全性、性能、合规性和生态系统成熟度。</p>
+</blockquote>
+<hr>
+<h2 id="密码学算法选型需匹配场景的安全需求和性能约束避免过度设计或不足">密码学算法选型需匹配场景的安全需求和性能约束，避免过度设计或不足</h2>
+<h3 id="对称加密算法选型">对称加密算法选型</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐算法</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>通用数据加密</td>
+          <td>AES-256-GCM</td>
+          <td>安全、支持认证加密、硬件加速</td>
+      </tr>
+      <tr>
+          <td>国内合规系统</td>
+          <td>SM4</td>
+          <td>国密要求</td>
+      </tr>
+      <tr>
+          <td>低功耗IoT设备</td>
+          <td>AES-128</td>
+          <td>计算量小，安全性足够</td>
+      </tr>
+      <tr>
+          <td>文件系统加密</td>
+          <td>AES-XTS</td>
+          <td>针对块设备优化</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// AES-GCM 加密示例</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Cipher</span><span class="w"> </span><span class="n">cipher</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Cipher</span><span class="p">.</span><span class="na">getInstance</span><span class="p">(</span><span class="s">&#34;AES/GCM/NoPadding&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">SecretKeySpec</span><span class="w"> </span><span class="n">keySpec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SecretKeySpec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;AES&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">cipher</span><span class="p">.</span><span class="na">init</span><span class="p">(</span><span class="n">Cipher</span><span class="p">.</span><span class="na">ENCRYPT_MODE</span><span class="p">,</span><span class="w"> </span><span class="n">keySpec</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GCMParameterSpec</span><span class="p">(</span><span class="n">128</span><span class="p">,</span><span class="w"> </span><span class="n">iv</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kt">byte</span><span class="o">[]</span><span class="w"> </span><span class="n">encrypted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cipher</span><span class="p">.</span><span class="na">doFinal</span><span class="p">(</span><span class="n">plainText</span><span class="p">);</span></span></span></code></pre></div></div>
+<h3 id="非对称加密算法选型">非对称加密算法选型</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐算法</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>HTTPS/TLS证书</td>
+          <td>RSA-2048 / ECDSA P-256</td>
+          <td>广泛兼容</td>
+      </tr>
+      <tr>
+          <td>移动端API签名</td>
+          <td>ECDSA</td>
+          <td>签名短、验证快</td>
+      </tr>
+      <tr>
+          <td>国内金融系统</td>
+          <td>SM2</td>
+          <td>国密合规</td>
+      </tr>
+      <tr>
+          <td>区块链/数字货币</td>
+          <td>ECDSA / Ed25519</td>
+          <td>签名短小高效</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="哈希算法选型">哈希算法选型</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐算法</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>密码存储</td>
+          <td>bcrypt / scrypt / Argon2</td>
+          <td>计算慢可防暴力破解</td>
+      </tr>
+      <tr>
+          <td>数据完整性校验</td>
+          <td>SHA-256</td>
+          <td>快速且安全</td>
+      </tr>
+      <tr>
+          <td>数字签名</td>
+          <td>SHA-256 + RSA/ECDSA</td>
+          <td>标准组合</td>
+      </tr>
+      <tr>
+          <td>国内合规</td>
+          <td>SM3</td>
+          <td>国密要求</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="典型组合场景">典型组合场景</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>组合方式</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>HTTPS通信</td>
+          <td>RSA/ECDHE + AES-GCM + SHA-256</td>
+          <td>密钥交换 + 对称加密 + 完整性校验</td>
+      </tr>
+      <tr>
+          <td>JWT签名</td>
+          <td>HS256(RSA) / ES256(ECDSA)</td>
+          <td>Header.Payload 用私钥签名</td>
+      </tr>
+      <tr>
+          <td>文件加密</td>
+          <td>AES-256 + RSA</td>
+          <td>随机AES密钥加密文件，RSA加密AES密钥</td>
+      </tr>
+      <tr>
+          <td>数字证书</td>
+          <td>私钥签名 + 公钥验签 + 证书链</td>
+          <td>CA用私钥签发，浏览器用CA公钥验证</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="国密算法体系">国密算法体系</h3>
+<table>
+  <thead>
+      <tr>
+          <th>算法</th>
+          <th>类型</th>
+          <th>用途</th>
+          <th>替代的国际算法</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>SM2</td>
+          <td>非对称加密</td>
+          <td>加密、签名、密钥交换</td>
+          <td>RSA、ECDSA</td>
+      </tr>
+      <tr>
+          <td>SM3</td>
+          <td>哈希</td>
+          <td>数据摘要、签名</td>
+          <td>SHA-256</td>
+      </tr>
+      <tr>
+          <td>SM4</td>
+          <td>对称加密</td>
+          <td>数据加密</td>
+          <td>AES</td>
+      </tr>
+      <tr>
+          <td>SM9</td>
+          <td>标识密码</td>
+          <td>基于标识的加密和签名</td>
+          <td>IBE方案</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1密钥长度过短">问题1：密钥长度过短</h3>
+<p><strong>根因</strong>：使用1024位RSA或128位以下AES以追求性能
+<strong>解决</strong>：RSA至少2048位，AES至少128位，密码学安全不能妥协</p>]]></description></item></channel></rss>

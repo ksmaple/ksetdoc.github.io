@@ -1,0 +1,127 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>BIO - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/bio/</link><description>BIO - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/bio/" rel="self" type="application/rss+xml"/><item><title>网络IO模型</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E7%BD%91%E7%BB%9Cio%E6%A8%A1%E5%9E%8B/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E7%BD%91%E7%BB%9Cio%E6%A8%A1%E5%9E%8B/</guid><description><![CDATA[<h1 id="网络io模型">网络IO模型</h1>
+<blockquote>
+<p><strong>核心结论</strong>：网络IO模型从BIO的阻塞线程到NIO的多路复用再到AIO的异步回调，本质是在IO等待、数据拷贝和线程资源之间做权衡，epoll通过事件驱动和边缘触发机制支撑了Linux高并发服务的核心能力。</p>
+</blockquote>
+<hr>
+<h2 id="linux网络io从阻塞到非阻塞从同步到异步演进epoll事件驱动是当前高并发的核心机制">Linux网络IO从阻塞到非阻塞、从同步到异步演进，epoll事件驱动是当前高并发的核心机制</h2>
+<h3 id="五种io模型从阻塞到异步的演进">五种IO模型：从阻塞到异步的演进</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">以网络read为例，涉及两个阶段：
+</span></span><span class="line"><span class="cl">  阶段1：等待数据就绪（数据从网卡到内核缓冲区）
+</span></span><span class="line"><span class="cl">  阶段2：数据拷贝（从内核缓冲区到用户空间）</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>模型</th>
+          <th>阶段1（等待数据）</th>
+          <th>阶段2（数据拷贝）</th>
+          <th>特点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>阻塞IO（BIO）</td>
+          <td>阻塞等待</td>
+          <td>阻塞拷贝</td>
+          <td>最简单，一个连接一个线程</td>
+      </tr>
+      <tr>
+          <td>非阻塞IO（NIO）</td>
+          <td>轮询（立即返回EAGAIN）</td>
+          <td>阻塞拷贝</td>
+          <td>CPU空转浪费</td>
+      </tr>
+      <tr>
+          <td>IO多路复用</td>
+          <td>select/poll/epoll阻塞等待多个fd</td>
+          <td>阻塞拷贝</td>
+          <td>单线程管理多个连接</td>
+      </tr>
+      <tr>
+          <td>信号驱动IO</td>
+          <td>注册回调，数据就绪时信号通知</td>
+          <td>阻塞拷贝</td>
+          <td>Linux少见</td>
+      </tr>
+      <tr>
+          <td>异步IO（AIO）</td>
+          <td>不阻塞</td>
+          <td>不阻塞（内核拷贝完通知）</td>
+          <td>最复杂，真正异步</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">阻塞IO（BIO）：
+</span></span><span class="line"><span class="cl">  应用            内核
+</span></span><span class="line"><span class="cl">    |  read()    |
+</span></span><span class="line"><span class="cl">    | ---------&gt; |  等待数据就绪 ──────→ 数据到达
+</span></span><span class="line"><span class="cl">    |            |  拷贝数据到用户空间
+</span></span><span class="line"><span class="cl">    |  返回数据   |
+</span></span><span class="line"><span class="cl">    | &lt;--------- |
+</span></span><span class="line"><span class="cl">    |  [全程阻塞] |
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">IO多路复用：
+</span></span><span class="line"><span class="cl">  应用            内核
+</span></span><span class="line"><span class="cl">    | epoll_wait()|  等待多个fd任一就绪
+</span></span><span class="line"><span class="cl">    | ---------&gt; |  ─────────────────→ fd3就绪
+</span></span><span class="line"><span class="cl">    |  fd3可读    |
+</span></span><span class="line"><span class="cl">    | &lt;--------- |
+</span></span><span class="line"><span class="cl">    | read(fd3)  |  拷贝数据（阻塞）
+</span></span><span class="line"><span class="cl">    | ---------&gt; |
+</span></span><span class="line"><span class="cl">    |  返回数据   |
+</span></span><span class="line"><span class="cl">    | &lt;--------- |
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">异步IO（AIO）：
+</span></span><span class="line"><span class="cl">  应用            内核
+</span></span><span class="line"><span class="cl">    | aio_read() |  提交请求
+</span></span><span class="line"><span class="cl">    | ---------&gt; |  内核等待数据+拷贝
+</span></span><span class="line"><span class="cl">    |  立即返回   |
+</span></span><span class="line"><span class="cl">    | &lt;--------- |
+</span></span><span class="line"><span class="cl">    | [继续执行]  |  ─────────────────→ 拷贝完成
+</span></span><span class="line"><span class="cl">    |            |  发送信号/回调通知
+</span></span><span class="line"><span class="cl">    |  处理数据   |</span></span></code></pre></div></div>
+<h3 id="io多路复用selectpollepoll的演进">IO多路复用：select、poll、epoll的演进</h3>
+<table>
+  <thead>
+      <tr>
+          <th>机制</th>
+          <th>实现方式</th>
+          <th>最大fd数</th>
+          <th>时间复杂度</th>
+          <th>数据拷贝</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>select</td>
+          <td>位图数组</td>
+          <td>1024（FD_SETSIZE）</td>
+          <td>O(n)扫描</td>
+          <td>每次调用拷贝fd集合到内核</td>
+      </tr>
+      <tr>
+          <td>poll</td>
+          <td>链表数组</td>
+          <td>无限制（内存限制）</td>
+          <td>O(n)扫描</td>
+          <td>每次调用拷贝fd数组到内核</td>
+      </tr>
+      <tr>
+          <td>epoll</td>
+          <td>红黑树 + 就绪链表</td>
+          <td>无限制</td>
+          <td>O(1)活跃fd</td>
+          <td>首次epoll_ctl拷贝，后续不拷贝</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>epoll的核心机制</strong>：</p>]]></description></item></channel></rss>

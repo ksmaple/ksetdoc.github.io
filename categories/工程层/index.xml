@@ -1,0 +1,1118 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>工程层 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E5%B7%A5%E7%A8%8B%E5%B1%82/</link><description>工程层 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E5%B7%A5%E7%A8%8B%E5%B1%82/" rel="self" type="application/rss+xml"/><item><title>CAT分布式监控</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/cat%E7%9B%91%E6%8E%A7/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/cat%E7%9B%91%E6%8E%A7/</guid><description><![CDATA[<h1 id="cat分布式监控">CAT分布式监控</h1>
+<blockquote>
+<p><strong>核心结论</strong>：CAT通过客户端埋点采集监控数据，通过消息树组织调用链，通过服务端聚合分析，实现从应用性能到业务指标的全链路监控，埋点规范和数据采样是落地关键。</p>
+</blockquote>
+<hr>
+<h2 id="cat通过客户端埋点采集消息树组织服务端聚合实现全链路监控和实时告警">CAT通过客户端埋点采集、消息树组织、服务端聚合，实现全链路监控和实时告警</h2>
+<h3 id="核心概念transactioneventheartbeatmetric">核心概念：Transaction、Event、Heartbeat、Metric</h3>
+<table>
+  <thead>
+      <tr>
+          <th>类型</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Transaction</td>
+          <td>有执行时间的嵌套结构</td>
+          <td>SQL执行、RPC调用、方法执行</td>
+      </tr>
+      <tr>
+          <td>Event</td>
+          <td>无执行时间的离散事件</td>
+          <td>异常、日志、用户行为</td>
+      </tr>
+      <tr>
+          <td>Heartbeat</td>
+          <td>周期性心跳</td>
+          <td>JVM状态、线程数、系统负载</td>
+      </tr>
+      <tr>
+          <td>Metric</td>
+          <td>指标统计</td>
+          <td>QPS、RT、成功率</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">消息树（Message Tree）结构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Root Transaction: URL-/api/order/create
+</span></span><span class="line"><span class="cl">├── Transaction: Service-createOrder (耗时50ms)
+</span></span><span class="line"><span class="cl">│   ├── Transaction: DAO-insertOrder (耗时10ms)
+</span></span><span class="line"><span class="cl">│   │   └── Event: SQL (INSERT INTO order ...)
+</span></span><span class="line"><span class="cl">│   ├── Transaction: Cache-getUser (耗时5ms)
+</span></span><span class="line"><span class="cl">│   └── Transaction: RPC-callPayment (耗时30ms)
+</span></span><span class="line"><span class="cl">│       └── Event: Request (payId=12345)
+</span></span><span class="line"><span class="cl">├── Event: OrderCreated (orderId=10001)
+</span></span><span class="line"><span class="cl">└── Metric: order.create (count=1)</span></span></code></pre></div></div>
+<h3 id="java埋点示例">Java埋点示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Transaction埋点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Transaction</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Cat</span><span class="p">.</span><span class="na">newTransaction</span><span class="p">(</span><span class="s">&#34;Service&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;createOrder&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Order</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orderService</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Cat</span><span class="p">.</span><span class="na">logEvent</span><span class="p">(</span><span class="s">&#34;OrderCreated&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">order</span><span class="p">.</span><span class="na">getId</span><span class="p">()));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="n">Transaction</span><span class="p">.</span><span class="na">SUCCESS</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Cat</span><span class="p">.</span><span class="na">logError</span><span class="p">(</span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">complete</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 简化方式（使用AOP或注解）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@CatTransaction</span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;Service&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;createOrder&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Order</span><span class="w"> </span><span class="nf">createOrder</span><span class="p">(</span><span class="n">OrderRequest</span><span class="w"> </span><span class="n">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">orderService</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>埋点策略</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>核心接口</td>
+          <td>全量Transaction</td>
+          <td>精确监控RT和成功率</td>
+      </tr>
+      <tr>
+          <td>高频调用</td>
+          <td>采样（1%）</td>
+          <td>减少性能开销</td>
+      </tr>
+      <tr>
+          <td>异常处理</td>
+          <td>必报Event</td>
+          <td>不遗漏错误</td>
+      </tr>
+      <tr>
+          <td>业务指标</td>
+          <td>Metric聚合</td>
+          <td>实时大盘</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1埋点过多影响性能">问题1：埋点过多影响性能</h3>
+<p><strong>根因</strong>：每个埋点都有创建和序列化开销
+<strong>解决</strong>：核心链路全量、非核心采样、异步上报</p>]]></description></item><item><title>Docker容器化</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/docker%E5%AE%B9%E5%99%A8%E5%8C%96/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/docker%E5%AE%B9%E5%99%A8%E5%8C%96/</guid><description><![CDATA[<h1 id="docker容器化">Docker容器化</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Docker通过容器技术实现应用与运行环境的打包隔离，通过镜像分层复用减少存储，通过容器运行时提供一致的部署体验，是云原生和微服务部署的基础。</p>
+</blockquote>
+<hr>
+<h2 id="docker通过镜像打包容器隔离分层存储实现应用的标准化交付">Docker通过镜像打包、容器隔离、分层存储实现应用的标准化交付</h2>
+<h3 id="核心概念镜像容器仓库">核心概念：镜像、容器、仓库</h3>
+<table>
+  <thead>
+      <tr>
+          <th>概念</th>
+          <th>说明</th>
+          <th>类比</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>镜像（Image）</td>
+          <td>只读模板，包含应用和依赖</td>
+          <td>类（Class）</td>
+      </tr>
+      <tr>
+          <td>容器（Container）</td>
+          <td>镜像的运行实例</td>
+          <td>对象（Object）</td>
+      </tr>
+      <tr>
+          <td>仓库（Registry）</td>
+          <td>镜像存储和分发</td>
+          <td>Maven仓库</td>
+      </tr>
+      <tr>
+          <td>Dockerfile</td>
+          <td>镜像构建脚本</td>
+          <td>构建脚本</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="dockerfile最佳实践">Dockerfile最佳实践</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-dockerfile">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-dockerfile" data-lang="dockerfile"><span class="line"><span class="cl"><span class="c"># 多阶段构建，减小最终镜像</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">FROM</span><span class="w"> </span><span class="s">maven:3.8</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">build</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">COPY</span> pom.xml .<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">RUN</span> mvn dependency:go-offline<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">COPY</span> src ./src<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">RUN</span> mvn clean package -DskipTests<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">FROM</span><span class="w"> </span><span class="s">eclipse-temurin:17-jre-alpine</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">COPY</span> --from<span class="o">=</span>build /app/target/*.jar app.jar<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">EXPOSE</span><span class="w"> </span><span class="s">8080</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="k">ENTRYPOINT</span> <span class="p">[</span><span class="s2">&#34;java&#34;</span><span class="p">,</span> <span class="s2">&#34;-jar&#34;</span><span class="p">,</span> <span class="s2">&#34;app.jar&#34;</span><span class="p">]</span></span></span></code></pre></div></div>
+<p><strong>优化原则</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>原则</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>多阶段构建</td>
+          <td>编译和运行分离，减小镜像</td>
+      </tr>
+      <tr>
+          <td>基础镜像选Alpine</td>
+          <td>体积小，安全面小</td>
+      </tr>
+      <tr>
+          <td>层缓存优化</td>
+          <td>不常变的指令放前面</td>
+      </tr>
+      <tr>
+          <td>非root运行</td>
+          <td>安全考虑</td>
+      </tr>
+      <tr>
+          <td>.dockerignore</td>
+          <td>排除不需要的文件</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="容器网络与存储">容器网络与存储</h3>
+<table>
+  <thead>
+      <tr>
+          <th>网络模式</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>bridge</td>
+          <td>默认，容器间通过网桥通信</td>
+          <td>单机多容器</td>
+      </tr>
+      <tr>
+          <td>host</td>
+          <td>共享宿主机网络</td>
+          <td>性能要求高</td>
+      </tr>
+      <tr>
+          <td>overlay</td>
+          <td>跨主机容器通信</td>
+          <td>Swarm/K8s</td>
+      </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+      <tr>
+          <th>存储方式</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>bind mount</td>
+          <td>挂载宿主机目录</td>
+          <td>开发调试</td>
+      </tr>
+      <tr>
+          <td>volume</td>
+          <td>Docker管理的数据卷</td>
+          <td>生产持久化</td>
+      </tr>
+      <tr>
+          <td>tmpfs</td>
+          <td>内存存储</td>
+          <td>敏感临时数据</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1镜像过大">问题1：镜像过大</h3>
+<p><strong>根因</strong>：包含不必要的依赖和文件
+<strong>解决</strong>：多阶段构建、Alpine基础镜像、清理缓存</p>]]></description></item><item><title>Elasticsearch核心</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/elasticsearch%E6%A0%B8%E5%BF%83/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/elasticsearch%E6%A0%B8%E5%BF%83/</guid><description><![CDATA[<h1 id="elasticsearch核心">Elasticsearch核心</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Elasticsearch基于Lucene实现分布式搜索，通过倒排索引加速全文检索，通过分片和副本实现水平扩展和高可用，理解索引、分片、映射和查询DSL是使用ES的基础。</p>
+</blockquote>
+<hr>
+<h2 id="elasticsearch基于lucene构建通过分片分布式存储通过倒排索引实现高性能全文搜索">Elasticsearch基于Lucene构建，通过分片分布式存储，通过倒排索引实现高性能全文搜索</h2>
+<h3 id="核心概念索引文档映射分片">核心概念：索引、文档、映射、分片</h3>
+<table>
+  <thead>
+      <tr>
+          <th>概念</th>
+          <th>说明</th>
+          <th>类比关系型数据库</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Index</td>
+          <td>索引，文档的集合</td>
+          <td>Database</td>
+      </tr>
+      <tr>
+          <td>Document</td>
+          <td>文档，一条JSON数据</td>
+          <td>Row</td>
+      </tr>
+      <tr>
+          <td>Mapping</td>
+          <td>映射，字段类型定义</td>
+          <td>Schema</td>
+      </tr>
+      <tr>
+          <td>Type</td>
+          <td>类型（7.0+已废弃）</td>
+          <td>Table</td>
+      </tr>
+      <tr>
+          <td>Shard</td>
+          <td>分片，数据的最小单元</td>
+          <td>Partition</td>
+      </tr>
+      <tr>
+          <td>Replica</td>
+          <td>副本，分片的复制</td>
+          <td>Replica</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">索引结构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Index: products
+</span></span><span class="line"><span class="cl">├── Primary Shard 0 (Node-1)
+</span></span><span class="line"><span class="cl">│   └── Replica 0 (Node-2)
+</span></span><span class="line"><span class="cl">├── Primary Shard 1 (Node-2)
+</span></span><span class="line"><span class="cl">│   └── Replica 1 (Node-3)
+</span></span><span class="line"><span class="cl">├── Primary Shard 2 (Node-3)
+</span></span><span class="line"><span class="cl">│   └── Replica 2 (Node-1)
+</span></span><span class="line"><span class="cl">└── Primary Shard 3 (Node-1)
+</span></span><span class="line"><span class="cl">    └── Replica 3 (Node-2)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">路由：shard = hash(routing) % number_of_primary_shards
+</span></span><span class="line"><span class="cl">routing默认是文档_id</span></span></code></pre></div></div>
+<h3 id="倒排索引与文本分析">倒排索引与文本分析</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">文本分析流程（Analysis）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">原始文本: &#34;The quick brown foxes jumped!&#34;
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">Character Filter: 去除HTML、替换字符
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">Tokenizer: 分词 → [the, quick, brown, foxes, jumped]
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">Token Filter: 
+</span></span><span class="line"><span class="cl">  - Lowercase: [the, quick, brown, foxes, jumped]
+</span></span><span class="line"><span class="cl">  - Stop words: [quick, brown, foxes, jumped]（去除the）
+</span></span><span class="line"><span class="cl">  - Stemming: [quick, brown, fox, jump]（foxes→fox, jumped→jump）
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">存入倒排索引</span></span></code></pre></div></div>
+<p><strong>常用分析器</strong>：</p>]]></description></item><item><title>ES运维问题</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/es%E8%BF%90%E7%BB%B4/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/es%E8%BF%90%E7%BB%B4/</guid><description><![CDATA[<h1 id="es运维问题">ES运维问题</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Elasticsearch运维的核心是平衡搜索性能、索引吞吐和集群稳定性，常见问题集中在磁盘不足、分片过多、内存压力大三个方面，通过索引生命周期管理、分片策略和监控告警体系来系统性解决。</p>
+</blockquote>
+<hr>
+<h2 id="es运维围绕磁盘内存分片三个资源维度通过ilm和监控体系保障集群稳定">ES运维围绕磁盘、内存、分片三个资源维度，通过ILM和监控体系保障集群稳定</h2>
+<h3 id="磁盘不足索引生命周期管理ilm">磁盘不足：索引生命周期管理（ILM）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">索引生命周期：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Hot（热数据） → Warm（温数据） → Cold（冷数据） → Frozen（冻结） → Delete（删除）
+</span></span><span class="line"><span class="cl">   ↓               ↓               ↓                ↓
+</span></span><span class="line"><span class="cl"> 高频搜索      只读，压缩存储   极少访问，慢查询   归档
+</span></span><span class="line"><span class="cl"> 高性能磁盘    普通磁盘          对象存储          低成本存储
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ILM策略示例：
+</span></span><span class="line"><span class="cl">- 创建后1天：进入Hot
+</span></span><span class="line"><span class="cl">- 7天后：进入Warm，缩小分片，forcemerge
+</span></span><span class="line"><span class="cl">- 30天后：进入Cold，关闭索引（只保留元数据）
+</span></span><span class="line"><span class="cl">- 90天后：删除</span></span></code></pre></div></div>
+<p><strong>磁盘优化措施</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>措施</th>
+          <th>效果</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Force Merge</td>
+          <td>合并段，减少文件数，降低磁盘占用</td>
+      </tr>
+      <tr>
+          <td>_shrink</td>
+          <td>缩小索引分片数</td>
+      </tr>
+      <tr>
+          <td>关闭索引（Close）</td>
+          <td>释放文件句柄，保留元数据</td>
+      </tr>
+      <tr>
+          <td>删除旧索引</td>
+          <td>释放磁盘</td>
+      </tr>
+      <tr>
+          <td>压缩存储（best_compression）</td>
+          <td>牺牲CPU换磁盘</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="分片策略避免过多或过少">分片策略：避免过多或过少</h3>
+<table>
+  <thead>
+      <tr>
+          <th>问题</th>
+          <th>原因</th>
+          <th>解决</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>分片过多</td>
+          <td>每个分片有内存开销，元数据压力大</td>
+          <td>合并索引，使用_shrink</td>
+      </tr>
+      <tr>
+          <td>分片过少</td>
+          <td>无法利用多节点并行</td>
+          <td>按30-50GB/分片预估</td>
+      </tr>
+      <tr>
+          <td>分片不均</td>
+          <td>节点负载不均</td>
+          <td>调整routing或rebalance</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>分片数量建议</strong>：</p>]]></description></item><item><title>JVM与系统问题排查</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/jvm%E7%B3%BB%E7%BB%9F%E6%8E%92%E6%9F%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/jvm%E7%B3%BB%E7%BB%9F%E6%8E%92%E6%9F%A5/</guid><description><![CDATA[<h1 id="jvm与系统问题排查">JVM与系统问题排查</h1>
+<blockquote>
+<p><strong>核心结论</strong>：JVM问题排查遵循&quot;监控发现→日志定位→工具分析→验证修复&quot;的流程，CPU高通常与热点代码或死循环有关，内存泄漏需通过堆dump分析对象引用链，GC问题需结合日志和可视化工具判断。</p>
+</blockquote>
+<hr>
+<h2 id="jvm问题排查遵循从监控到工具分析的系统化流程cpu内存gc是三大核心排查方向">JVM问题排查遵循从监控到工具分析的系统化流程，CPU、内存、GC是三大核心排查方向</h2>
+<h3 id="cpu高排查流程">CPU高排查流程</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 定位高CPU进程
+</span></span><span class="line"><span class="cl">   top / htop → 找到PID
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 定位高CPU线程
+</span></span><span class="line"><span class="cl">   top -Hp PID → 找到TID
+</span></span><span class="line"><span class="cl">   printf &#34;%x\n&#34; TID → 转换为十六进制
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 查看线程堆栈
+</span></span><span class="line"><span class="cl">   jstack PID | grep TID_HEX -A 30
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">4. 分析热点代码
+</span></span><span class="line"><span class="cl">   - 某方法执行时间长 → 优化算法
+</span></span><span class="line"><span class="cl">   - 频繁GC → 调整GC参数或内存
+</span></span><span class="line"><span class="cl">   - 死循环 → 修复代码</span></span></code></pre></div></div>
+<h3 id="内存泄漏排查">内存泄漏排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 发现内存增长
+</span></span><span class="line"><span class="cl">   jstat -gcutil PID 1000 → 观察老年代增长
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">2. 生成堆dump
+</span></span><span class="line"><span class="cl">   jmap -dump:format=b,file=heap.hprof PID
+</span></span><span class="line"><span class="cl">   或 -XX:+HeapDumpOnOutOfMemoryError
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 分析dump文件
+</span></span><span class="line"><span class="cl">   MAT（Eclipse Memory Analyzer）
+</span></span><span class="line"><span class="cl">   - Dominator Tree：查看大对象
+</span></span><span class="line"><span class="cl">   - Path to GC Roots：查看引用链
+</span></span><span class="line"><span class="cl">   - Leak Suspects：自动泄漏报告
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">常见泄漏源：
+</span></span><span class="line"><span class="cl">- 静态集合缓存未清理
+</span></span><span class="line"><span class="cl">- ThreadLocal未remove
+</span></span><span class="line"><span class="cl">- 未关闭的资源（流、连接）
+</span></span><span class="line"><span class="cl">- 监听器未注销</span></span></code></pre></div></div>
+<h3 id="gc问题排查">GC问题排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 启用GC日志
+</span></span><span class="line"><span class="cl">   -Xlog:gc*:file=gc.log:time:filecount=5,filesize=100m
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 分析GC日志
+</span></span><span class="line"><span class="cl">   - GCeasy（在线工具）
+</span></span><span class="line"><span class="cl">   - gceasy.io
+</span></span><span class="line"><span class="cl">   - GCViewer（本地工具）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 关键指标
+</span></span><span class="line"><span class="cl">   - GC频率：多久一次
+</span></span><span class="line"><span class="cl">   - GC耗时：STW时间
+</span></span><span class="line"><span class="cl">   - 内存回收率：每次回收多少
+</span></span><span class="line"><span class="cl">   - 晋升速率：对象进入老年代速度
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">调优方向：
+</span></span><span class="line"><span class="cl">- 堆太小 → 频繁GC → 增大堆
+</span></span><span class="line"><span class="cl">- 年轻代太小 → 对象过早晋升 → 增大新生代
+</span></span><span class="line"><span class="cl">- 大对象多 → 分配失败 → 调整大对象阈值</span></span></code></pre></div></div>
+<hr>
+<h2 id="常用排查命令速查">常用排查命令速查</h2>
+<table>
+  <thead>
+      <tr>
+          <th>问题</th>
+          <th>命令</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>CPU高</td>
+          <td>top + jstack</td>
+          <td>定位线程和热点代码</td>
+      </tr>
+      <tr>
+          <td>内存占用</td>
+          <td>jmap -heap</td>
+          <td>堆内存分布</td>
+      </tr>
+      <tr>
+          <td>内存泄漏</td>
+          <td>jmap -dump + MAT</td>
+          <td>分析对象引用</td>
+      </tr>
+      <tr>
+          <td>GC情况</td>
+          <td>jstat -gcutil</td>
+          <td>实时GC统计</td>
+      </tr>
+      <tr>
+          <td>线程死锁</td>
+          <td>jstack -l</td>
+          <td>查看死锁信息</td>
+      </tr>
+      <tr>
+          <td>类加载</td>
+          <td>jcmd PID VM.classloader_stats</td>
+          <td>类加载器统计</td>
+      </tr>
+      <tr>
+          <td>系统调用</td>
+          <td>strace -p PID</td>
+          <td>跟踪系统调用</td>
+      </tr>
+      <tr>
+          <td>网络连接</td>
+          <td>netstat -anp / ss -s</td>
+          <td>连接状态统计</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e7%bc%96%e7%a8%8b%e8%af%ad%e8%a8%80/JVM%e5%8e%9f%e7%90%86.md" rel="">JVM原理</a></li>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f/CPU%e8%b0%83%e5%ba%a6.md" rel="">CPU调度与上下文切换</a></li>
+<li><a href="./CAT%e7%9b%91%e6%8e%a7.md" rel="">CAT分布式监控</a></li>
+</ul>]]></description></item><item><title>Kubernetes</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/kubernetes/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/kubernetes/</guid><description><![CDATA[<h1 id="kubernetes">Kubernetes</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Kubernetes通过声明式API管理容器化应用，通过Pod、Service、Deployment等抽象提供自动化部署、弹性伸缩和自我修复能力，是容器编排的事实标准。</p>
+</blockquote>
+<hr>
+<h2 id="kubernetes通过控制循环实现声明式管理通过分层抽象简化容器编排">Kubernetes通过控制循环实现声明式管理，通过分层抽象简化容器编排</h2>
+<h3 id="核心对象">核心对象</h3>
+<table>
+  <thead>
+      <tr>
+          <th>对象</th>
+          <th>职责</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Pod</td>
+          <td>最小调度单元</td>
+          <td>包含一个或多个容器</td>
+      </tr>
+      <tr>
+          <td>Deployment</td>
+          <td>无状态应用管理</td>
+          <td>滚动更新、回滚、扩缩容</td>
+      </tr>
+      <tr>
+          <td>StatefulSet</td>
+          <td>有状态应用管理</td>
+          <td>稳定网络标识、有序部署</td>
+      </tr>
+      <tr>
+          <td>Service</td>
+          <td>服务发现</td>
+          <td>ClusterIP/NodePort/LoadBalancer</td>
+      </tr>
+      <tr>
+          <td>Ingress</td>
+          <td>七层路由</td>
+          <td>HTTP/HTTPS路由规则</td>
+      </tr>
+      <tr>
+          <td>ConfigMap/Secret</td>
+          <td>配置管理</td>
+          <td>配置与镜像分离</td>
+      </tr>
+      <tr>
+          <td>PV/PVC</td>
+          <td>存储管理</td>
+          <td>持久化存储抽象</td>
+      </tr>
+      <tr>
+          <td>HPA</td>
+          <td>自动伸缩</td>
+          <td>基于CPU/内存/自定义指标</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="deployment配置示例">Deployment配置示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Deployment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">registry/order-service:v1.0.0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;512Mi&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;500m&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">limits</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1Gi&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1000m&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">livenessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/actuator/health</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">30</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">readinessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/actuator/health</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">5</span></span></span></code></pre></div></div>
+<h3 id="pod生命周期与探针">Pod生命周期与探针</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Pending → Running → Succeeded/Failed/Unknown
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">探针类型：
+</span></span><span class="line"><span class="cl">- LivenessProbe：容器是否存活，失败则重启
+</span></span><span class="line"><span class="cl">- ReadinessProbe：容器是否就绪，失败则从Service摘除
+</span></span><span class="line"><span class="cl">- StartupProbe：容器是否启动完成，替代Liveness的initialDelay</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1pod频繁重启">问题1：Pod频繁重启</h3>
+<p><strong>根因</strong>：LivenessProbe配置不当或应用启动慢
+<strong>解决</strong>：调整探针参数、增加StartupProbe</p>]]></description></item><item><title>RAG与向量检索</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/rag%E4%B8%8E%E5%90%91%E9%87%8F%E6%90%9C%E7%B4%A2/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/rag%E4%B8%8E%E5%90%91%E9%87%8F%E6%90%9C%E7%B4%A2/</guid><description><![CDATA[<h1 id="rag与向量检索">RAG与向量检索</h1>
+<blockquote>
+<p><strong>核心结论</strong>：RAG通过向量检索获取相关知识再生成回答，解决了大模型幻觉和知识时效问题，向量检索的核心是Embedding模型将文本转为高维向量，通过ANN算法在毫秒级找到最近邻。</p>
+</blockquote>
+<hr>
+<h2 id="rag通过向量检索获取上下文再生成embeddingann是语义搜索的核心技术栈">RAG通过向量检索获取上下文再生成，Embedding+ANN是语义搜索的核心技术栈</h2>
+<h3 id="rag架构检索增强生成">RAG架构：检索增强生成</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户提问: &#34;公司的年假政策是什么？&#34;
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">Embedding模型 → 将问题转为向量 Query-Vector
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">向量数据库检索 → 找出Top-K相似的文档片段
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">构建Prompt: 
+</span></span><span class="line"><span class="cl">  &#34;基于以下信息回答问题：
+</span></span><span class="line"><span class="cl">   [文档片段1] [文档片段2] [文档片段3]
+</span></span><span class="line"><span class="cl">   问题：公司的年假政策是什么？&#34;
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">LLM生成回答</span></span></code></pre></div></div>
+<p><strong>RAG vs 微调</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>RAG</th>
+          <th>微调</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>知识更新</td>
+          <td>实时（更新向量库）</td>
+          <td>需重新训练</td>
+      </tr>
+      <tr>
+          <td>成本</td>
+          <td>低</td>
+          <td>高</td>
+      </tr>
+      <tr>
+          <td>幻觉控制</td>
+          <td>好（基于检索内容）</td>
+          <td>一般</td>
+      </tr>
+      <tr>
+          <td>适用场景</td>
+          <td>知识库问答、客服</td>
+          <td>特定风格/格式</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="embedding与向量相似度">Embedding与向量相似度</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">文本 → Embedding模型 → 高维向量（如1536维）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">相似度计算：
+</span></span><span class="line"><span class="cl">  - 余弦相似度：向量夹角余弦值（最常用）
+</span></span><span class="line"><span class="cl">  - 欧氏距离：向量空间直线距离
+</span></span><span class="line"><span class="cl">  - 点积：考虑向量长度
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">余弦相似度 = (A · B) / (||A|| × ||B||)
+</span></span><span class="line"><span class="cl">  值域[-1, 1]，1表示完全相同方向</span></span></code></pre></div></div>
+<p><strong>常用Embedding模型</strong>：</p>]]></description></item><item><title>Serverless</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%A6%82%E5%BF%B5/serverless/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%A6%82%E5%BF%B5/serverless/</guid><description><![CDATA[<h1 id="serverless">Serverless</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Serverless通过事件驱动、按量计费、自动伸缩将运维负担彻底转移给云厂商，适合流量波动大、执行时间短的场景，但冷启动和厂商锁定是需要权衡的核心问题。</p>
+</blockquote>
+<hr>
+<h2 id="serverless通过将服务器管理抽象化让开发者只关注代码和事件由平台自动处理运行和扩缩容">Serverless通过将服务器管理抽象化，让开发者只关注代码和事件，由平台自动处理运行和扩缩容</h2>
+<h3 id="核心模型">核心模型</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">事件源（触发器）        函数计算平台           后端服务
+</span></span><span class="line"><span class="cl">├── HTTP请求    →    自动分配容器    →    数据库
+</span></span><span class="line"><span class="cl">├── 定时任务    →    执行用户代码    →    缓存
+</span></span><span class="line"><span class="cl">├── MQ消息      →    按调用时长计费  →    对象存储
+</span></span><span class="line"><span class="cl">└── 文件上传    →    执行完成后释放  →    第三方API</span></span></code></pre></div></div>
+<h3 id="faas-vs-传统部署">FaaS vs 传统部署</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>传统服务</th>
+          <th>Serverless</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>资源管理</td>
+          <td>预购服务器/容器</td>
+          <td>按需分配</td>
+      </tr>
+      <tr>
+          <td>计费方式</td>
+          <td>按规格包年包月</td>
+          <td>按调用次数+执行时长</td>
+      </tr>
+      <tr>
+          <td>扩缩容</td>
+          <td>手动或HPA配置</td>
+          <td>毫秒级自动伸缩</td>
+      </tr>
+      <tr>
+          <td>运维负担</td>
+          <td>需要维护服务器</td>
+          <td>零服务器管理</td>
+      </tr>
+      <tr>
+          <td>冷启动</td>
+          <td>无（常驻）</td>
+          <td>有（容器预热）</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="冷启动优化">冷启动优化</h3>
+<table>
+  <thead>
+      <tr>
+          <th>优化手段</th>
+          <th>原理</th>
+          <th>效果</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>预留实例</td>
+          <td>预置常驻容器</td>
+          <td>消除冷启动</td>
+      </tr>
+      <tr>
+          <td>单实例多并发</td>
+          <td>一个容器处理多个请求</td>
+          <td>减少实例创建</td>
+      </tr>
+      <tr>
+          <td>精简依赖包</td>
+          <td>减小镜像体积</td>
+          <td>加快拉取和加载</td>
+      </tr>
+      <tr>
+          <td>保持连接池</td>
+          <td>复用数据库连接</td>
+          <td>减少连接建立时间</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="适用场景">适用场景</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>原因</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>定时任务</td>
+          <td>低频执行，常驻浪费</td>
+          <td>数据清理、报表生成</td>
+      </tr>
+      <tr>
+          <td>文件处理</td>
+          <td>触发式执行</td>
+          <td>图片压缩、视频转码</td>
+      </tr>
+      <tr>
+          <td>Webhook</td>
+          <td>异步、流量不均</td>
+          <td>支付回调、Git事件</td>
+      </tr>
+      <tr>
+          <td>API网关后端</td>
+          <td>简单业务逻辑</td>
+          <td>BFF层、数据转换</td>
+      </tr>
+      <tr>
+          <td>边缘计算</td>
+          <td>就近执行</td>
+          <td>CDN边缘脚本</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="不适用的场景">不适用的场景</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>长连接服务</td>
+          <td>持续计费不经济</td>
+      </tr>
+      <tr>
+          <td>低延迟敏感</td>
+          <td>冷启动不可控</td>
+      </tr>
+      <tr>
+          <td>有状态服务</td>
+          <td>实例无状态，数据需外置</td>
+      </tr>
+      <tr>
+          <td>大计算任务</td>
+          <td>执行时长受限、超时风险</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1冷启动导致接口超时">问题1：冷启动导致接口超时</h3>
+<p><strong>根因</strong>：函数长时间未被调用，容器被回收后重新初始化
+<strong>解决</strong>：配置最小实例数保留预热容器，或改用预留实例</p>]]></description></item><item><title>Service Mesh</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%A6%82%E5%BF%B5/service-mesh/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%A6%82%E5%BF%B5/service-mesh/</guid><description><![CDATA[<h1 id="service-mesh">Service Mesh</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Service Mesh通过Sidecar代理将服务间通信从业务代码中剥离，实现流量治理、安全通信和可观测性的基础设施化，是微服务治理的演进方向。</p>
+</blockquote>
+<hr>
+<h2 id="service-mesh通过sidecar代理统一接管服务间流量在业务无感知的情况下实现治理与观测">Service Mesh通过Sidecar代理统一接管服务间流量，在业务无感知的情况下实现治理与观测</h2>
+<h3 id="核心架构">核心架构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">传统微服务                        Service Mesh
+</span></span><span class="line"><span class="cl">业务A ←→ 业务B                    业务A → Sidecar → Sidecar → 业务B
+</span></span><span class="line"><span class="cl">  ↓  服务发现/熔断/重试               ↑         ↑         ↑
+</span></span><span class="line"><span class="cl">  ↓  负载均衡/链路追踪             (治理能力下沉到基础设施层)
+</span></span><span class="line"><span class="cl">  ↓  全写在业务代码里</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>组件</th>
+          <th>职责</th>
+          <th>代表产品</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>数据面</td>
+          <td>Sidecar代理，实际转发流量</td>
+          <td>Envoy、Linkerd-proxy</td>
+      </tr>
+      <tr>
+          <td>控制面</td>
+          <td>配置下发、证书管理、策略控制</td>
+          <td>Istio、Linkerd、Consul</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="核心能力">核心能力</h3>
+<table>
+  <thead>
+      <tr>
+          <th>能力</th>
+          <th>说明</th>
+          <th>配置方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>流量路由</td>
+          <td>按版本/权重/Header分发</td>
+          <td>VirtualService</td>
+      </tr>
+      <tr>
+          <td>灰度发布</td>
+          <td>金丝雀、蓝绿部署</td>
+          <td>流量比例控制</td>
+      </tr>
+      <tr>
+          <td>熔断降级</td>
+          <td>失败率/慢请求触发熔断</td>
+          <td>DestinationRule</td>
+      </tr>
+      <tr>
+          <td>超时重试</td>
+          <td>自动重试与超时控制</td>
+          <td>路由规则</td>
+      </tr>
+      <tr>
+          <td>mTLS</td>
+          <td>服务间自动双向TLS</td>
+          <td>PeerAuthentication</td>
+      </tr>
+      <tr>
+          <td>可观测性</td>
+          <td>自动生成指标、日志、追踪</td>
+          <td>无需埋点</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="istio配置示例">Istio配置示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># 流量路由：将 v2 版本 10% 流量分配给 reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.istio.io/v1beta1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">VirtualService</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">route</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">destination</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">subset</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="m">90</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">destination</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">subset</span><span class="p">:</span><span class="w"> </span><span class="l">v2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c"># 熔断配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.istio.io/v1beta1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">DestinationRule</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">reviews</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">trafficPolicy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">connectionPool</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">tcp</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">maxConnections</span><span class="p">:</span><span class="w"> </span><span class="m">100</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">http1MaxPendingRequests</span><span class="p">:</span><span class="w"> </span><span class="m">50</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">outlierDetection</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">consecutiveErrors</span><span class="p">:</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l">30s</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">baseEjectionTime</span><span class="p">:</span><span class="w"> </span><span class="l">30s</span></span></span></code></pre></div></div>
+<h3 id="sidecar模式演进">Sidecar模式演进</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>延迟</th>
+          <th>资源占用</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Sidecar（传统）</td>
+          <td>1-2ms</td>
+          <td>每Pod一个代理</td>
+          <td>通用场景</td>
+      </tr>
+      <tr>
+          <td>Sidecarless（Ambient）</td>
+          <td>&lt;1ms</td>
+          <td>节点级代理</td>
+          <td>大规模集群</td>
+      </tr>
+      <tr>
+          <td>eBPF</td>
+          <td>接近零</td>
+          <td>内核态处理</td>
+          <td>高性能要求</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1引入service-mesh后延迟增加">问题1：引入Service Mesh后延迟增加</h3>
+<p><strong>根因</strong>：流量多经过Sidecar一跳，mTLS增加握手开销
+<strong>解决</strong>：Ambient模式减少代理数量，连接池复用，选择性关闭mTLS</p>]]></description></item><item><title>SkyWalking链路追踪</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/skywalking/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/skywalking/</guid><description><![CDATA[<h1 id="skywalking链路追踪">SkyWalking链路追踪</h1>
+<blockquote>
+<p><strong>核心结论</strong>：SkyWalking通过探针自动采集调用链数据，通过OAP服务端分析聚合，通过UI可视化展示，支持无侵入式接入，是云原生环境下应用性能监控的标准方案。</p>
+</blockquote>
+<hr>
+<h2 id="skywalking通过探针自动采集oap分析ui可视化实现无侵入式全链路追踪">SkyWalking通过探针自动采集、OAP分析、UI可视化，实现无侵入式全链路追踪</h2>
+<h3 id="核心架构探针-oap-存储-ui">核心架构：探针-OAP-存储-UI</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">┌──────────┐      ┌─────────┐      ┌──────────┐      ┌────────┐
+</span></span><span class="line"><span class="cl">│  Agent   │ ───→ │   OAP   │ ───→ │ Storage  │ ←──→ │   UI   │
+</span></span><span class="line"><span class="cl">│ (探针)    │ gRPC │ (分析)   │      │ (ES/H2)  │      │ (可视化)│
+</span></span><span class="line"><span class="cl">└──────────┘      └─────────┘      └──────────┘      └────────┘
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">探针类型：
+</span></span><span class="line"><span class="cl">- Java Agent：字节码增强，无侵入
+</span></span><span class="line"><span class="cl">- Sidecar：Envoy/Service Mesh集成
+</span></span><span class="line"><span class="cl">- 语言探针：Go/Node.js/Python等</span></span></code></pre></div></div>
+<p><strong>自动采集的Span类型</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>Span类型</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Entry Span</td>
+          <td>请求入口（HTTP/RPC接收）</td>
+      </tr>
+      <tr>
+          <td>Exit Span</td>
+          <td>请求出口（HTTP/RPC发送）</td>
+      </tr>
+      <tr>
+          <td>Local Span</td>
+          <td>本地方法</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="java-agent接入">Java Agent接入</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># JVM启动参数</span>
+</span></span><span class="line"><span class="cl">-javaagent:/path/to/skywalking-agent.jar
+</span></span><span class="line"><span class="cl">-DSW_AGENT_NAME<span class="o">=</span>order-service
+</span></span><span class="line"><span class="cl">-DSW_AGENT_COLLECTOR_BACKEND_SERVICES<span class="o">=</span>127.0.0.1:11800</span></span></code></pre></div></div>
+<p><strong>自动拦截的组件</strong>：</p>]]></description></item></channel></rss>

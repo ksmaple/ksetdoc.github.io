@@ -1,0 +1,38 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Bitmap - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/bitmap/</link><description>Bitmap - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/bitmap/" rel="self" type="application/rss+xml"/><item><title>位图与布隆过滤器</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E4%BD%8D%E5%9B%BE%E4%B8%8E%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E4%BD%8D%E5%9B%BE%E4%B8%8E%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/</guid><description><![CDATA[<h1 id="位图与布隆过滤器">位图与布隆过滤器</h1>
+<blockquote>
+<p><strong>核心结论</strong>：位图用1bit表示一个状态，将存储空间压缩至1/8，适合大规模去重和状态标记；布隆过滤器在位图基础上增加多哈希函数，以可控的假阳性为代价实现O(1)的成员查询，是缓存穿透防护和大集合判存的经典方案。</p>
+</blockquote>
+<hr>
+<h2 id="位图将状态压缩到1bit布隆过滤器用多哈希位图实现概率型判存二者核心都是空间换时间">位图将状态压缩到1bit，布隆过滤器用多哈希+位图实现概率型判存，二者核心都是空间换时间</h2>
+<h3 id="位图bitmap用bit数组表示状态集合">位图（Bitmap）：用bit数组表示状态集合</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">存储10亿个int（约4GB） vs 位图标记10亿个状态（约119MB）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">10亿个整数（去重判断）：
+</span></span><span class="line"><span class="cl">  HashSet: 10亿 * 4字节 ≈ 4GB（不考虑HashMap开销）
+</span></span><span class="line"><span class="cl">  位图: 10亿 bit = 10^9 / 8 ≈ 119MB
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  压缩比: 4GB / 119MB ≈ 34倍</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java中的位图实现：BitSet</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">BitSet</span><span class="w"> </span><span class="n">bitSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BitSet</span><span class="p">(</span><span class="n">1000000000</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 标记数字n存在</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">bitSet</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="n">n</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 判断数字n是否存在</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kt">boolean</span><span class="w"> </span><span class="n">exists</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bitSet</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">n</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 位运算本质</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 第n位: arr[n/64] 的第 (n%64) 位</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 设置: arr[index] |= (1L &lt;&lt; offset)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">查询</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="n">arr</span><span class="o">[</span><span class="n">index</span><span class="o">]</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">offset</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">1</span></span></span></code></pre></div></div>
+<p><strong>位图的应用场景</strong>：</p>]]></description></item></channel></rss>

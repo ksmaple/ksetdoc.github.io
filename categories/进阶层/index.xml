@@ -1,0 +1,851 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>进阶层 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E8%BF%9B%E9%98%B6%E5%B1%82/</link><description>进阶层 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E8%BF%9B%E9%98%B6%E5%B1%82/" rel="self" type="application/rss+xml"/><item><title>API网关</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/api%E7%BD%91%E5%85%B3/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/api%E7%BD%91%E5%85%B3/</guid><description><![CDATA[<h1 id="api网关">API网关</h1>
+<blockquote>
+<p><strong>核心结论</strong>：API网关作为微服务入口，统一处理路由转发、协议转换、安全认证、限流熔断等横切关注点，将后端服务的复杂性对客户端屏蔽，是微服务架构的关键基础设施。</p>
+</blockquote>
+<hr>
+<h2 id="api网关通过统一入口聚合微服务通过过滤器链处理横切关注点将客户端与后端服务解耦">API网关通过统一入口聚合微服务，通过过滤器链处理横切关注点，将客户端与后端服务解耦</h2>
+<h3 id="网关的核心职责路由--横切关注点">网关的核心职责：路由 + 横切关注点</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">客户端请求 → API网关 → 路由匹配 → 过滤器链 → 后端服务
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            ┌─────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">            │           API Gateway                │
+</span></span><span class="line"><span class="cl">            │  ┌───────────────────────────────┐  │
+</span></span><span class="line"><span class="cl">            │  │  全局过滤器（GlobalFilter）    │  │
+</span></span><span class="line"><span class="cl">            │  │  - 认证鉴权                    │  │
+</span></span><span class="line"><span class="cl">            │  │  - 日志记录                    │  │
+</span></span><span class="line"><span class="cl">            │  │  - 限流熔断                    │  │
+</span></span><span class="line"><span class="cl">            │  └───────────────────────────────┘  │
+</span></span><span class="line"><span class="cl">            │                ↓                     │
+</span></span><span class="line"><span class="cl">            │  ┌───────────────────────────────┐  │
+</span></span><span class="line"><span class="cl">            │  │  路由过滤器（GatewayFilter）   │  │
+</span></span><span class="line"><span class="cl">            │  │  - 路径重写                    │  │
+</span></span><span class="line"><span class="cl">            │  │  - 请求/响应修改               │  │
+</span></span><span class="line"><span class="cl">            │  │  - 重试                        │  │
+</span></span><span class="line"><span class="cl">            │  └───────────────────────────────┘  │
+</span></span><span class="line"><span class="cl">            │                ↓                     │
+</span></span><span class="line"><span class="cl">            │  ┌───────────────────────────────┐  │
+</span></span><span class="line"><span class="cl">            │  │  负载均衡 → 后端服务           │  │
+</span></span><span class="line"><span class="cl">            │  └───────────────────────────────┘  │
+</span></span><span class="line"><span class="cl">            └─────────────────────────────────────┘</span></span></code></pre></div></div>
+<p><strong>核心功能</strong>：</p>]]></description></item><item><title>Dubbo RPC框架</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/dubbo/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/dubbo/</guid><description><![CDATA[<h1 id="dubbo-rpc框架">Dubbo RPC框架</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Dubbo通过注册中心实现服务自动发现，通过代理模式屏蔽远程调用细节，通过集群策略处理容错和负载均衡，是Java生态中成熟的RPC解决方案。</p>
+</blockquote>
+<hr>
+<h2 id="dubbo通过注册中心解耦服务提供者与消费者通过代理和协议层屏蔽远程调用差异通过集群策略实现容错和负载均衡">Dubbo通过注册中心解耦服务提供者与消费者，通过代理和协议层屏蔽远程调用差异，通过集群策略实现容错和负载均衡</h2>
+<h3 id="核心架构provider-consumer-registry-monitor">核心架构：Provider-Consumer-Registry-Monitor</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">┌─────────────┐         注册/发现          ┌─────────────┐
+</span></span><span class="line"><span class="cl">│   Provider   │ ───────────────────────→ │   Registry   │
+</span></span><span class="line"><span class="cl">│  (服务提供者) │ ←─────────────────────── │  (注册中心)   │
+</span></span><span class="line"><span class="cl">└──────┬──────┘      服务地址列表           └──────┬──────┘
+</span></span><span class="line"><span class="cl">       │                                         │
+</span></span><span class="line"><span class="cl">       │           RPC调用（Netty/HTTP）          │
+</span></span><span class="line"><span class="cl">       │ ←─────────────────────────────────────→ │
+</span></span><span class="line"><span class="cl">       │                                         │
+</span></span><span class="line"><span class="cl">┌──────┴──────┐                                  │
+</span></span><span class="line"><span class="cl">│   Consumer   │                                  │
+</span></span><span class="line"><span class="cl">│  (服务消费者) │                                  │
+</span></span><span class="line"><span class="cl">└─────────────┘                                  │
+</span></span><span class="line"><span class="cl">                                                 │
+</span></span><span class="line"><span class="cl">┌─────────────┐                                  │
+</span></span><span class="line"><span class="cl">│   Monitor    │ ←───────────────────────────────┘
+</span></span><span class="line"><span class="cl">│  (监控中心)   │        调用统计上报
+</span></span><span class="line"><span class="cl">└─────────────┘</span></span></code></pre></div></div>
+<p><strong>核心角色</strong>：</p>]]></description></item><item><title>Java反射机制</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/java%E5%8F%8D%E5%B0%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/java%E5%8F%8D%E5%B0%84/</guid><description><![CDATA[<h1 id="java反射机制">Java反射机制</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Java反射允许运行时检查和操作类结构，是框架实现解耦的基础，但性能开销较大；MethodHandle和VarHandle在JDK7+提供了更高效的替代方案，反射调用应尽量缓存和避免在热路径使用。</p>
+</blockquote>
+<hr>
+<h2 id="反射通过运行时元数据操作类成员是框架基石但性能较差methodhandle提供了更高效的替代">反射通过运行时元数据操作类成员，是框架基石但性能较差，MethodHandle提供了更高效的替代</h2>
+<h3 id="反射基础运行时窥探和操作类结构">反射基础：运行时窥探和操作类结构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 获取Class对象</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">clazz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Class</span><span class="p">.</span><span class="na">forName</span><span class="p">(</span><span class="s">&#34;com.example.User&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 或</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">clazz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">User</span><span class="p">.</span><span class="na">class</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 或</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">clazz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">user</span><span class="p">.</span><span class="na">getClass</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 创建实例</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">User</span><span class="p">)</span><span class="w"> </span><span class="n">clazz</span><span class="p">.</span><span class="na">getDeclaredConstructor</span><span class="p">().</span><span class="na">newInstance</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 获取和调用方法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Method</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">clazz</span><span class="p">.</span><span class="na">getDeclaredMethod</span><span class="p">(</span><span class="s">&#34;setName&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">class</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">method</span><span class="p">.</span><span class="na">setAccessible</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span><span class="w">  </span><span class="c1">// 绕过访问控制</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">method</span><span class="p">.</span><span class="na">invoke</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;Tom&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 获取和修改字段</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Field</span><span class="w"> </span><span class="n">field</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">clazz</span><span class="p">.</span><span class="na">getDeclaredField</span><span class="p">(</span><span class="s">&#34;age&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">field</span><span class="p">.</span><span class="na">setAccessible</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">field</span><span class="p">.</span><span class="na">setInt</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="n">25</span><span class="p">);</span></span></span></code></pre></div></div>
+<p><strong>反射API核心类</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>类</th>
+          <th>用途</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Class</td>
+          <td>类的元数据</td>
+      </tr>
+      <tr>
+          <td>Field</td>
+          <td>字段信息</td>
+      </tr>
+      <tr>
+          <td>Method</td>
+          <td>方法信息</td>
+      </tr>
+      <tr>
+          <td>Constructor</td>
+          <td>构造器信息</td>
+      </tr>
+      <tr>
+          <td>Modifier</td>
+          <td>修饰符解析</td>
+      </tr>
+      <tr>
+          <td>Array</td>
+          <td>数组操作</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="反射的性能问题与优化">反射的性能问题与优化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">反射调用慢的原因：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 安全检查：每次调用都进行访问权限检查
+</span></span><span class="line"><span class="cl">   → 优化：setAccessible(true) + 缓存
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 参数包装/解包：基本类型需装箱拆箱
+</span></span><span class="line"><span class="cl">   → 优化：使用特定类型方法（setInt, invokeExact）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 方法分派：无法内联优化
+</span></span><span class="line"><span class="cl">   → 优化：JIT编译后可能优化，但不稳定
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">4. 元数据查找：每次查找Method/Field对象
+</span></span><span class="line"><span class="cl">   → 优化：缓存Method/Field对象</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 反射优化：缓存Method对象</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ReflectiveCache</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Method</span><span class="w"> </span><span class="n">CACHED_METHOD</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Method</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">User</span><span class="p">.</span><span class="na">class</span><span class="p">.</span><span class="na">getDeclaredMethod</span><span class="p">(</span><span class="s">&#34;setName&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">class</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">m</span><span class="p">.</span><span class="na">setAccessible</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span><span class="w">  </span><span class="c1">// 关闭安全检查</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">CACHED_METHOD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RuntimeException</span><span class="p">(</span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setName</span><span class="p">(</span><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">CACHED_METHOD</span><span class="p">.</span><span class="na">invoke</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w">  </span><span class="c1">// 复用缓存的Method</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="methodhandle更高效的反射替代">MethodHandle：更高效的反射替代</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// MethodHandle使用</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">MethodHandles</span><span class="p">.</span><span class="na">Lookup</span><span class="w"> </span><span class="n">lookup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MethodHandles</span><span class="p">.</span><span class="na">lookup</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">MethodType</span><span class="w"> </span><span class="n">mt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MethodType</span><span class="p">.</span><span class="na">methodType</span><span class="p">(</span><span class="kt">void</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">class</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">MethodHandle</span><span class="w"> </span><span class="n">mh</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lookup</span><span class="p">.</span><span class="na">findVirtual</span><span class="p">(</span><span class="n">User</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;setName&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">mt</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">User</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">mh</span><span class="p">.</span><span class="na">invoke</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;Tom&#34;</span><span class="p">);</span><span class="w">  </span><span class="c1">// 直接调用，无反射开销</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// invokeExact要求参数类型精确匹配</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">mh</span><span class="p">.</span><span class="na">invokeExact</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;Tom&#34;</span><span class="p">);</span><span class="w">  </span><span class="o">//</span><span class="w"> </span><span class="n">编译期检查类型</span></span></span></code></pre></div></div>
+<p><strong>反射 vs MethodHandle vs LambdaMetafactory</strong>：</p>]]></description></item><item><title>JUC并发工具包</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/juc%E5%B7%A5%E5%85%B7%E5%8C%85/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/juc%E5%B7%A5%E5%85%B7%E5%8C%85/</guid><description><![CDATA[<h1 id="juc并发工具包">JUC并发工具包</h1>
+<blockquote>
+<p><strong>核心结论</strong>：JUC通过Lock体系替代synchronized提供灵活锁机制，通过Semaphore控制并发数，通过CountDownLatch和CyclicBarrier协调多线程执行节奏，通过CompletableFuture实现异步编排，覆盖了从互斥到协作的完整并发控制场景。</p>
+</blockquote>
+<hr>
+<h2 id="juc通过显式锁信号量栅栏异步future四类工具提供了比synchronized更精细的并发控制能力">JUC通过显式锁、信号量、栅栏、异步Future四类工具，提供了比synchronized更精细的并发控制能力</h2>
+<h3 id="lock体系比synchronized更灵活的锁机制">Lock体系：比synchronized更灵活的锁机制</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>ReentrantLock</th>
+          <th>synchronized</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>可中断</td>
+          <td>支持lockInterruptibly()</td>
+          <td>不支持</td>
+      </tr>
+      <tr>
+          <td>可超时</td>
+          <td>支持tryLock(timeout)</td>
+          <td>不支持</td>
+      </tr>
+      <tr>
+          <td>公平性</td>
+          <td>支持公平/非公平模式</td>
+          <td>非公平</td>
+      </tr>
+      <tr>
+          <td>条件变量</td>
+          <td>多个Condition</td>
+          <td>一个wait/notify</td>
+      </tr>
+      <tr>
+          <td>尝试获取</td>
+          <td>tryLock()</td>
+          <td>无</td>
+      </tr>
+      <tr>
+          <td>性能</td>
+          <td>JDK6+优化后接近</td>
+          <td>同左</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// ReentrantLock基本用法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">ReentrantLock</span><span class="w"> </span><span class="n">lock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ReentrantLock</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">lock</span><span class="p">.</span><span class="na">lock</span><span class="p">();</span><span class="w">  </span><span class="c1">// 获取锁</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 临界区</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">lock</span><span class="p">.</span><span class="na">unlock</span><span class="p">();</span><span class="w">  </span><span class="c1">// 必须在finally中释放</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 可中断锁</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">lock</span><span class="p">.</span><span class="na">lockInterruptibly</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 可被Thread.interrupt()中断</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">lock</span><span class="p">.</span><span class="na">unlock</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 尝试获取锁（不阻塞）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">lock</span><span class="p">.</span><span class="na">tryLock</span><span class="p">(</span><span class="n">3</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">SECONDS</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 获取到锁</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">lock</span><span class="p">.</span><span class="na">unlock</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 超时未获取到锁</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<p><strong>ReadWriteLock：读写分离提升并发</strong></p>]]></description></item><item><title>MyBatis-Plus</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/mybatis-plus/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/mybatis-plus/</guid><description><![CDATA[<h1 id="mybatis-plus">MyBatis-Plus</h1>
+<blockquote>
+<p><strong>核心结论</strong>：MyBatis-Plus在MyBatis基础上封装了通用CRUD、分页、代码生成等能力，通过SQL注入器和拦截器机制扩展功能，是提升MyBatis开发效率的增强工具而非替代方案。</p>
+</blockquote>
+<hr>
+<h2 id="mybatis-plus通过basemapper封装通用crud通过sql注入器和拦截器链扩展功能减少80的重复sql编写">MyBatis-Plus通过BaseMapper封装通用CRUD，通过SQL注入器和拦截器链扩展功能，减少80%的重复SQL编写</h2>
+<h3 id="核心功能从mybatis到mybatis-plus的简化">核心功能：从MyBatis到MyBatis-Plus的简化</h3>
+<p><strong>MyBatis原始方式</strong>：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-xml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="line"><span class="cl"><span class="c">&lt;!-- UserMapper.xml --&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&lt;mapper</span> <span class="na">namespace=</span><span class="s">&#34;com.example.mapper.UserMapper&#34;</span><span class="nt">&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&#34;selectById&#34;</span> <span class="na">resultType=</span><span class="s">&#34;User&#34;</span><span class="nt">&gt;</span>
+</span></span><span class="line"><span class="cl">        SELECT * FROM user WHERE id = #{id}
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/select&gt;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&#34;selectList&#34;</span> <span class="na">resultType=</span><span class="s">&#34;User&#34;</span><span class="nt">&gt;</span>
+</span></span><span class="line"><span class="cl">        SELECT * FROM user
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;where&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">&#34;name != null&#34;</span><span class="nt">&gt;</span>AND name = #{name}<span class="nt">&lt;/if&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">&#34;age != null&#34;</span><span class="nt">&gt;</span>AND age = #{age}<span class="nt">&lt;/if&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;/where&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/select&gt;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;insert</span> <span class="na">id=</span><span class="s">&#34;insert&#34;</span><span class="nt">&gt;</span>
+</span></span><span class="line"><span class="cl">        INSERT INTO user (name, age, email) VALUES (#{name}, #{age}, #{email})
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/insert&gt;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;update</span> <span class="na">id=</span><span class="s">&#34;updateById&#34;</span><span class="nt">&gt;</span>
+</span></span><span class="line"><span class="cl">        UPDATE user 
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;set&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">&#34;name != null&#34;</span><span class="nt">&gt;</span>name = #{name},<span class="nt">&lt;/if&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&lt;if</span> <span class="na">test=</span><span class="s">&#34;age != null&#34;</span><span class="nt">&gt;</span>age = #{age},<span class="nt">&lt;/if&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;/set&gt;</span>
+</span></span><span class="line"><span class="cl">        WHERE id = #{id}
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/update&gt;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;delete</span> <span class="na">id=</span><span class="s">&#34;deleteById&#34;</span><span class="nt">&gt;</span>
+</span></span><span class="line"><span class="cl">        DELETE FROM user WHERE id = #{id}
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/delete&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&lt;/mapper&gt;</span></span></span></code></pre></div></div>
+<p><strong>MyBatis-Plus方式</strong>：</p>]]></description></item><item><title>MyBatis-Plus多租户</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/mybatis-plus%E5%A4%9A%E7%A7%9F%E6%88%B7/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/mybatis-plus%E5%A4%9A%E7%A7%9F%E6%88%B7/</guid><description><![CDATA[<h1 id="mybatis-plus多租户">MyBatis-Plus多租户</h1>
+<blockquote>
+<p><strong>核心结论</strong>：MyBatis-Plus通过TenantLineInnerInterceptor实现SQL级多租户隔离，在ORM层自动拼接租户ID条件，相比独立数据库和共享数据库独立Schema方案，是成本和隔离性最均衡的SaaS数据隔离方案。</p>
+</blockquote>
+<hr>
+<h2 id="mybatis-plus多租户通过拦截器自动改写sql在应用层实现行级数据隔离">MyBatis-Plus多租户通过拦截器自动改写SQL，在应用层实现行级数据隔离</h2>
+<h3 id="多租户方案对比">多租户方案对比</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方案</th>
+          <th>隔离级别</th>
+          <th>成本</th>
+          <th>复杂度</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>独立数据库</td>
+          <td>物理隔离</td>
+          <td>高</td>
+          <td>低</td>
+          <td>大客户定制、强合规要求</td>
+      </tr>
+      <tr>
+          <td>共享数据库独立Schema</td>
+          <td>逻辑隔离</td>
+          <td>中</td>
+          <td>中</td>
+          <td>中大型企业客户</td>
+      </tr>
+      <tr>
+          <td>共享Schema行级隔离</td>
+          <td>行级隔离</td>
+          <td>低</td>
+          <td>高</td>
+          <td>中小客户SaaS</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="mybatis-plus行级隔离实现">MyBatis-Plus行级隔离实现</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Configuration</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">MybatisPlusConfig</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Bean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">MybatisPlusInterceptor</span><span class="w"> </span><span class="nf">mybatisPlusInterceptor</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">MybatisPlusInterceptor</span><span class="w"> </span><span class="n">interceptor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MybatisPlusInterceptor</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">interceptor</span><span class="p">.</span><span class="na">addInnerInterceptor</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">TenantLineInnerInterceptor</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">TenantLineHandler</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kd">public</span><span class="w"> </span><span class="n">Expression</span><span class="w"> </span><span class="nf">getTenantId</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// 从当前线程上下文获取租户ID</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LongValue</span><span class="p">(</span><span class="n">TenantContextHolder</span><span class="p">.</span><span class="na">getTenantId</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getTenantIdColumn</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="s">&#34;tenant_id&#34;</span><span class="p">;</span><span class="w">  </span><span class="c1">// 租户字段名</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kd">public</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">ignoreTable</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">tableName</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// 忽略不隔离的表（如全局配置表）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="s">&#34;sys_config&#34;</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">tableName</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">                       </span><span class="s">&#34;sys_dict&#34;</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">tableName</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">interceptor</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="自动改写sql效果">自动改写SQL效果</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-sql">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="c1">-- 原始SQL
+</span></span></span><span class="line"><span class="cl"><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">18</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- 自动改写后
+</span></span></span><span class="line"><span class="cl"><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">18</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1001</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- 原始INSERT
+</span></span></span><span class="line"><span class="cl"><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="k">user</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;张三&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- 自动改写后
+</span></span></span><span class="line"><span class="cl"><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="k">user</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">,</span><span class="w"> </span><span class="n">tenant_id</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;张三&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">1001</span><span class="p">);</span></span></span></code></pre></div></div>
+<h3 id="租户上下文传递">租户上下文传递</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 1. 登录时写入租户ID</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="n">LoginDTO</span><span class="w"> </span><span class="n">dto</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">userService</span><span class="p">.</span><span class="na">validate</span><span class="p">(</span><span class="n">dto</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">TenantContextHolder</span><span class="p">.</span><span class="na">setTenantId</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="na">getTenantId</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">StpUtil</span><span class="p">.</span><span class="na">login</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="na">getId</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 2. 拦截器统一设置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Component</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">TenantInterceptor</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">HandlerInterceptor</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">preHandle</span><span class="p">(</span><span class="n">HttpServletRequest</span><span class="w"> </span><span class="n">req</span><span class="p">,</span><span class="w"> </span><span class="n">HttpServletResponse</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="w"> </span><span class="n">handler</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Long</span><span class="w"> </span><span class="n">userId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">StpUtil</span><span class="p">.</span><span class="na">getLoginIdAsLong</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Long</span><span class="w"> </span><span class="n">tenantId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">userService</span><span class="p">.</span><span class="na">getTenantId</span><span class="p">(</span><span class="n">userId</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">TenantContextHolder</span><span class="p">.</span><span class="na">setTenantId</span><span class="p">(</span><span class="n">tenantId</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">afterCompletion</span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">TenantContextHolder</span><span class="p">.</span><span class="na">clear</span><span class="p">();</span><span class="w">  </span><span class="c1">// 清理防止线程复用污染</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 3. ThreadLocal实现</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">TenantContextHolder</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ThreadLocal</span><span class="o">&lt;</span><span class="n">Long</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TENANT_ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ThreadLocal</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setTenantId</span><span class="p">(</span><span class="n">Long</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">TENANT_ID</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="n">id</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Long</span><span class="w"> </span><span class="nf">getTenantId</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">TENANT_ID</span><span class="p">.</span><span class="na">get</span><span class="p">();</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">clear</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">TENANT_ID</span><span class="p">.</span><span class="na">remove</span><span class="p">();</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="多租户下的分页查询">多租户下的分页查询</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// MyBatis-Plus分页自动带租户条件</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Page</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Page</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">1</span><span class="p">,</span><span class="w"> </span><span class="n">10</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">LambdaQueryWrapper</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="n">wrapper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LambdaQueryWrapper</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">wrapper</span><span class="p">.</span><span class="na">eq</span><span class="p">(</span><span class="n">User</span><span class="p">::</span><span class="n">getStatus</span><span class="p">,</span><span class="w"> </span><span class="n">1</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 实际执行SQL自动附加 tenant_id = ?</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Page</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">userMapper</span><span class="p">.</span><span class="na">selectPage</span><span class="p">(</span><span class="n">page</span><span class="p">,</span><span class="w"> </span><span class="n">wrapper</span><span class="p">);</span></span></span></code></pre></div></div>
+<h3 id="全局表处理">全局表处理</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 某些表需要所有租户共享（如系统配置）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">ignoreTable</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">tableName</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 方式1：硬编码</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="s">&#34;sys_config&#34;</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">tableName</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 方式2：配置文件</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">ignoreTables</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="n">tableName</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 方式3：注解标记</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">isGlobalTable</span><span class="p">(</span><span class="n">tableName</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1子查询或join时租户条件遗漏">问题1：子查询或JOIN时租户条件遗漏</h3>
+<p><strong>根因</strong>：复杂SQL中拦截器可能漏加租户条件
+<strong>解决</strong>：检查SQL执行日志，手动补充wrapper条件，或使用@InterceptorIgnore在特殊方法中跳过</p>]]></description></item><item><title>MySQL存储引擎</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</guid><description><![CDATA[<h1 id="mysql存储引擎">MySQL存储引擎</h1>
+<blockquote>
+<p><strong>核心结论</strong>：InnoDB通过聚簇索引组织数据，通过MVCC实现无锁读，通过行锁和间隙锁实现并发控制，是MySQL生产环境的事实标准；MyISAM已逐步被InnoDB取代，仅在特殊读多写少场景考虑。</p>
+</blockquote>
+<hr>
+<h2 id="innodb通过聚簇索引mvcc行锁三大机制实现高并发事务安全是mysql生产环境的首选存储引擎">InnoDB通过聚簇索引、MVCC、行锁三大机制实现高并发事务安全，是MySQL生产环境的首选存储引擎</h2>
+<h3 id="innodb核心特性">InnoDB核心特性</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>实现</th>
+          <th>优势</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>聚簇索引</td>
+          <td>主键索引即数据</td>
+          <td>主键查询快，范围查询高效</td>
+      </tr>
+      <tr>
+          <td>MVCC</td>
+          <td>undo log + 事务ID</td>
+          <td>读不阻塞写，写不阻塞读</td>
+      </tr>
+      <tr>
+          <td>行级锁</td>
+          <td>记录锁 + 间隙锁</td>
+          <td>并发度高</td>
+      </tr>
+      <tr>
+          <td>外键</td>
+          <td>支持级联操作</td>
+          <td>数据完整性</td>
+      </tr>
+      <tr>
+          <td>崩溃恢复</td>
+          <td>Redo Log + Double Write</td>
+          <td>数据不丢失</td>
+      </tr>
+      <tr>
+          <td>缓冲池</td>
+          <td>内存缓存数据和索引</td>
+          <td>减少磁盘IO</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="mvcc多版本并发控制">MVCC：多版本并发控制</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">MVCC核心：每行数据有两个隐藏列
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">DB_TRX_ID（6字节）：最后修改该行的事务ID
+</span></span><span class="line"><span class="cl">DB_ROLL_PTR（7字节）：指向undo log的回滚指针
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Read View（快照）：事务开始时创建的一致性视图
+</span></span><span class="line"><span class="cl">  - creator_trx_id：创建该视图的事务ID
+</span></span><span class="line"><span class="cl">  - up_limit_id：活跃事务最小ID
+</span></span><span class="line"><span class="cl">  - low_limit_id：即将分配的下一个事务ID
+</span></span><span class="line"><span class="cl">  - trx_ids：活跃事务ID列表
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">可见性判断：
+</span></span><span class="line"><span class="cl">  1. DB_TRX_ID == creator_trx_id：可见（自己修改的）
+</span></span><span class="line"><span class="cl">  2. DB_TRX_ID &lt; up_limit_id：可见（事务已提交）
+</span></span><span class="line"><span class="cl">  3. DB_TRX_ID &gt;= low_limit_id：不可见（事务未开始）
+</span></span><span class="line"><span class="cl">  4. DB_TRX_ID在trx_ids中：不可见（事务活跃未提交）
+</span></span><span class="line"><span class="cl">  5. 其他情况：可见</span></span></code></pre></div></div>
+<p><strong>InnoDB的三种行记录格式</strong>：</p>]]></description></item><item><title>MySQL瓶颈与扩展</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E6%89%A9%E5%B1%95/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E6%89%A9%E5%B1%95/</guid><description><![CDATA[<h1 id="mysql瓶颈与扩展">MySQL瓶颈与扩展</h1>
+<blockquote>
+<p><strong>核心结论</strong>：MySQL单库的瓶颈在CPU、内存、磁盘IO和连接数四个维度，扩展路径从读写分离到分库分表逐步递进，每种方案都在一致性、复杂度和成本之间做权衡。</p>
+</blockquote>
+<hr>
+<h2 id="mysql单库存在cpu内存磁盘连接数四重瓶颈扩展路径为读写分离垂直拆分水平分表分库分表">MySQL单库存在CPU、内存、磁盘、连接数四重瓶颈，扩展路径为读写分离→垂直拆分→水平分表→分库分表</h2>
+<h3 id="单库瓶颈分析">单库瓶颈分析</h3>
+<table>
+  <thead>
+      <tr>
+          <th>瓶颈</th>
+          <th>表现</th>
+          <th>临时解决</th>
+          <th>根本解决</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>CPU</td>
+          <td>慢查询多、计算密集</td>
+          <td>优化SQL、加缓存</td>
+          <td>读写分离、分库</td>
+      </tr>
+      <tr>
+          <td>内存</td>
+          <td>缓冲池不足、频繁换页</td>
+          <td>增大内存</td>
+          <td>分库分散压力</td>
+      </tr>
+      <tr>
+          <td>磁盘IO</td>
+          <td>iowait高、磁盘满</td>
+          <td>SSD、加索引</td>
+          <td>分表、归档</td>
+      </tr>
+      <tr>
+          <td>连接数</td>
+          <td>Too many connections</td>
+          <td>增大max_connections</td>
+          <td>连接池、分库</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="读写分离一主多从架构">读写分离：一主多从架构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">写请求 → 主库（Master）→ 异步复制 → 从库（Slave）
+</span></span><span class="line"><span class="cl">读请求 → 从库1 / 从库2 / 从库N
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">复制方式：
+</span></span><span class="line"><span class="cl">  - 异步复制：主库写完即返回，延迟小但可能丢数据
+</span></span><span class="line"><span class="cl">  - 半同步复制：至少一个从库确认收到binlog才返回
+</span></span><span class="line"><span class="cl">  - 组复制（MGR）：Paxos协议，强一致性
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">延迟问题：
+</span></span><span class="line"><span class="cl">  - 主从延迟导致读取旧数据
+</span></span><span class="line"><span class="cl">  - 解决方案：强制走主库（关键读）、延迟阈值告警</span></span></code></pre></div></div>
+<h3 id="分库分表水平与垂直拆分">分库分表：水平与垂直拆分</h3>
+<p><strong>垂直拆分</strong>：按业务模块拆分</p>]]></description></item><item><title>MySQL索引与优化</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96/</guid><description><![CDATA[<h1 id="mysql索引与优化">MySQL索引与优化</h1>
+<blockquote>
+<p><strong>核心结论</strong>：MySQL索引通过B+树实现高效查找，索引设计的核心原则是减少回表、避免全表扫描，EXPLAIN是排查慢SQL的首要工具，理解索引下推和覆盖索引是优化的关键。</p>
+</blockquote>
+<hr>
+<h2 id="mysql通过b树索引加速查询索引设计决定查询性能上限explain是排查sql性能的首要工具">MySQL通过B+树索引加速查询，索引设计决定查询性能上限，EXPLAIN是排查SQL性能的首要工具</h2>
+<h3 id="b树索引结构与查询原理">B+树索引结构与查询原理</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">聚簇索引（主键索引）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        [10, 20, 30]
+</span></span><span class="line"><span class="cl">       /     |     \
+</span></span><span class="line"><span class="cl">  [5,7,9] [15,18] [25,28,29]
+</span></span><span class="line"><span class="cl">     ↓        ↓         ↓
+</span></span><span class="line"><span class="cl">   数据行   数据行    数据行
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">特点：叶子节点存储完整数据行，按主键排序
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">二级索引（非主键索引）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        [&#34;Alice&#34;, &#34;Bob&#34;, &#34;Charlie&#34;]
+</span></span><span class="line"><span class="cl">       /           |            \
+</span></span><span class="line"><span class="cl">  [...]         [...]          [...]
+</span></span><span class="line"><span class="cl">     ↓             ↓              ↓
+</span></span><span class="line"><span class="cl">   主键值10     主键值20       主键值30
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">特点：叶子节点存储索引列值 + 主键值
+</span></span><span class="line"><span class="cl">查询时需回表：先查二级索引获取主键 → 再查聚簇索引获取完整数据</span></span></code></pre></div></div>
+<p><strong>索引类型</strong>：</p>]]></description></item><item><title>Netty网络框架</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/netty/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/netty/</guid><description><![CDATA[<h1 id="netty网络框架">Netty网络框架</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Netty基于NIO多路复用和事件驱动模型，通过EventLoop处理IO事件，通过ChannelPipeline串联业务处理器，通过ByteBuf实现高效内存管理，是构建高性能网络服务的首选框架。</p>
+</blockquote>
+<hr>
+<h2 id="netty通过eventloop线程模型处理io通过channelpipeline串联处理器通过bytebuf管理内存实现高并发低延迟网络通信">Netty通过EventLoop线程模型处理IO，通过ChannelPipeline串联处理器，通过ByteBuf管理内存，实现高并发低延迟网络通信</h2>
+<h3 id="核心组件eventloopchannelpipelinebytebuf">核心组件：EventLoop、Channel、Pipeline、ByteBuf</h3>
+<table>
+  <thead>
+      <tr>
+          <th>组件</th>
+          <th>职责</th>
+          <th>类比</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>EventLoop</td>
+          <td>IO事件循环处理</td>
+          <td>NIO中的Selector + 线程</td>
+      </tr>
+      <tr>
+          <td>Channel</td>
+          <td>网络连接抽象</td>
+          <td>SocketChannel</td>
+      </tr>
+      <tr>
+          <td>ChannelPipeline</td>
+          <td>处理器责任链</td>
+          <td>Filter链/拦截器链</td>
+      </tr>
+      <tr>
+          <td>ChannelHandler</td>
+          <td>具体处理器</td>
+          <td>Servlet/Controller</td>
+      </tr>
+      <tr>
+          <td>ByteBuf</td>
+          <td>字节缓冲区</td>
+          <td>NIO ByteBuffer的增强版</td>
+      </tr>
+      <tr>
+          <td>Bootstrap</td>
+          <td>启动辅助类</td>
+          <td>Spring ApplicationContext</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Netty服务端线程模型：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Boss Group（通常1个线程）
+</span></span><span class="line"><span class="cl">  └── 监听端口，accept新连接
+</span></span><span class="line"><span class="cl">      ↓
+</span></span><span class="line"><span class="cl">      将新Channel注册到Worker Group的某个EventLoop
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Worker Group（N个EventLoop线程，通常CPU核数*2）
+</span></span><span class="line"><span class="cl">  └── EventLoop-1: 管理 Channel-1, Channel-5, Channel-9...
+</span></span><span class="line"><span class="cl">  └── EventLoop-2: 管理 Channel-2, Channel-6, Channel-10...
+</span></span><span class="line"><span class="cl">  └── EventLoop-N: 管理 Channel-N...
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  每个EventLoop绑定一个Selector，处理分配给它的所有Channel的IO事件</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Netty服务端启动代码</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">NettyServer</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">EventLoopGroup</span><span class="w"> </span><span class="n">bossGroup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">NioEventLoopGroup</span><span class="p">(</span><span class="n">1</span><span class="p">);</span><span class="w">   </span><span class="c1">// 接收连接</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">EventLoopGroup</span><span class="w"> </span><span class="n">workerGroup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">NioEventLoopGroup</span><span class="p">();</span><span class="w">   </span><span class="c1">// 处理IO</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">ServerBootstrap</span><span class="w"> </span><span class="n">bootstrap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ServerBootstrap</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">bootstrap</span><span class="p">.</span><span class="na">group</span><span class="p">(</span><span class="n">bossGroup</span><span class="p">,</span><span class="w"> </span><span class="n">workerGroup</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">.</span><span class="na">channel</span><span class="p">(</span><span class="n">NioServerSocketChannel</span><span class="p">.</span><span class="na">class</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">.</span><span class="na">childHandler</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ChannelInitializer</span><span class="o">&lt;</span><span class="n">SocketChannel</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="kd">protected</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">initChannel</span><span class="p">(</span><span class="n">SocketChannel</span><span class="w"> </span><span class="n">ch</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="n">ch</span><span class="p">.</span><span class="na">pipeline</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                            </span><span class="p">.</span><span class="na">addLast</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">LoggingHandler</span><span class="p">(</span><span class="n">LogLevel</span><span class="p">.</span><span class="na">INFO</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                            </span><span class="p">.</span><span class="na">addLast</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">StringDecoder</span><span class="p">())</span><span class="w">    </span><span class="c1">// 解码：ByteBuf → String</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                            </span><span class="p">.</span><span class="na">addLast</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">StringEncoder</span><span class="p">())</span><span class="w">    </span><span class="c1">// 编码：String → ByteBuf</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                            </span><span class="p">.</span><span class="na">addLast</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">BusinessHandler</span><span class="p">());</span><span class="w"> </span><span class="c1">// 业务处理</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">});</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">ChannelFuture</span><span class="w"> </span><span class="n">future</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bootstrap</span><span class="p">.</span><span class="na">bind</span><span class="p">(</span><span class="n">8080</span><span class="p">).</span><span class="na">sync</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">future</span><span class="p">.</span><span class="na">channel</span><span class="p">().</span><span class="na">closeFuture</span><span class="p">().</span><span class="na">sync</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">bossGroup</span><span class="p">.</span><span class="na">shutdownGracefully</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">workerGroup</span><span class="p">.</span><span class="na">shutdownGracefully</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="channelpipeline处理器责任链">ChannelPipeline：处理器责任链</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">ChannelPipeline中的数据流向：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">入站（Inbound：读取数据）：
+</span></span><span class="line"><span class="cl">  Socket → HeadContext → LoggingHandler → StringDecoder → BusinessHandler → TailContext
+</span></span><span class="line"><span class="cl">                                                           ↑
+</span></span><span class="line"><span class="cl">                                                      业务处理
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">出站（Outbound：写入数据）：
+</span></span><span class="line"><span class="cl">  BusinessHandler → StringEncoder → LoggingHandler → HeadContext → Socket
+</span></span><span class="line"><span class="cl">       ↑
+</span></span><span class="line"><span class="cl">  ctx.writeAndFlush(response)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">注意：Inbound从头到尾，Outbound从尾到头</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">BusinessHandler</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">ChannelInboundHandlerAdapter</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">channelRead</span><span class="p">(</span><span class="n">ChannelHandlerContext</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="w"> </span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="n">msg</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;收到消息：&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 处理业务逻辑</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">process</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 写入响应（触发Outbound处理器链）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">ctx</span><span class="p">.</span><span class="na">writeAndFlush</span><span class="p">(</span><span class="n">response</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">exceptionCaught</span><span class="p">(</span><span class="n">ChannelHandlerContext</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">Throwable</span><span class="w"> </span><span class="n">cause</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">cause</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">ctx</span><span class="p">.</span><span class="na">close</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="实现原理与关键机制">实现原理与关键机制</h2>
+<h3 id="bytebuf比java-nio-bytebuffer更高效的缓冲区">ByteBuf：比Java NIO ByteBuffer更高效的缓冲区</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>ByteBuf</th>
+          <th>Java ByteBuffer</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>读写索引分离</td>
+          <td>readerIndex / writerIndex</td>
+          <td>position翻转</td>
+      </tr>
+      <tr>
+          <td>容量自动扩展</td>
+          <td>动态扩容</td>
+          <td>固定容量</td>
+      </tr>
+      <tr>
+          <td>引用计数</td>
+          <td>retain()/release()</td>
+          <td>无</td>
+      </tr>
+      <tr>
+          <td>池化</td>
+          <td>PooledByteBufAllocator</td>
+          <td>无</td>
+      </tr>
+      <tr>
+          <td>复合缓冲区</td>
+          <td>CompositeByteBuf</td>
+          <td>无</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// ByteBuf使用示例</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">ByteBuf</span><span class="w"> </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Unpooled</span><span class="p">.</span><span class="na">buffer</span><span class="p">(</span><span class="n">1024</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 写入数据</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="na">writeBytes</span><span class="p">(</span><span class="s">&#34;Hello Netty&#34;</span><span class="p">.</span><span class="na">getBytes</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 读取数据</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">.</span><span class="na">isReadable</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">byte</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buffer</span><span class="p">.</span><span class="na">readByte</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">((</span><span class="kt">char</span><span class="p">)</span><span class="w"> </span><span class="n">b</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="na">release</span><span class="p">();</span><span class="w">  </span><span class="c1">// 引用计数减1，为0时释放</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 池化ByteBuf（推荐生产环境使用）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">ByteBuf</span><span class="w"> </span><span class="n">pooledBuf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PooledByteBufAllocator</span><span class="p">.</span><span class="na">DEFAULT</span><span class="p">.</span><span class="na">buffer</span><span class="p">(</span><span class="n">1024</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">pooledBuf</span><span class="p">.</span><span class="na">writeBytes</span><span class="p">(</span><span class="s">&#34;Pooled&#34;</span><span class="p">.</span><span class="na">getBytes</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// ... 使用 ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">pooledBuf</span><span class="p">.</span><span class="na">release</span><span class="p">();</span></span></span></code></pre></div></div>
+<p><strong>内存分配策略</strong>：</p>]]></description></item></channel></rss>

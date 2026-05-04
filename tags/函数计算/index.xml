@@ -1,0 +1,155 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>函数计算 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%87%BD%E6%95%B0%E8%AE%A1%E7%AE%97/</link><description>函数计算 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%87%BD%E6%95%B0%E8%AE%A1%E7%AE%97/" rel="self" type="application/rss+xml"/><item><title>Serverless</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%A6%82%E5%BF%B5/serverless/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%A6%82%E5%BF%B5/serverless/</guid><description><![CDATA[<h1 id="serverless">Serverless</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Serverless通过事件驱动、按量计费、自动伸缩将运维负担彻底转移给云厂商，适合流量波动大、执行时间短的场景，但冷启动和厂商锁定是需要权衡的核心问题。</p>
+</blockquote>
+<hr>
+<h2 id="serverless通过将服务器管理抽象化让开发者只关注代码和事件由平台自动处理运行和扩缩容">Serverless通过将服务器管理抽象化，让开发者只关注代码和事件，由平台自动处理运行和扩缩容</h2>
+<h3 id="核心模型">核心模型</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">事件源（触发器）        函数计算平台           后端服务
+</span></span><span class="line"><span class="cl">├── HTTP请求    →    自动分配容器    →    数据库
+</span></span><span class="line"><span class="cl">├── 定时任务    →    执行用户代码    →    缓存
+</span></span><span class="line"><span class="cl">├── MQ消息      →    按调用时长计费  →    对象存储
+</span></span><span class="line"><span class="cl">└── 文件上传    →    执行完成后释放  →    第三方API</span></span></code></pre></div></div>
+<h3 id="faas-vs-传统部署">FaaS vs 传统部署</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>传统服务</th>
+          <th>Serverless</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>资源管理</td>
+          <td>预购服务器/容器</td>
+          <td>按需分配</td>
+      </tr>
+      <tr>
+          <td>计费方式</td>
+          <td>按规格包年包月</td>
+          <td>按调用次数+执行时长</td>
+      </tr>
+      <tr>
+          <td>扩缩容</td>
+          <td>手动或HPA配置</td>
+          <td>毫秒级自动伸缩</td>
+      </tr>
+      <tr>
+          <td>运维负担</td>
+          <td>需要维护服务器</td>
+          <td>零服务器管理</td>
+      </tr>
+      <tr>
+          <td>冷启动</td>
+          <td>无（常驻）</td>
+          <td>有（容器预热）</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="冷启动优化">冷启动优化</h3>
+<table>
+  <thead>
+      <tr>
+          <th>优化手段</th>
+          <th>原理</th>
+          <th>效果</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>预留实例</td>
+          <td>预置常驻容器</td>
+          <td>消除冷启动</td>
+      </tr>
+      <tr>
+          <td>单实例多并发</td>
+          <td>一个容器处理多个请求</td>
+          <td>减少实例创建</td>
+      </tr>
+      <tr>
+          <td>精简依赖包</td>
+          <td>减小镜像体积</td>
+          <td>加快拉取和加载</td>
+      </tr>
+      <tr>
+          <td>保持连接池</td>
+          <td>复用数据库连接</td>
+          <td>减少连接建立时间</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="适用场景">适用场景</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>原因</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>定时任务</td>
+          <td>低频执行，常驻浪费</td>
+          <td>数据清理、报表生成</td>
+      </tr>
+      <tr>
+          <td>文件处理</td>
+          <td>触发式执行</td>
+          <td>图片压缩、视频转码</td>
+      </tr>
+      <tr>
+          <td>Webhook</td>
+          <td>异步、流量不均</td>
+          <td>支付回调、Git事件</td>
+      </tr>
+      <tr>
+          <td>API网关后端</td>
+          <td>简单业务逻辑</td>
+          <td>BFF层、数据转换</td>
+      </tr>
+      <tr>
+          <td>边缘计算</td>
+          <td>就近执行</td>
+          <td>CDN边缘脚本</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="不适用的场景">不适用的场景</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>长连接服务</td>
+          <td>持续计费不经济</td>
+      </tr>
+      <tr>
+          <td>低延迟敏感</td>
+          <td>冷启动不可控</td>
+      </tr>
+      <tr>
+          <td>有状态服务</td>
+          <td>实例无状态，数据需外置</td>
+      </tr>
+      <tr>
+          <td>大计算任务</td>
+          <td>执行时长受限、超时风险</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1冷启动导致接口超时">问题1：冷启动导致接口超时</h3>
+<p><strong>根因</strong>：函数长时间未被调用，容器被回收后重新初始化
+<strong>解决</strong>：配置最小实例数保留预热容器，或改用预留实例</p>]]></description></item></channel></rss>

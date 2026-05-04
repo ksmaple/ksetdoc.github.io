@@ -1,0 +1,71 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>游戏对接 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E6%B8%B8%E6%88%8F%E5%AF%B9%E6%8E%A5/</link><description>游戏对接 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E6%B8%B8%E6%88%8F%E5%AF%B9%E6%8E%A5/" rel="self" type="application/rss+xml"/><item><title>游戏对接系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%B8%B8%E6%88%8F%E6%8E%A5%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%B8%B8%E6%88%8F%E6%8E%A5%E5%85%A5/</guid><description><![CDATA[<h1 id="游戏对接系统">游戏对接系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：游戏对接系统的核心是与第三方游戏服务商的协议对接，通过SDK集成实现用户互通，通过回调机制同步订单和角色数据，通过签名验签保障通信安全。</p>
+</blockquote>
+<hr>
+<h2 id="游戏对接通过sdk集成回调同步签名验签实现平台与游戏的数据互通">游戏对接通过SDK集成、回调同步、签名验签实现平台与游戏的数据互通</h2>
+<h3 id="对接模式">对接模式</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>说明</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>SDK集成</td>
+          <td>平台提供SDK，游戏方嵌入</td>
+          <td>强绑定，深度集成</td>
+      </tr>
+      <tr>
+          <td>H5对接</td>
+          <td>游戏以H5形式接入</td>
+          <td>轻量，快速上线</td>
+      </tr>
+      <tr>
+          <td>独立APP</td>
+          <td>游戏独立包，账号打通</td>
+          <td>大型游戏</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="核心接口">核心接口</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 登录验证
+</span></span><span class="line"><span class="cl">   游戏 → 平台：token校验 → 返回用户信息
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 支付下单
+</span></span><span class="line"><span class="cl">   游戏 → 平台：创建订单 → 返回平台订单号
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 支付回调
+</span></span><span class="line"><span class="cl">   平台 → 游戏：支付结果回调（带签名）
+</span></span><span class="line"><span class="cl">   游戏验签 → 发放道具
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">4. 角色上报
+</span></span><span class="line"><span class="cl">   游戏 → 平台：角色等级、战力等数据同步</span></span></code></pre></div></div>
+<h3 id="安全设计">安全设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">签名机制：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">参数排序 → 拼接字符串 → 加Secret → MD5/SHA256
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">回调防重：
+</span></span><span class="line"><span class="cl">  平台订单号唯一性校验，已处理回调直接返回成功
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">IP白名单：
+</span></span><span class="line"><span class="cl">  回调接口限制平台出口IP</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1回调丢失导致未到账">问题1：回调丢失导致未到账</h3>
+<p><strong>根因</strong>：网络问题或游戏方服务不可用
+<strong>解决</strong>：平台支持主动查询接口，游戏方定时对账</p>]]></description></item></channel></rss>

@@ -1,0 +1,62 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>冲突解决 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3/</link><description>冲突解决 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3/" rel="self" type="application/rss+xml"/><item><title>Hash表</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%93%88%E5%B8%8C%E8%A1%A8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%93%88%E5%B8%8C%E8%A1%A8/</guid><description><![CDATA[<h1 id="hash表">Hash表</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Hash表通过哈希函数将键映射到数组索引，实现O(1)的平均查找效率，冲突解决和扩容机制是工程实现的关键，一致性Hash则解决了分布式环境下的数据分布问题。</p>
+</blockquote>
+<hr>
+<h2 id="hash表通过哈希函数数组实现o1查找冲突解决和动态扩容是工程实现的核心机制">Hash表通过哈希函数+数组实现O(1)查找，冲突解决和动态扩容是工程实现的核心机制</h2>
+<h3 id="核心原理哈希函数将任意键映射到有限数组空间">核心原理：哈希函数将任意键映射到有限数组空间</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">键(Key) ──→ 哈希函数 ──→ 哈希值 ──→ 取模 ──→ 数组索引
+</span></span><span class="line"><span class="cl">                                
+</span></span><span class="line"><span class="cl">&#34;apple&#34;    hashCode()    93029231    % 16     → 15
+</span></span><span class="line"><span class="cl">&#34;banana&#34;   hashCode()    63595437    % 16     → 13
+</span></span><span class="line"><span class="cl">&#34;cherry&#34;   hashCode()    12345678    % 16     → 14</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java HashMap 的扰动函数：高16位与低16位异或，减少低位的规律性</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">hash</span><span class="p">(</span><span class="n">Object</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">h</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">0</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="na">hashCode</span><span class="p">())</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">&gt;&gt;&gt;</span><span class="w"> </span><span class="n">16</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 数组索引计算：(n-1) &amp; hash 等价于 hash % n，当n为2的幂时</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">n</span><span class="o">=</span><span class="n">16</span><span class="p">:</span><span class="w">  </span><span class="p">(</span><span class="n">16</span><span class="o">-</span><span class="n">1</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">hash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0b1111</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">hash</span><span class="w">  </span><span class="err">→</span><span class="w"> </span><span class="n">取低4位</span></span></span></code></pre></div></div>
+<h3 id="冲突解决链地址法-vs-开放寻址法">冲突解决：链地址法 vs 开放寻址法</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方法</th>
+          <th>原理</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>链地址法</td>
+          <td>冲突元素组成链表/树</td>
+          <td>实现简单、删除方便</td>
+          <td>缓存不友好、链表过长退化</td>
+      </tr>
+      <tr>
+          <td>开放寻址法</td>
+          <td>冲突时探测下一个空位</td>
+          <td>缓存友好、无指针开销</td>
+          <td>删除复杂、装填因子受限</td>
+      </tr>
+      <tr>
+          <td>再哈希法</td>
+          <td>多个哈希函数依次尝试</td>
+          <td>分布均匀</td>
+          <td>计算开销大</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>链地址法（Java HashMap采用）</strong>：</p>]]></description></item></channel></rss>

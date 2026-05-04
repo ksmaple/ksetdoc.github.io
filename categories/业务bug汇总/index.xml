@@ -1,0 +1,257 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>业务Bug汇总 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/</link><description>业务Bug汇总 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Mon, 04 May 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/" rel="self" type="application/rss+xml"/><item><title>并发与锁问题汇总</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E5%B9%B6%E5%8F%91%E4%B8%8E%E9%94%81%E9%97%AE%E9%A2%98/</link><pubDate>Mon, 04 May 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E5%B9%B6%E5%8F%91%E4%B8%8E%E9%94%81%E9%97%AE%E9%A2%98/</guid><description><![CDATA[<h1 id="并发与锁问题汇总">并发与锁问题汇总</h1>
+<p>本文档汇总了项目历史上处理的并发与锁相关技术问题，包括分布式锁、线程安全、阻塞修复、异步处理等。</p>
+<hr>
+<h2 id="1-redisson-marshallingcodec-threadlocal-缓存导致的内存泄漏">1. Redisson MarshallingCodec ThreadLocal 缓存导致的内存泄漏</h2>
+<p><strong>提交记录</strong>: <code>kella-server</code> <code>399e3d18</code> (2026-04-22)
+<strong>涉及文件</strong>:</p>
+<ul>
+<li><code>kella-user/src/main/java/me/ddkj/user/biz/impl/SubscribeBizImpl.java</code></li>
+<li><code>kella-user/src/main/java/me/ddkj/user/biz/impl/SuperCardBizImpl.java</code></li>
+<li><code>kella-user/src/main/java/me/ddkj/user/biz/impl/UserLVipBizImpl.java</code></li>
+<li><code>kella-user/src/main/java/me/ddkj/user/service/label/dao/impl/UserLabelDaoImpl.java</code></li>
+<li><code>kella-user/src/main/java/me/ddkj/user/service/operator/impl/UserOperatorDaoImpl.java</code></li>
+</ul>
+<h3 id="问题背景">问题背景</h3>
+<p>Redisson 默认使用 <code>MarshallingCodec</code> 进行序列化，该底层依赖 JBoss Marshalling 的 <code>RiverUnmarshaller</code>。在高并发场景下，RiverUnmarshaller 内部使用 ThreadLocal 缓存实例，因线程池长期存活导致缓存无法释放，最终引发内存泄漏（OOM）。</p>
+<h3 id="解决方案">解决方案</h3>
+<ol>
+<li><strong>替换序列化方式</strong>：将所有 Redisson 缓存操作从默认 <code>MarshallingCodec</code> 改为 <code>StringCodec</code>（字符串）或 <code>IntegerCodec</code>（整型），彻底消除 JBoss Marshalling 的 ThreadLocal 缓存问题。</li>
+<li><strong>Key 版本隔离</strong>：所有缓存 key 增加 <code>_v2</code> 后缀，与旧数据隔离，防止新老数据混用。</li>
+<li><strong>双读兼容 + 数据迁移</strong>：对于 <code>SubscribeBizImpl</code> 的过期队列，采用新 key 优先读取，新 key 不存在时回退读取旧 key，并将旧数据迁移到新 key 的方案，保证线上服务平滑升级。</li>
+</ol>
+<h3 id="关键代码">关键代码</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 使用 IntegerCodec 替代默认 MarshallingCodec</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">IntegerCodec</span><span class="w"> </span><span class="n">INTEGER_CODEC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntegerCodec</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span><span class="w"> </span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">uids</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;bo_user_subscribe_lv_map_v2&#34;</span><span class="p">;</span><span class="w">  </span><span class="c1">// key 加 _v2 后缀</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">RMap</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span><span class="w"> </span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">redisClientSession</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">getMap</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">,</span><span class="w"> </span><span class="n">INTEGER_CODEC</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">map</span><span class="p">.</span><span class="na">getAll</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">HashSet</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">uids</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 双读兼容 + 数据迁移</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">rangeExpireLv</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">now</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">1000L</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">newKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;bo_user_subscribe_lv_expire_v2&#34;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">RScoredSortedSet</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">newSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">redisClientSession</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">getScoredSortedSet</span><span class="p">(</span><span class="n">newKey</span><span class="p">,</span><span class="w"> </span><span class="n">INTEGER_CODEC</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">newSet</span><span class="p">.</span><span class="na">isExists</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Collection</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newSet</span><span class="p">.</span><span class="na">valueRange</span><span class="p">(</span><span class="n">0</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">result</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 新 key 不存在，回退读旧 key</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">oldKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;bo_user_subscribe_lv_expire&#34;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">RScoredSortedSet</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">oldSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">redisClientSession</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">getScoredSortedSet</span><span class="p">(</span><span class="n">oldKey</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Collection</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">oldSet</span><span class="p">.</span><span class="na">valueRange</span><span class="p">(</span><span class="n">0</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 迁移旧数据到新 key</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Integer</span><span class="w"> </span><span class="n">uid</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">result</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Double</span><span class="w"> </span><span class="n">score</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">oldSet</span><span class="p">.</span><span class="na">getScore</span><span class="p">(</span><span class="n">uid</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">score</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">newSet</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">score</span><span class="p">,</span><span class="w"> </span><span class="n">uid</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">result</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="2-幸运蛋库存扣减并发问题set去重--死循环修复">2. 幸运蛋库存扣减并发问题（Set去重 + 死循环修复）</h2>
+<p><strong>提交记录</strong>: <code>kella-server</code> <code>40f4bcb6</code> (2026-03-16)
+<strong>涉及文件</strong>:</p>]]></description></item><item><title>内存与 OOM 问题汇总</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E5%86%85%E5%AD%98%E4%B8%8Eoom%E9%97%AE%E9%A2%98/</link><pubDate>Mon, 04 May 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E5%86%85%E5%AD%98%E4%B8%8Eoom%E9%97%AE%E9%A2%98/</guid><description><![CDATA[<h1 id="内存与-oom-问题汇总">内存与 OOM 问题汇总</h1>
+<p>本文档汇总了项目历史上因内存使用不当、大数据量加载、缓存泄漏等导致的 OOM（Out Of Memory）问题及修复方案。</p>
+<hr>
+<h2 id="1-消息推送任务查询-oom字段精简">1. 消息推送任务查询 OOM（字段精简）</h2>
+<p><strong>提交记录</strong>: <code>kella-server</code> <code>4bcfdf79</code> (2025-08-04)
+<strong>涉及文件</strong>:</p>
+<ul>
+<li><code>kella-system/src/main/java/me/ddkj/system/rpc/StMessageServiceImpl.java</code></li>
+</ul>
+<h3 id="问题背景">问题背景</h3>
+<p>系统消息推送任务需要查询最近 30 天的任务记录进行统计。原实现使用 <code>LambdaQueryWrapper</code> 直接查询整个实体对象，而 <code>StMessageTask</code> 表中的 <code>content</code> 字段存储了大型 JSON 字符串（推送消息内容），单次查询加载大量大字段数据，导致内存迅速耗尽，触发 OOM。</p>
+<h3 id="解决方案">解决方案</h3>
+<p>使用 MyBatis-Plus 的 <code>.select()</code> 方法只查询需要的字段，排除 <code>content</code> 等大字段，大幅降低内存占用。</p>
+<h3 id="关键代码">关键代码</h3>
+<div class="code-block code-line-numbers" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 修复前：查询所有字段，content 内容过大导致内存溢出</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">List</span><span class="o">&lt;</span><span class="n">StMessageTask</span><span class="o">&gt;</span><span class="w"> </span><span class="n">taskList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stMessageTaskDao</span><span class="p">.</span><span class="na">list</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">LambdaQueryWrapper</span><span class="o">&lt;</span><span class="n">StMessageTask</span><span class="o">&gt;</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">gt</span><span class="p">(</span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getCreateDate</span><span class="p">,</span><span class="w"> </span><span class="n">DDKJDate</span><span class="p">.</span><span class="na">build</span><span class="p">().</span><span class="na">addDay</span><span class="p">(</span><span class="o">-</span><span class="n">30</span><span class="p">).</span><span class="na">toDate</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 修复后：只查询需要使用的字段</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">List</span><span class="o">&lt;</span><span class="n">StMessageTask</span><span class="o">&gt;</span><span class="w"> </span><span class="n">taskList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stMessageTaskDao</span><span class="p">.</span><span class="na">list</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">LambdaQueryWrapper</span><span class="o">&lt;</span><span class="n">StMessageTask</span><span class="o">&gt;</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">select</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getId</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getAndroidClick</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getAndroidReceive</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getAndroidPush</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getIosClick</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getIosReceive</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getIosPush</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getPushTotal</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getPushSuc</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getPushToken</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getCreateDate</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">gt</span><span class="p">(</span><span class="n">StMessageTask</span><span class="p">::</span><span class="n">getCreateDate</span><span class="p">,</span><span class="w"> </span><span class="n">DDKJDate</span><span class="p">.</span><span class="na">build</span><span class="p">().</span><span class="na">addDay</span><span class="p">(</span><span class="o">-</span><span class="n">30</span><span class="p">).</span><span class="na">toDate</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span></span></span></code></pre></div></div>
+<h3 id="收益">收益</h3>
+<ul>
+<li>内存占用降低 80% 以上（排除 <code>content</code> 等大字段）；</li>
+<li>避免全表大字段扫描导致的 GC 压力；</li>
+<li>查询速度提升（网络传输数据量减少）。</li>
+</ul>
+<hr>
+<h2 id="2-神策数据缓冲区-oom降低缓冲区大小">2. 神策数据缓冲区 OOM（降低缓冲区大小）</h2>
+<p><strong>提交记录</strong>: <code>kella-server</code> <code>266606b9</code> (2025-12-30)
+<strong>涉及文件</strong>:</p>]]></description></item><item><title>数据库与连接池优化汇总</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E8%BF%9E%E6%8E%A5%E6%B1%A0%E4%BC%98%E5%8C%96/</link><pubDate>Mon, 04 May 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E8%BF%9E%E6%8E%A5%E6%B1%A0%E4%BC%98%E5%8C%96/</guid><description><![CDATA[<h1 id="数据库与连接池优化汇总">数据库与连接池优化汇总</h1>
+<p>本文档汇总了项目历史上针对数据库查询性能、连接池配置、SQL 优化等方面的技术改进。</p>
+<hr>
+<h2 id="1-mysql-连接池最大等待时间优化">1. MySQL 连接池最大等待时间优化</h2>
+<p><strong>提交记录</strong>: <code>kella-spring-boot-starter</code> <code>ce79ec6f</code> (2020-02-21)
+<strong>涉及文件</strong>:</p>
+<ul>
+<li><code>src/main/java/verify/ddkj/config/RedisClientSession.java</code></li>
+<li><code>src/main/java/verify/ddkj/config/RedisClientUgc.java</code></li>
+<li><code>src/main/resources/application-starter-prd.yml</code></li>
+</ul>
+<h3 id="问题背景">问题背景</h3>
+<p>Redis 连接池配置中，<code>maxWaitMillis</code> 被错误地设置为 <code>timeout</code>（连接超时时间，通常 2000ms），而非独立的 <code>maxWait</code>（最大等待时间）。当连接池耗尽时，等待线程只等待极短时间（100ms）就抛出 <code>JedisConnectionException</code>，导致大量请求失败。同时，生产环境的 <code>max-wait</code> 配置为 5000ms，在高并发下连接池耗尽时，线程长时间阻塞等待，反而拖垮服务。</p>
+<h3 id="解决方案">解决方案</h3>
+<ol>
+<li><strong>修复变量引用</strong>：将 <code>config.setMaxWaitMillis(timeout)</code> 改为 <code>config.setMaxWaitMillis(maxWait)</code>，使用正确的配置项；</li>
+<li><strong>降低 max-wait</strong>：生产环境 Redis 连接池的 <code>max-wait</code> 从 5000ms 降低到 100ms，快速失败，避免线程长时间阻塞；</li>
+<li><strong>增加连接池大小</strong>：同步增加 <code>max-active</code> 到 500~1000，用更多连接承载并发，而非让线程等待。</li>
+</ol>
+<h3 id="关键代码">关键代码</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 修复前：错误地使用 timeout 作为 maxWait</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setMaxWaitMillis</span><span class="p">(</span><span class="n">timeout</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 修复后：使用正确的 maxWait 配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setMaxWaitMillis</span><span class="p">(</span><span class="n">maxWait</span><span class="p">);</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># 修复前：max-wait 过长，线程阻塞</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">redis</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">session</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">pool</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">max-active</span><span class="p">:</span><span class="w"> </span><span class="m">500</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">max-idle</span><span class="p">:</span><span class="w"> </span><span class="m">20</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">max-wait</span><span class="p">:</span><span class="w"> </span><span class="m">5000</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c"># 修复后：降低 max-wait，快速失败</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">redis</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">session</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">pool</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">max-active</span><span class="p">:</span><span class="w"> </span><span class="m">500</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">max-idle</span><span class="p">:</span><span class="w"> </span><span class="m">20</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">max-wait</span><span class="p">:</span><span class="w"> </span><span class="m">100</span></span></span></code></pre></div></div>
+<h3 id="收益">收益</h3>
+<ul>
+<li>连接池耗尽时快速失败，避免线程堆积拖垮服务；</li>
+<li>配合增加 <code>max-active</code>，用更多连接承载并发；</li>
+<li>服务整体可用性提升。</li>
+</ul>
+<hr>
+<h2 id="2-移除旧-tr-配置--mysql-连接加重试">2. 移除旧 TR 配置 + MySQL 连接加重试</h2>
+<p><strong>提交记录</strong>: <code>kella-server</code> <code>50757597</code> / <code>kella-cms</code> <code>50757597</code> (2025-03-20)
+<strong>涉及文件</strong>:</p>]]></description></item><item><title>性能与大数据量优化汇总</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E6%80%A7%E8%83%BD%E4%B8%8E%E5%A4%A7%E6%95%B0%E6%8D%AE%E9%87%8F%E4%BC%98%E5%8C%96/</link><pubDate>Mon, 04 May 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E6%80%A7%E8%83%BD%E4%B8%8E%E5%A4%A7%E6%95%B0%E6%8D%AE%E9%87%8F%E4%BC%98%E5%8C%96/</guid><description><![CDATA[<h1 id="性能与大数据量优化汇总">性能与大数据量优化汇总</h1>
+<p>本文档汇总了项目历史上针对性能瓶颈、大数据量处理、算法优化等方面的技术改进。</p>
+<hr>
+<h2 id="1-redis-批量获取优化jedis--redisson">1. Redis 批量获取优化（Jedis → Redisson）</h2>
+<p><strong>提交记录</strong>: <code>kella-spring-boot-starter</code> <code>2c9ba19d</code> (2022-07-22)
+<strong>涉及文件</strong>:</p>
+<ul>
+<li><code>src/main/java/verify/ddkj/config/redis/BaseCache.java</code></li>
+<li><code>src/main/java/verify/ddkj/config/redis/BaseRedisClient.java</code></li>
+<li><code>src/main/java/verify/ddkj/config/redis/RedisClient.java</code></li>
+</ul>
+<h3 id="问题背景">问题背景</h3>
+<p>原 Redis 批量获取实现（<code>mget</code>）基于 JedisCluster，需要手动计算 key 的槽位（slot）并按槽位分组，代码复杂且性能不佳。更关键的是，JedisCluster 的 <code>mget</code> 在跨槽位时性能下降明显，且需要自己处理连接异常和重试。</p>
+<h3 id="解决方案">解决方案</h3>
+<p>将批量获取逻辑从 JedisCluster 迁移到 Redisson，利用 Redisson 的 <code>RBucket.get()</code> 批量操作 API：</p>
+<ol>
+<li><strong>简化接口</strong>：删除手动实现的 <code>mmget</code> 和 <code>mget</code> 方法；</li>
+<li><strong>使用 Redisson Buckets</strong>：通过 <code>redissonClient.getBuckets(codec).get(keys)</code> 一次性批量获取，Redisson 内部自动处理槽位路由和管道优化；</li>
+<li><strong>支持类型化反序列化</strong>：使用 <code>TypedJsonJacksonCodec</code> 自动将 JSON 字符串反序列化为目标类型。</li>
+</ol>
+<h3 id="关键代码">关键代码</h3>
+<div class="code-block code-line-numbers" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getObjList</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">preKey</span><span class="p">,</span><span class="w"> </span><span class="n">Class</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">clazz</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">...</span><span class="w"> </span><span class="n">keys</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Set</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">keyList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Arrays</span><span class="p">.</span><span class="na">stream</span><span class="p">(</span><span class="n">keys</span><span class="p">).</span><span class="na">map</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">preKey</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">k</span><span class="p">).</span><span class="na">collect</span><span class="p">(</span><span class="n">Collectors</span><span class="p">.</span><span class="na">toSet</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Redisson 自动处理批量获取和槽位路由</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get</span><span class="p">().</span><span class="na">getBuckets</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">TypedJsonJacksonCodec</span><span class="p">(</span><span class="n">clazz</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                               </span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">keyList</span><span class="p">.</span><span class="na">toArray</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">String</span><span class="o">[</span><span class="n">0</span><span class="o">]</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">keys</span><span class="p">.</span><span class="na">length</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">results</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">preKey</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">keys</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">results</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="收益">收益</h3>
+<ul>
+<li>代码复杂度大幅降低；</li>
+<li>Redisson 内部使用管道（pipeline）批量发送命令，减少网络 RTT；</li>
+<li>自动处理集群槽位映射和异常重试。</li>
+</ul>
+<hr>
+<h2 id="2-cms-房间数据统计汇总逻辑优化">2. CMS 房间数据统计汇总逻辑优化</h2>
+<p><strong>提交记录</strong>: <code>kella-cms</code> <code>c974ebd0</code> (2024-09-26)
+<strong>涉及文件</strong>:</p>]]></description></item><item><title>源码实现 Bug 汇总</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E6%BA%90%E7%A0%81%E5%AE%9E%E7%8E%B0bug/</link><pubDate>Mon, 04 May 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E4%B8%9A%E5%8A%A1bug%E6%B1%87%E6%80%BB/%E6%BA%90%E7%A0%81%E5%AE%9E%E7%8E%B0bug/</guid><description><![CDATA[<h1 id="源码实现-bug-汇总">源码实现 Bug 汇总</h1>
+<p>本文档汇总了项目历史上因代码逻辑缺陷、边界条件未处理、状态判断错误等导致的 Bug 修复记录。</p>
+<hr>
+<h2 id="1-周星活动空指针异常npe">1. 周星活动空指针异常（NPE）</h2>
+<p><strong>提交记录</strong>: <code>kella-server</code> <code>c7aa065d</code> (2025-11-05)
+<strong>涉及文件</strong>:</p>
+<ul>
+<li><code>kella-ugc/src/main/java/me/ddkj/ugc/biz/activity/agg/ActivityStar2025Biz.java</code></li>
+</ul>
+<h3 id="问题背景">问题背景</h3>
+<p>周星活动预排名逻辑中，调用 <code>rankService.queryTwoRank()</code> 查询排名数据时，未对返回结果进行空值检查。当活动尚未产生排名数据时，返回的 <code>RankVO</code> 为 null，后续调用 <code>rankVO.getRanks()</code> 直接导致 <code>NullPointerException</code>。</p>
+<h3 id="解决方案">解决方案</h3>
+<p>在调用 <code>rankService.queryTwoRank()</code> 后增加空值检查，若返回 null 则记录 warn 日志并直接返回 null。</p>
+<h3 id="关键代码">关键代码</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="n">RankVO</span><span class="w"> </span><span class="n">rankVO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rankService</span><span class="p">.</span><span class="na">queryTwoRank</span><span class="p">(</span><span class="n">actBaseReq</span><span class="p">,</span><span class="w"> </span><span class="n">uid</span><span class="p">,</span><span class="w"> </span><span class="n">DefaultCycleTypeEnum</span><span class="p">.</span><span class="na">TOTAL</span><span class="p">.</span><span class="na">type</span><span class="p">(),</span><span class="w"> </span><span class="n">millSeconds</span><span class="p">,</span><span class="w"> </span><span class="n">gid</span><span class="p">.</span><span class="na">toString</span><span class="p">(),</span><span class="w"> </span><span class="n">1</span><span class="p">,</span><span class="w"> </span><span class="n">1</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 添加空值检查，避免NullPointerException</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rankVO</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">log</span><span class="p">.</span><span class="na">warn</span><span class="p">(</span><span class="s">&#34;ActivityStar2025Biz preRank: rankVO is null for gid={}, uid={}, campaignId={}&#34;</span><span class="p">,</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">             </span><span class="n">gid</span><span class="p">,</span><span class="w"> </span><span class="n">uid</span><span class="p">,</span><span class="w"> </span><span class="n">actBaseReq</span><span class="p">.</span><span class="na">getCampaignId</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="2-常驻活动星光榜送礼价值统计-bug多人送礼只统计一次">2. 常驻活动星光榜送礼价值统计 Bug（多人送礼只统计一次）</h2>
+<p><strong>提交记录</strong>: <code>kella-server</code> <code>1a785251</code> (2026-01-07)
+<strong>涉及文件</strong>:</p>]]></description></item></channel></rss>

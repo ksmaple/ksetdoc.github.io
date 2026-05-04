@@ -1,0 +1,227 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>分布式ID - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%88%86%E5%B8%83%E5%BC%8Fid/</link><description>分布式ID - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%88%86%E5%B8%83%E5%BC%8Fid/" rel="self" type="application/rss+xml"/><item><title>分库分表</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E7%89%87/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E7%89%87/</guid><description><![CDATA[<h1 id="分库分表">分库分表</h1>
+<blockquote>
+<p><strong>核心结论</strong>：分库分表通过水平拆分（数据分散）和垂直拆分（职责分离）突破单库性能瓶颈，但引入了分布式事务、跨分片查询、数据迁移等复杂度，应在单库优化无法满足需求时作为最后手段引入。</p>
+</blockquote>
+<hr>
+<h2 id="分库分表通过拆分策略将数据分布到多个节点以牺牲部分查询灵活性换取存储和性能扩展性">分库分表通过拆分策略将数据分布到多个节点，以牺牲部分查询灵活性换取存储和性能扩展性</h2>
+<h3 id="拆分策略">拆分策略</h3>
+<table>
+  <thead>
+      <tr>
+          <th>策略</th>
+          <th>方式</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>垂直分库</td>
+          <td>按业务拆分（用户库/订单库/商品库）</td>
+          <td>业务边界清晰，耦合低</td>
+      </tr>
+      <tr>
+          <td>垂直分表</td>
+          <td>大字段拆分（主表+扩展表）</td>
+          <td>单表字段过多，冷热数据分离</td>
+      </tr>
+      <tr>
+          <td>水平分库</td>
+          <td>同表数据分散到不同库</td>
+          <td>单库数据量过大</td>
+      </tr>
+      <tr>
+          <td>水平分表</td>
+          <td>同表数据分散到不同表</td>
+          <td>单表数据量过大，同一实例内</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">垂直分库                    水平分表
+</span></span><span class="line"><span class="cl">user_db                     db0: order_0, order_2
+</span></span><span class="line"><span class="cl">├── user                    db1: order_1, order_3
+</span></span><span class="line"><span class="cl">└── user_profile
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">order_db
+</span></span><span class="line"><span class="cl">└── order</span></span></code></pre></div></div>
+<h3 id="分片键选择">分片键选择</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方案</th>
+          <th>分片键</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>哈希分片</td>
+          <td>user_id % 4</td>
+          <td>数据均匀分布</td>
+          <td>范围查询需扫描全部分片</td>
+      </tr>
+      <tr>
+          <td>范围分片</td>
+          <td>create_time</td>
+          <td>支持范围查询</td>
+          <td>热点问题（新数据集中在最新分片）</td>
+      </tr>
+      <tr>
+          <td>混合分片</td>
+          <td>时间+哈希</td>
+          <td>兼顾均匀与范围</td>
+          <td>实现复杂</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// ShardingSphere哈希分片配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nl">sharding</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">tables</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t_order</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">actual</span><span class="o">-</span><span class="n">data</span><span class="o">-</span><span class="n">nodes</span><span class="p">:</span><span class="w"> </span><span class="n">ds$</span><span class="p">{</span><span class="n">0</span><span class="p">..</span><span class="na">1</span><span class="p">}.</span><span class="na">t_order_$</span><span class="p">{</span><span class="n">0</span><span class="p">..</span><span class="na">3</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">table</span><span class="o">-</span><span class="n">strategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">standard</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="n">sharding</span><span class="o">-</span><span class="n">column</span><span class="p">:</span><span class="w"> </span><span class="n">order_id</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="n">sharding</span><span class="o">-</span><span class="n">algorithm</span><span class="o">-</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">order</span><span class="o">-</span><span class="n">hash</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">sharding</span><span class="o">-</span><span class="n">algorithms</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">order</span><span class="o">-</span><span class="n">hash</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">type</span><span class="p">:</span><span class="w"> </span><span class="n">INLINE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">props</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">algorithm</span><span class="o">-</span><span class="n">expression</span><span class="p">:</span><span class="w"> </span><span class="n">t_order_$</span><span class="p">{</span><span class="n">order_id</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">4</span><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="分布式id">分布式ID</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方案</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>数据库自增</td>
+          <td>简单</td>
+          <td>性能瓶颈，不适合分片</td>
+      </tr>
+      <tr>
+          <td>Snowflake</td>
+          <td>高性能，趋势递增</td>
+          <td>时钟回拨问题</td>
+      </tr>
+      <tr>
+          <td>号段模式</td>
+          <td>批量获取，性能高</td>
+          <td>依赖数据库</td>
+      </tr>
+      <tr>
+          <td>UUID</td>
+          <td>无中心</td>
+          <td>无序，占用空间大</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Snowflake实现（位运算）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 64位 = 1位符号 + 41位时间戳 + 10位机器ID + 12位序列号</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="nf">nextId</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">long</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">((</span><span class="n">timestamp</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">EPOCH</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">TIMESTAMP_LEFT</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">datacenterId</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">DATACENTER_LEFT</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">workerId</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">WORKER_LEFT</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">sequence</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="shardingsphere集成">ShardingSphere集成</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">spring</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">shardingsphere</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">datasource</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">names</span><span class="p">:</span><span class="w"> </span><span class="l">ds0, ds1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">ds0</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">com.zaxxer.hikari.HikariDataSource</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">driver-class-name</span><span class="p">:</span><span class="w"> </span><span class="l">com.mysql.cj.jdbc.Driver</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">jdbc-url</span><span class="p">:</span><span class="w"> </span><span class="l">jdbc:mysql://localhost:3306/db0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">ds1</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">com.zaxxer.hikari.HikariDataSource</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">driver-class-name</span><span class="p">:</span><span class="w"> </span><span class="l">com.mysql.cj.jdbc.Driver</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">jdbc-url</span><span class="p">:</span><span class="w"> </span><span class="l">jdbc:mysql://localhost:3306/db1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">sharding</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">tables</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">t_order</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">actual-data-nodes</span><span class="p">:</span><span class="w"> </span><span class="l">ds${0..1}.t_order_${0..3}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">key-generate-strategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="l">order_id</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">key-generator-name</span><span class="p">:</span><span class="w"> </span><span class="l">snowflake</span></span></span></code></pre></div></div>
+<h3 id="分片后的挑战">分片后的挑战</h3>
+<table>
+  <thead>
+      <tr>
+          <th>问题</th>
+          <th>说明</th>
+          <th>解决方案</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>跨分片JOIN</td>
+          <td>无法直接JOIN不同分片的数据</td>
+          <td>全局表广播、应用层聚合、宽表冗余</td>
+      </tr>
+      <tr>
+          <td>跨分片排序分页</td>
+          <td>ORDER BY + LIMIT需全局排序</td>
+          <td>应用层归并、限制深度分页</td>
+      </tr>
+      <tr>
+          <td>分布式事务</td>
+          <td>跨库事务无法保证ACID</td>
+          <td>Seata AT模式、最终一致性</td>
+      </tr>
+      <tr>
+          <td>数据迁移</td>
+          <td>扩容需重新分片</td>
+          <td>双写过渡、增量同步</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="分页优化">分页优化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 问题：limit 1000000, 10 需全局扫描大量数据</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 优化1：限制分页深度</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pageNum</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">1000</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BizException</span><span class="p">(</span><span class="s">&#34;不支持深分页，请使用搜索条件缩小范围&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 优化2：游标分页（基于排序键）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">FROM</span><span class="w"> </span><span class="n">t_order</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="n">WHERE</span><span class="w"> </span><span class="n">create_time</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="err">#</span><span class="p">{</span><span class="n">lastTime</span><span class="p">}</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="n">ORDER</span><span class="w"> </span><span class="n">BY</span><span class="w"> </span><span class="n">create_time</span><span class="w"> </span><span class="n">DESC</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="n">LIMIT</span><span class="w"> </span><span class="n">10</span><span class="p">;</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1过早引入分库分表">问题1：过早引入分库分表</h3>
+<p><strong>根因</strong>：单表几百万数据就开始拆分，增加不必要复杂度
+<strong>解决</strong>：先尝试索引优化、读写分离、归档历史数据，单表千万级以上再考虑拆分</p>]]></description></item></channel></rss>

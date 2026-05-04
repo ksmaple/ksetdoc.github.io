@@ -1,0 +1,154 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>监控 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E7%9B%91%E6%8E%A7/</link><description>监控 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E7%9B%91%E6%8E%A7/" rel="self" type="application/rss+xml"/><item><title>CAT分布式监控</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/cat%E7%9B%91%E6%8E%A7/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/cat%E7%9B%91%E6%8E%A7/</guid><description><![CDATA[<h1 id="cat分布式监控">CAT分布式监控</h1>
+<blockquote>
+<p><strong>核心结论</strong>：CAT通过客户端埋点采集监控数据，通过消息树组织调用链，通过服务端聚合分析，实现从应用性能到业务指标的全链路监控，埋点规范和数据采样是落地关键。</p>
+</blockquote>
+<hr>
+<h2 id="cat通过客户端埋点采集消息树组织服务端聚合实现全链路监控和实时告警">CAT通过客户端埋点采集、消息树组织、服务端聚合，实现全链路监控和实时告警</h2>
+<h3 id="核心概念transactioneventheartbeatmetric">核心概念：Transaction、Event、Heartbeat、Metric</h3>
+<table>
+  <thead>
+      <tr>
+          <th>类型</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Transaction</td>
+          <td>有执行时间的嵌套结构</td>
+          <td>SQL执行、RPC调用、方法执行</td>
+      </tr>
+      <tr>
+          <td>Event</td>
+          <td>无执行时间的离散事件</td>
+          <td>异常、日志、用户行为</td>
+      </tr>
+      <tr>
+          <td>Heartbeat</td>
+          <td>周期性心跳</td>
+          <td>JVM状态、线程数、系统负载</td>
+      </tr>
+      <tr>
+          <td>Metric</td>
+          <td>指标统计</td>
+          <td>QPS、RT、成功率</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">消息树（Message Tree）结构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Root Transaction: URL-/api/order/create
+</span></span><span class="line"><span class="cl">├── Transaction: Service-createOrder (耗时50ms)
+</span></span><span class="line"><span class="cl">│   ├── Transaction: DAO-insertOrder (耗时10ms)
+</span></span><span class="line"><span class="cl">│   │   └── Event: SQL (INSERT INTO order ...)
+</span></span><span class="line"><span class="cl">│   ├── Transaction: Cache-getUser (耗时5ms)
+</span></span><span class="line"><span class="cl">│   └── Transaction: RPC-callPayment (耗时30ms)
+</span></span><span class="line"><span class="cl">│       └── Event: Request (payId=12345)
+</span></span><span class="line"><span class="cl">├── Event: OrderCreated (orderId=10001)
+</span></span><span class="line"><span class="cl">└── Metric: order.create (count=1)</span></span></code></pre></div></div>
+<h3 id="java埋点示例">Java埋点示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Transaction埋点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Transaction</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Cat</span><span class="p">.</span><span class="na">newTransaction</span><span class="p">(</span><span class="s">&#34;Service&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;createOrder&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Order</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orderService</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Cat</span><span class="p">.</span><span class="na">logEvent</span><span class="p">(</span><span class="s">&#34;OrderCreated&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">order</span><span class="p">.</span><span class="na">getId</span><span class="p">()));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="n">Transaction</span><span class="p">.</span><span class="na">SUCCESS</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Cat</span><span class="p">.</span><span class="na">logError</span><span class="p">(</span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="na">complete</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 简化方式（使用AOP或注解）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@CatTransaction</span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;Service&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;createOrder&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Order</span><span class="w"> </span><span class="nf">createOrder</span><span class="p">(</span><span class="n">OrderRequest</span><span class="w"> </span><span class="n">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">orderService</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>埋点策略</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>核心接口</td>
+          <td>全量Transaction</td>
+          <td>精确监控RT和成功率</td>
+      </tr>
+      <tr>
+          <td>高频调用</td>
+          <td>采样（1%）</td>
+          <td>减少性能开销</td>
+      </tr>
+      <tr>
+          <td>异常处理</td>
+          <td>必报Event</td>
+          <td>不遗漏错误</td>
+      </tr>
+      <tr>
+          <td>业务指标</td>
+          <td>Metric聚合</td>
+          <td>实时大盘</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1埋点过多影响性能">问题1：埋点过多影响性能</h3>
+<p><strong>根因</strong>：每个埋点都有创建和序列化开销
+<strong>解决</strong>：核心链路全量、非核心采样、异步上报</p>]]></description></item><item><title>线程池原理与调优</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E7%BA%BF%E7%A8%8B%E6%B1%A0/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E7%BA%BF%E7%A8%8B%E6%B1%A0/</guid><description><![CDATA[<h1 id="线程池原理与调优">线程池原理与调优</h1>
+<blockquote>
+<p><strong>核心结论</strong>：线程池通过复用线程减少创建销毁开销，通过阻塞队列缓冲任务，通过拒绝策略处理超负荷，核心参数（核心线程数、最大线程数、队列容量）的配置直接决定了系统的吞吐和稳定性。</p>
+</blockquote>
+<hr>
+<h2 id="线程池通过复用线程和队列缓冲实现资源控制核心参数配置不当是导致生产故障的主要原因">线程池通过复用线程和队列缓冲实现资源控制，核心参数配置不当是导致生产故障的主要原因</h2>
+<h3 id="threadpoolexecutor核心参数">ThreadPoolExecutor核心参数</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="nf">ThreadPoolExecutor</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">corePoolSize</span><span class="p">,</span><span class="w">           </span><span class="c1">// 核心线程数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">maximumPoolSize</span><span class="p">,</span><span class="w">        </span><span class="c1">// 最大线程数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">long</span><span class="w"> </span><span class="n">keepAliveTime</span><span class="p">,</span><span class="w">         </span><span class="c1">// 空闲线程存活时间</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">TimeUnit</span><span class="w"> </span><span class="n">unit</span><span class="p">,</span><span class="w">              </span><span class="c1">// 时间单位</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">BlockingQueue</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;</span><span class="w"> </span><span class="n">workQueue</span><span class="p">,</span><span class="w">  </span><span class="c1">// 任务队列</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ThreadFactory</span><span class="w"> </span><span class="n">threadFactory</span><span class="p">,</span><span class="w">         </span><span class="c1">// 线程工厂</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">RejectedExecutionHandler</span><span class="w"> </span><span class="n">handler</span><span class="w">     </span><span class="c1">// 拒绝策略</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span></span></span></code></pre></div></div>
+<p><strong>参数作用与任务提交流程</strong>：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">提交任务 → 当前线程数 &lt; corePoolSize？
+</span></span><span class="line"><span class="cl">    → 是：创建新线程执行任务
+</span></span><span class="line"><span class="cl">    → 否：队列未满？
+</span></span><span class="line"><span class="cl">        → 是：任务入队列
+</span></span><span class="line"><span class="cl">        → 否：当前线程数 &lt; maximumPoolSize？
+</span></span><span class="line"><span class="cl">            → 是：创建新线程（临时线程）
+</span></span><span class="line"><span class="cl">            → 否：执行拒绝策略
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">线程空闲超过keepAliveTime：
+</span></span><span class="line"><span class="cl">    - 当前线程数 &gt; corePoolSize：销毁多余线程
+</span></span><span class="line"><span class="cl">    - 当前线程数 &lt;= corePoolSize：保留（除非allowCoreThreadTimeOut=true）</span></span></code></pre></div></div>
+<p><strong>JDK提供的快捷创建方法</strong>：</p>]]></description></item></channel></rss>

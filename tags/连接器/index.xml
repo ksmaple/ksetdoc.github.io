@@ -1,0 +1,29 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>连接器 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E8%BF%9E%E6%8E%A5%E5%99%A8/</link><description>连接器 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E8%BF%9E%E6%8E%A5%E5%99%A8/" rel="self" type="application/rss+xml"/><item><title>Tomcat与Servlet</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/tomcat%E4%B8%8Eservlet/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/tomcat%E4%B8%8Eservlet/</guid><description><![CDATA[<h1 id="tomcat与servlet">Tomcat与Servlet</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Tomcat通过Connector接收HTTP请求，通过Container（Engine-Host-Context-Wrapper）层级管理Servlet生命周期，线程池模型决定了并发处理能力，理解Acceptor-Poller-Worker线程分工是调优关键。</p>
+</blockquote>
+<hr>
+<h2 id="tomcat通过connector处理网络连接通过container层级管理servlet线程池和io模型决定并发性能">Tomcat通过Connector处理网络连接，通过Container层级管理Servlet，线程池和I/O模型决定并发性能</h2>
+<h3 id="tomcat架构connector--container双核心">Tomcat架构：Connector + Container双核心</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Server（Tomcat实例）
+</span></span><span class="line"><span class="cl">└── Service
+</span></span><span class="line"><span class="cl">    ├── Connector（HTTP/AJP连接器）
+</span></span><span class="line"><span class="cl">    │   ├── ProtocolHandler（协议处理器）
+</span></span><span class="line"><span class="cl">    │   │   ├── Endpoint（网络端点：NIO/NIO2/APR）
+</span></span><span class="line"><span class="cl">    │   │   │   ├── Acceptor（接收连接）
+</span></span><span class="line"><span class="cl">    │   │   │   ├── Poller（轮询就绪事件）
+</span></span><span class="line"><span class="cl">    │   │   │   └── Executor（工作线程池）
+</span></span><span class="line"><span class="cl">    │   │   └── Processor（处理HTTP协议）
+</span></span><span class="line"><span class="cl">    │   └── Adapter（适配到Container）
+</span></span><span class="line"><span class="cl">    │
+</span></span><span class="line"><span class="cl">    └── Engine（Servlet引擎）
+</span></span><span class="line"><span class="cl">        └── Host（虚拟主机）
+</span></span><span class="line"><span class="cl">            └── Context（Web应用）
+</span></span><span class="line"><span class="cl">                └── Wrapper（Servlet包装器）
+</span></span><span class="line"><span class="cl">                    └── Servlet实例</span></span></code></pre></div></div>
+<p><strong>核心组件职责</strong>：</p>]]></description></item></channel></rss>

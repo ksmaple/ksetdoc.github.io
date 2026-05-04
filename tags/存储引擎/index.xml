@@ -1,0 +1,140 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>存储引擎 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</link><description>存储引擎 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/" rel="self" type="application/rss+xml"/><item><title>MySQL存储引擎</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</guid><description><![CDATA[<h1 id="mysql存储引擎">MySQL存储引擎</h1>
+<blockquote>
+<p><strong>核心结论</strong>：InnoDB通过聚簇索引组织数据，通过MVCC实现无锁读，通过行锁和间隙锁实现并发控制，是MySQL生产环境的事实标准；MyISAM已逐步被InnoDB取代，仅在特殊读多写少场景考虑。</p>
+</blockquote>
+<hr>
+<h2 id="innodb通过聚簇索引mvcc行锁三大机制实现高并发事务安全是mysql生产环境的首选存储引擎">InnoDB通过聚簇索引、MVCC、行锁三大机制实现高并发事务安全，是MySQL生产环境的首选存储引擎</h2>
+<h3 id="innodb核心特性">InnoDB核心特性</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>实现</th>
+          <th>优势</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>聚簇索引</td>
+          <td>主键索引即数据</td>
+          <td>主键查询快，范围查询高效</td>
+      </tr>
+      <tr>
+          <td>MVCC</td>
+          <td>undo log + 事务ID</td>
+          <td>读不阻塞写，写不阻塞读</td>
+      </tr>
+      <tr>
+          <td>行级锁</td>
+          <td>记录锁 + 间隙锁</td>
+          <td>并发度高</td>
+      </tr>
+      <tr>
+          <td>外键</td>
+          <td>支持级联操作</td>
+          <td>数据完整性</td>
+      </tr>
+      <tr>
+          <td>崩溃恢复</td>
+          <td>Redo Log + Double Write</td>
+          <td>数据不丢失</td>
+      </tr>
+      <tr>
+          <td>缓冲池</td>
+          <td>内存缓存数据和索引</td>
+          <td>减少磁盘IO</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="mvcc多版本并发控制">MVCC：多版本并发控制</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">MVCC核心：每行数据有两个隐藏列
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">DB_TRX_ID（6字节）：最后修改该行的事务ID
+</span></span><span class="line"><span class="cl">DB_ROLL_PTR（7字节）：指向undo log的回滚指针
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Read View（快照）：事务开始时创建的一致性视图
+</span></span><span class="line"><span class="cl">  - creator_trx_id：创建该视图的事务ID
+</span></span><span class="line"><span class="cl">  - up_limit_id：活跃事务最小ID
+</span></span><span class="line"><span class="cl">  - low_limit_id：即将分配的下一个事务ID
+</span></span><span class="line"><span class="cl">  - trx_ids：活跃事务ID列表
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">可见性判断：
+</span></span><span class="line"><span class="cl">  1. DB_TRX_ID == creator_trx_id：可见（自己修改的）
+</span></span><span class="line"><span class="cl">  2. DB_TRX_ID &lt; up_limit_id：可见（事务已提交）
+</span></span><span class="line"><span class="cl">  3. DB_TRX_ID &gt;= low_limit_id：不可见（事务未开始）
+</span></span><span class="line"><span class="cl">  4. DB_TRX_ID在trx_ids中：不可见（事务活跃未提交）
+</span></span><span class="line"><span class="cl">  5. 其他情况：可见</span></span></code></pre></div></div>
+<p><strong>InnoDB的三种行记录格式</strong>：</p>]]></description></item><item><title>PostgreSQL 架构原理与 MySQL 对比</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/postgresql%E6%B7%B1%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/postgresql%E6%B7%B1%E5%85%A5/</guid><description><![CDATA[<h1 id="postgresql-架构原理与-mysql-对比">PostgreSQL 架构原理与 MySQL 对比</h1>
+<blockquote>
+<p><strong>核心结论</strong>：PostgreSQL 通过<strong>进程模型</strong>实现连接隔离、通过<strong>统一存储层</strong>管理数据、通过<strong>多版本并发控制（MVCC）<strong>实现无锁读写、通过</strong>丰富的索引类型和扩展体系</strong>覆盖从 OLTP 到 AI 向量的全场景，其设计哲学是&quot;扩展优先、标准兼容、企业级可靠&quot;；而 MySQL 以&quot;简单优先、性能优先&quot;著称，两者在架构模型、MVCC 实现、索引体系和扩展能力上存在根本性差异。</p>
+</blockquote>
+<hr>
+<h2 id="postgresql-通过进程架构统一存储层mvcc-和扩展体系实现企业级可靠性">PostgreSQL 通过进程架构、统一存储层、MVCC 和扩展体系实现企业级可靠性</h2>
+<h3 id="进程架构每个连接独立进程崩溃隔离优于线程模型">进程架构：每个连接独立进程，崩溃隔离优于线程模型</h3>
+<h3 id="存储管理表空间--toast--页面结构大字段外置存储">存储管理：表空间 + TOAST + 页面结构，大字段外置存储</h3>
+<h3 id="mvcc-与事务快照隔离--可见性规则--vacuum-清理">MVCC 与事务：快照隔离 + 可见性规则 + Vacuum 清理</h3>
+<h3 id="索引体系b-tree--gin--gist--brin-覆盖全场景">索引体系：B-Tree / GIN / GiST / BRIN 覆盖全场景</h3>
+<h3 id="扩展生态pgvector--postgis--citus-等插件体系">扩展生态：pgvector / PostGIS / Citus 等插件体系</h3>
+<hr>
+<h2 id="实现原理与关键机制">实现原理与关键机制</h2>
+<h3 id="进程模型-vs-mysql-线程模型">进程模型 vs MySQL 线程模型</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">PostgreSQL 进程模型：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">┌──────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">│              Postmaster (主进程)           │
+</span></span><span class="line"><span class="cl">│   - 监听端口 5432                          │
+</span></span><span class="line"><span class="cl">│   - 管理所有子进程生命周期                  │
+</span></span><span class="line"><span class="cl">│   - 协调崩溃恢复                           │
+</span></span><span class="line"><span class="cl">└──────────────────────────────────────────┘
+</span></span><span class="line"><span class="cl">          │
+</span></span><span class="line"><span class="cl">    ┌─────┼─────┬─────────┬─────────┐
+</span></span><span class="line"><span class="cl">    ▼     ▼     ▼         ▼         ▼
+</span></span><span class="line"><span class="cl">  后端    后端   后端      后端       后端
+</span></span><span class="line"><span class="cl">  进程    进程   进程      进程       进程
+</span></span><span class="line"><span class="cl">  conn1   conn2  conn3    conn4      conn5
+</span></span><span class="line"><span class="cl">  ───────────────────────────────────────
+</span></span><span class="line"><span class="cl">  每个连接 = 独立进程 (fork)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">共享内存区域（所有进程共享）：
+</span></span><span class="line"><span class="cl">  ├── 缓冲池（Buffer Pool）     - 缓存表页和索引页
+</span></span><span class="line"><span class="cl">  ├── WAL 缓冲区                - 预写日志缓冲
+</span></span><span class="line"><span class="cl">  ├── 锁表（Lock Table）        - 进程间锁协调
+</span></span><span class="line"><span class="cl">  ├── 进程通信区                 - 进程间信号传递
+</span></span><span class="line"><span class="cl">  └── 事务状态数组               - 全局事务快照</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">MySQL (InnoDB) 线程模型：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">┌──────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">│           mysqld (单进程多线程)            │
+</span></span><span class="line"><span class="cl">│                                          │
+</span></span><span class="line"><span class="cl">│   主线程 ──→ 监听端口 3306                 │
+</span></span><span class="line"><span class="cl">│      │                                   │
+</span></span><span class="line"><span class="cl">│      ├──→ 连接线程池                      │
+</span></span><span class="line"><span class="cl">│      │    ├── 线程 1 (conn1)             │
+</span></span><span class="line"><span class="cl">│      │    ├── 线程 2 (conn2)             │
+</span></span><span class="line"><span class="cl">│      │    └── 线程 N (connN)             │
+</span></span><span class="line"><span class="cl">│      │                                   │
+</span></span><span class="line"><span class="cl">│      ├──→ 后台线程                      │
+</span></span><span class="line"><span class="cl">│      │    ├── IO 线程（读/写日志）        │
+</span></span><span class="line"><span class="cl">│      │    ├── Purge 线程                │
+</span></span><span class="line"><span class="cl">│      │    └── Page Cleaner 线程         │
+</span></span><span class="line"><span class="cl">│      │                                   │
+</span></span><span class="line"><span class="cl">│      └──→ 共享缓冲池（Buffer Pool）       │
+</span></span><span class="line"><span class="cl">│                                          │
+</span></span><span class="line"><span class="cl">│   所有线程共享同一地址空间                  │
+</span></span><span class="line"><span class="cl">└──────────────────────────────────────────┘</span></span></code></pre></div></div>
+<p><strong>核心差异</strong>：</p>]]></description></item></channel></rss>

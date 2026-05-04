@@ -1,0 +1,88 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>接口规范 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E6%8E%A5%E5%8F%A3%E8%A7%84%E8%8C%83/</link><description>接口规范 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E6%8E%A5%E5%8F%A3%E8%A7%84%E8%8C%83/" rel="self" type="application/rss+xml"/><item><title>第三方系统交互设计</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%8E%A5%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%8E%A5%E5%85%A5/</guid><description><![CDATA[<h1 id="第三方系统交互设计">第三方系统交互设计</h1>
+<blockquote>
+<p><strong>核心结论</strong>：与第三方系统交互的核心挑战是网络不可靠和接口差异，通过统一接口层封装异构协议，通过幂等和重试保障可靠性，通过熔断降级保障自身稳定性。</p>
+</blockquote>
+<hr>
+<h2 id="第三方交互通过统一封装幂等重试熔断降级三大机制保障可靠性">第三方交互通过统一封装、幂等重试、熔断降级三大机制保障可靠性</h2>
+<h3 id="设计原则">设计原则</h3>
+<table>
+  <thead>
+      <tr>
+          <th>原则</th>
+          <th>说明</th>
+          <th>实现</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>统一封装</td>
+          <td>屏蔽第三方差异</td>
+          <td>适配器模式，统一出入参</td>
+      </tr>
+      <tr>
+          <td>幂等设计</td>
+          <td>重复调用无副作用</td>
+          <td>业务订单号唯一性</td>
+      </tr>
+      <tr>
+          <td>超时重试</td>
+          <td>网络抖动容错</td>
+          <td>指数退避，限制重试次数</td>
+      </tr>
+      <tr>
+          <td>熔断降级</td>
+          <td>第三方故障自我保护</td>
+          <td>失败率阈值触发熔断</td>
+      </tr>
+      <tr>
+          <td>异步解耦</td>
+          <td>降低耦合和延迟</td>
+          <td>MQ中转</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="接口层架构">接口层架构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">业务层
+</span></span><span class="line"><span class="cl">  ↓ 调用
+</span></span><span class="line"><span class="cl">统一接口层（Adapter）
+</span></span><span class="line"><span class="cl">  ├── 微信支付Adapter
+</span></span><span class="line"><span class="cl">  ├── 支付宝Adapter
+</span></span><span class="line"><span class="cl">  ├── 短信服务商Adapter
+</span></span><span class="line"><span class="cl">  └── 推送服务商Adapter
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">统一接口层职责：
+</span></span><span class="line"><span class="cl">  - 入参转换（内部标准 → 第三方格式）
+</span></span><span class="line"><span class="cl">  - 出参转换（第三方格式 → 内部标准）
+</span></span><span class="line"><span class="cl">  - 签名/验签
+</span></span><span class="line"><span class="cl">  - 超时/重试/熔断
+</span></span><span class="line"><span class="cl">  - 日志记录</span></span></code></pre></div></div>
+<h3 id="幂等与重试">幂等与重试</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 带幂等的HTTP调用</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Result</span><span class="w"> </span><span class="nf">callWithRetry</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">Request</span><span class="w"> </span><span class="n">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">idempotencyKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">generateKey</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">MAX_RETRY</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">httpClient</span><span class="p">.</span><span class="na">call</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">idempotencyKey</span><span class="p">,</span><span class="w"> </span><span class="n">TIMEOUT</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">TimeoutException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">MAX_RETRY</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="n">e</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">((</span><span class="kt">long</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="na">pow</span><span class="p">(</span><span class="n">2</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">100</span><span class="p">));</span><span class="w">  </span><span class="c1">// 指数退避</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RuntimeException</span><span class="p">(</span><span class="s">&#34;Should not reach here&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1第三方接口变更导致故障">问题1：第三方接口变更导致故障</h3>
+<p><strong>根因</strong>：直接依赖第三方数据结构
+<strong>解决</strong>：适配器层做字段映射，变更只改适配器</p>]]></description></item></channel></rss>

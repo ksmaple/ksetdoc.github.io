@@ -1,0 +1,241 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>搜索与推荐 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/</link><description>搜索与推荐 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/" rel="self" type="application/rss+xml"/><item><title>Elasticsearch核心</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/elasticsearch%E6%A0%B8%E5%BF%83/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/elasticsearch%E6%A0%B8%E5%BF%83/</guid><description><![CDATA[<h1 id="elasticsearch核心">Elasticsearch核心</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Elasticsearch基于Lucene实现分布式搜索，通过倒排索引加速全文检索，通过分片和副本实现水平扩展和高可用，理解索引、分片、映射和查询DSL是使用ES的基础。</p>
+</blockquote>
+<hr>
+<h2 id="elasticsearch基于lucene构建通过分片分布式存储通过倒排索引实现高性能全文搜索">Elasticsearch基于Lucene构建，通过分片分布式存储，通过倒排索引实现高性能全文搜索</h2>
+<h3 id="核心概念索引文档映射分片">核心概念：索引、文档、映射、分片</h3>
+<table>
+  <thead>
+      <tr>
+          <th>概念</th>
+          <th>说明</th>
+          <th>类比关系型数据库</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Index</td>
+          <td>索引，文档的集合</td>
+          <td>Database</td>
+      </tr>
+      <tr>
+          <td>Document</td>
+          <td>文档，一条JSON数据</td>
+          <td>Row</td>
+      </tr>
+      <tr>
+          <td>Mapping</td>
+          <td>映射，字段类型定义</td>
+          <td>Schema</td>
+      </tr>
+      <tr>
+          <td>Type</td>
+          <td>类型（7.0+已废弃）</td>
+          <td>Table</td>
+      </tr>
+      <tr>
+          <td>Shard</td>
+          <td>分片，数据的最小单元</td>
+          <td>Partition</td>
+      </tr>
+      <tr>
+          <td>Replica</td>
+          <td>副本，分片的复制</td>
+          <td>Replica</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">索引结构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Index: products
+</span></span><span class="line"><span class="cl">├── Primary Shard 0 (Node-1)
+</span></span><span class="line"><span class="cl">│   └── Replica 0 (Node-2)
+</span></span><span class="line"><span class="cl">├── Primary Shard 1 (Node-2)
+</span></span><span class="line"><span class="cl">│   └── Replica 1 (Node-3)
+</span></span><span class="line"><span class="cl">├── Primary Shard 2 (Node-3)
+</span></span><span class="line"><span class="cl">│   └── Replica 2 (Node-1)
+</span></span><span class="line"><span class="cl">└── Primary Shard 3 (Node-1)
+</span></span><span class="line"><span class="cl">    └── Replica 3 (Node-2)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">路由：shard = hash(routing) % number_of_primary_shards
+</span></span><span class="line"><span class="cl">routing默认是文档_id</span></span></code></pre></div></div>
+<h3 id="倒排索引与文本分析">倒排索引与文本分析</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">文本分析流程（Analysis）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">原始文本: &#34;The quick brown foxes jumped!&#34;
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">Character Filter: 去除HTML、替换字符
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">Tokenizer: 分词 → [the, quick, brown, foxes, jumped]
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">Token Filter: 
+</span></span><span class="line"><span class="cl">  - Lowercase: [the, quick, brown, foxes, jumped]
+</span></span><span class="line"><span class="cl">  - Stop words: [quick, brown, foxes, jumped]（去除the）
+</span></span><span class="line"><span class="cl">  - Stemming: [quick, brown, fox, jump]（foxes→fox, jumped→jump）
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">存入倒排索引</span></span></code></pre></div></div>
+<p><strong>常用分析器</strong>：</p>]]></description></item><item><title>ES运维问题</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/es%E8%BF%90%E7%BB%B4/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/es%E8%BF%90%E7%BB%B4/</guid><description><![CDATA[<h1 id="es运维问题">ES运维问题</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Elasticsearch运维的核心是平衡搜索性能、索引吞吐和集群稳定性，常见问题集中在磁盘不足、分片过多、内存压力大三个方面，通过索引生命周期管理、分片策略和监控告警体系来系统性解决。</p>
+</blockquote>
+<hr>
+<h2 id="es运维围绕磁盘内存分片三个资源维度通过ilm和监控体系保障集群稳定">ES运维围绕磁盘、内存、分片三个资源维度，通过ILM和监控体系保障集群稳定</h2>
+<h3 id="磁盘不足索引生命周期管理ilm">磁盘不足：索引生命周期管理（ILM）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">索引生命周期：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Hot（热数据） → Warm（温数据） → Cold（冷数据） → Frozen（冻结） → Delete（删除）
+</span></span><span class="line"><span class="cl">   ↓               ↓               ↓                ↓
+</span></span><span class="line"><span class="cl"> 高频搜索      只读，压缩存储   极少访问，慢查询   归档
+</span></span><span class="line"><span class="cl"> 高性能磁盘    普通磁盘          对象存储          低成本存储
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ILM策略示例：
+</span></span><span class="line"><span class="cl">- 创建后1天：进入Hot
+</span></span><span class="line"><span class="cl">- 7天后：进入Warm，缩小分片，forcemerge
+</span></span><span class="line"><span class="cl">- 30天后：进入Cold，关闭索引（只保留元数据）
+</span></span><span class="line"><span class="cl">- 90天后：删除</span></span></code></pre></div></div>
+<p><strong>磁盘优化措施</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>措施</th>
+          <th>效果</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Force Merge</td>
+          <td>合并段，减少文件数，降低磁盘占用</td>
+      </tr>
+      <tr>
+          <td>_shrink</td>
+          <td>缩小索引分片数</td>
+      </tr>
+      <tr>
+          <td>关闭索引（Close）</td>
+          <td>释放文件句柄，保留元数据</td>
+      </tr>
+      <tr>
+          <td>删除旧索引</td>
+          <td>释放磁盘</td>
+      </tr>
+      <tr>
+          <td>压缩存储（best_compression）</td>
+          <td>牺牲CPU换磁盘</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="分片策略避免过多或过少">分片策略：避免过多或过少</h3>
+<table>
+  <thead>
+      <tr>
+          <th>问题</th>
+          <th>原因</th>
+          <th>解决</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>分片过多</td>
+          <td>每个分片有内存开销，元数据压力大</td>
+          <td>合并索引，使用_shrink</td>
+      </tr>
+      <tr>
+          <td>分片过少</td>
+          <td>无法利用多节点并行</td>
+          <td>按30-50GB/分片预估</td>
+      </tr>
+      <tr>
+          <td>分片不均</td>
+          <td>节点负载不均</td>
+          <td>调整routing或rebalance</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>分片数量建议</strong>：</p>]]></description></item><item><title>RAG与向量检索</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/rag%E4%B8%8E%E5%90%91%E9%87%8F%E6%90%9C%E7%B4%A2/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%8E%A8%E8%8D%90/rag%E4%B8%8E%E5%90%91%E9%87%8F%E6%90%9C%E7%B4%A2/</guid><description><![CDATA[<h1 id="rag与向量检索">RAG与向量检索</h1>
+<blockquote>
+<p><strong>核心结论</strong>：RAG通过向量检索获取相关知识再生成回答，解决了大模型幻觉和知识时效问题，向量检索的核心是Embedding模型将文本转为高维向量，通过ANN算法在毫秒级找到最近邻。</p>
+</blockquote>
+<hr>
+<h2 id="rag通过向量检索获取上下文再生成embeddingann是语义搜索的核心技术栈">RAG通过向量检索获取上下文再生成，Embedding+ANN是语义搜索的核心技术栈</h2>
+<h3 id="rag架构检索增强生成">RAG架构：检索增强生成</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户提问: &#34;公司的年假政策是什么？&#34;
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">Embedding模型 → 将问题转为向量 Query-Vector
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">向量数据库检索 → 找出Top-K相似的文档片段
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">构建Prompt: 
+</span></span><span class="line"><span class="cl">  &#34;基于以下信息回答问题：
+</span></span><span class="line"><span class="cl">   [文档片段1] [文档片段2] [文档片段3]
+</span></span><span class="line"><span class="cl">   问题：公司的年假政策是什么？&#34;
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">LLM生成回答</span></span></code></pre></div></div>
+<p><strong>RAG vs 微调</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>RAG</th>
+          <th>微调</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>知识更新</td>
+          <td>实时（更新向量库）</td>
+          <td>需重新训练</td>
+      </tr>
+      <tr>
+          <td>成本</td>
+          <td>低</td>
+          <td>高</td>
+      </tr>
+      <tr>
+          <td>幻觉控制</td>
+          <td>好（基于检索内容）</td>
+          <td>一般</td>
+      </tr>
+      <tr>
+          <td>适用场景</td>
+          <td>知识库问答、客服</td>
+          <td>特定风格/格式</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="embedding与向量相似度">Embedding与向量相似度</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">文本 → Embedding模型 → 高维向量（如1536维）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">相似度计算：
+</span></span><span class="line"><span class="cl">  - 余弦相似度：向量夹角余弦值（最常用）
+</span></span><span class="line"><span class="cl">  - 欧氏距离：向量空间直线距离
+</span></span><span class="line"><span class="cl">  - 点积：考虑向量长度
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">余弦相似度 = (A · B) / (||A|| × ||B||)
+</span></span><span class="line"><span class="cl">  值域[-1, 1]，1表示完全相同方向</span></span></code></pre></div></div>
+<p><strong>常用Embedding模型</strong>：</p>]]></description></item></channel></rss>

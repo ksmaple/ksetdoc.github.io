@@ -1,0 +1,174 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Jwt - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/jwt/</link><description>Jwt - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/jwt/" rel="self" type="application/rss+xml"/><item><title>Sa-Token权限认证框架</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/sa-token/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/sa-token/</guid><description><![CDATA[<h1 id="sa-token权限认证框架">Sa-Token权限认证框架</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Sa-Token通过简洁的API设计和开箱即用的功能，将登录认证、权限校验、分布式Session等复杂逻辑封装为单句调用，适合快速开发场景，但在超大规模分布式场景下需评估其分布式Session实现与业务需求的匹配度。</p>
+</blockquote>
+<hr>
+<h2 id="sa-token通过api极简设计降低认证开发成本通过多模式登录和分布式session支持复杂业务场景">Sa-Token通过API极简设计降低认证开发成本，通过多模式登录和分布式Session支持复杂业务场景</h2>
+<h3 id="核心特性对比">核心特性对比</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>Sa-Token</th>
+          <th>Spring Security</th>
+          <th>Shiro</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>上手难度</td>
+          <td>极低，单句调用</td>
+          <td>高，需深度配置</td>
+          <td>中，需理解Realm</td>
+      </tr>
+      <tr>
+          <td>代码侵入</td>
+          <td>无，方法级注解</td>
+          <td>中，Filter链配置</td>
+          <td>中，Subject编程</td>
+      </tr>
+      <tr>
+          <td>分布式Session</td>
+          <td>内置集成Redis</td>
+          <td>需自行整合</td>
+          <td>需自行整合</td>
+      </tr>
+      <tr>
+          <td>多账号体系</td>
+          <td>原生支持（User/Admin）</td>
+          <td>需自定义</td>
+          <td>需自定义</td>
+      </tr>
+      <tr>
+          <td>文档友好度</td>
+          <td>中文详尽</td>
+          <td>英文为主</td>
+          <td>中文较少</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="核心api">核心API</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 登录（自动处理Session、Token生成）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpUtil</span><span class="p">.</span><span class="na">login</span><span class="p">(</span><span class="n">10001</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 权限校验（无权限自动抛异常）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpUtil</span><span class="p">.</span><span class="na">checkRole</span><span class="p">(</span><span class="s">&#34;super-admin&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpUtil</span><span class="p">.</span><span class="na">checkPermission</span><span class="p">(</span><span class="s">&#34;user:add&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 获取当前登录用户</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kt">long</span><span class="w"> </span><span class="n">userId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">StpUtil</span><span class="p">.</span><span class="na">getLoginIdAsLong</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 注销</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpUtil</span><span class="p">.</span><span class="na">logout</span><span class="p">();</span></span></span></code></pre></div></div>
+<h3 id="多账号体系">多账号体系</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 用户端</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpUtil</span><span class="p">.</span><span class="na">login</span><span class="p">(</span><span class="n">10001</span><span class="p">);</span><span class="w">                    </span><span class="c1">// 默认体系</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpUtil</span><span class="p">.</span><span class="na">getLoginIdDefaultAsLong</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 管理端（独立命名空间）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpAdminUtil</span><span class="p">.</span><span class="na">login</span><span class="p">(</span><span class="n">10001</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpAdminUtil</span><span class="p">.</span><span class="na">getLoginIdAsLong</span><span class="p">();</span></span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>配置项</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>token-name</code></td>
+          <td>Cookie/Header中的Token名称</td>
+      </tr>
+      <tr>
+          <td><code>timeout</code></td>
+          <td>Token有效期（秒）</td>
+      </tr>
+      <tr>
+          <td><code>activity-timeout</code></td>
+          <td>临时有效期（续签用）</td>
+      </tr>
+      <tr>
+          <td><code>is-concurrent</code></td>
+          <td>是否允许同一账号多端登录</td>
+      </tr>
+      <tr>
+          <td><code>is-share</code></td>
+          <td>多端登录是否共享Token</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="分布式session集成">分布式Session集成</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># application.yml - Redis集成</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">sa-token</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">token-name</span><span class="p">:</span><span class="w"> </span><span class="l">satoken</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="m">2592000</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">activity-timeout</span><span class="p">:</span><span class="w"> </span>-<span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">is-concurrent</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">is-share</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spring</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">redis</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">localhost</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">6370</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="m">1</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Sa-Token自动识别Redis依赖并切换分布式存储</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">无需额外配置SessionManager</span></span></span></code></pre></div></div>
+<h3 id="权限模型">权限模型</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 登录时绑定角色和权限</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpUtil</span><span class="p">.</span><span class="na">login</span><span class="p">(</span><span class="n">10001</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpUtil</span><span class="p">.</span><span class="na">getSession</span><span class="p">().</span><span class="na">set</span><span class="p">(</span><span class="s">&#34;roleList&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="s">&#34;admin&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;super-admin&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">StpUtil</span><span class="p">.</span><span class="na">getSession</span><span class="p">().</span><span class="na">set</span><span class="p">(</span><span class="s">&#34;permissionList&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="s">&#34;user:add&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;user:delete&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 方法级注解校验</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@SaCheckRole</span><span class="p">(</span><span class="s">&#34;admin&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@SaCheckPermission</span><span class="p">(</span><span class="s">&#34;user:add&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@RequestMapping</span><span class="p">(</span><span class="s">&#34;/user/add&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">SaResult</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">SaResult</span><span class="p">.</span><span class="na">ok</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="路由拦截">路由拦截</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Configuration</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">SaTokenConfigure</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">WebMvcConfigurer</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addInterceptors</span><span class="p">(</span><span class="n">InterceptorRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">registry</span><span class="p">.</span><span class="na">addInterceptor</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">SaInterceptor</span><span class="p">(</span><span class="n">handle</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">StpUtil</span><span class="p">.</span><span class="na">checkLogin</span><span class="p">()))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="na">addPathPatterns</span><span class="p">(</span><span class="s">&#34;/**&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="na">excludePathPatterns</span><span class="p">(</span><span class="s">&#34;/user/login&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;/user/register&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1分布式环境下token续签不一致">问题1：分布式环境下Token续签不一致</h3>
+<p><strong>根因</strong>：多实例节点时间不同步或Redis时钟漂移
+<strong>解决</strong>：使用NTP同步服务器时间，续签逻辑以Redis TTL为准</p>]]></description></item></channel></rss>

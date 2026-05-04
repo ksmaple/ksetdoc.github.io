@@ -1,251 +1,1460 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>基础知识 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</link><description>基础知识 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Sun, 12 Apr 2026 15:00:00 +0800</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="self" type="application/rss+xml"/><item><title>Java 泛型详解</title><link>https://ksmaple.github.io/posts/java-generics-guide/</link><pubDate>Sun, 12 Apr 2026 15:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-generics-guide/</guid><description><![CDATA[<div class="featured-image">
-                <img src="/images/covers/cover-java-code.jpg" referrerpolicy="no-referrer">
-            </div><h2 id="泛型概述">泛型概述</h2>
-<p>泛型（Generics）是 Java 5 引入的参数化类型机制，允许在定义类、接口和方法时使用类型参数，从而实现代码的复用和类型安全。</p>
-<h2 id="泛型类">泛型类</h2>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 定义泛型类</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Box</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="n">content</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setContent</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">content</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">content</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="nf">getContent</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">content</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 使用</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Box</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stringBox</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Box</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">stringBox</span><span class="p">.</span><span class="na">setContent</span><span class="p">(</span><span class="s">&#34;Hello&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">String</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stringBox</span><span class="p">.</span><span class="na">getContent</span><span class="p">();</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">无需强制类型转换</span></span></span></code></pre></div></div>
-<h2 id="泛型方法">泛型方法</h2>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Util</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 泛型方法</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">printArray</span><span class="p">(</span><span class="n">T</span><span class="o">[]</span><span class="w"> </span><span class="n">array</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">element</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">array</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">element</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 有界类型参数</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="o">&lt;</span><span class="n">T</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Comparable</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="nf">findMax</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="na">compareTo</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">0</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">b</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
-<h2 id="通配符">通配符</h2>
-<h3 id="无边界的通配符-">无边界的通配符 <?></h3>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="n">List</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">unknownList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 可以读取，但不能添加（除 null 外）</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Object</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unknownList</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">0</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">unknownList</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">&#34;test&#34;</span><span class="p">);</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">编译错误</span></span></span></code></pre></div></div>
-<h3 id="上界通配符--extends-t">上界通配符 &lt;? extends T&gt;</h3>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 可以读取 Number 及其子类</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">List</span><span class="o">&lt;?</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Number</span><span class="o">&gt;</span><span class="w"> </span><span class="n">numbers</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Number</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">numbers</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">num</span><span class="p">.</span><span class="na">doubleValue</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">total</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 使用</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">sum</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="n">1</span><span class="p">,</span><span class="w"> </span><span class="n">2</span><span class="p">,</span><span class="w"> </span><span class="n">3</span><span class="p">));</span><span class="w">      </span><span class="c1">// Integer</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">sum</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="n">1</span><span class="p">.</span><span class="na">5</span><span class="p">,</span><span class="w"> </span><span class="n">2</span><span class="p">.</span><span class="na">5</span><span class="p">));</span><span class="w">     </span><span class="o">//</span><span class="w"> </span><span class="n">Double</span></span></span></code></pre></div></div>
-<h3 id="下界通配符--super-t">下界通配符 &lt;? super T&gt;</h3>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 可以添加 Integer 及其父类</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addNumbers</span><span class="p">(</span><span class="n">List</span><span class="o">&lt;?</span><span class="w"> </span><span class="kd">super</span><span class="w"> </span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">list</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">1</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">2</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">3</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 使用</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">List</span><span class="o">&lt;</span><span class="n">Number</span><span class="o">&gt;</span><span class="w"> </span><span class="n">numbers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">addNumbers</span><span class="p">(</span><span class="n">numbers</span><span class="p">);</span></span></span></code></pre></div></div>
-<h2 id="pecs-原则">PECS 原则</h2>
-<p><strong>Producer Extends, Consumer Super</strong></p>]]></description></item><item><title>Java 核心特性详解：从基础到进阶</title><link>https://ksmaple.github.io/posts/java-features-guide/</link><pubDate>Fri, 10 Apr 2026 16:30:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-features-guide/</guid><description>&lt;p>Java 作为一门历经二十余年依然活跃的编程语言，其设计理念和技术特性值得每一位开发者深入理解。本文将从核心特性出发，详细解析 Java 的技术优势与实现原理。&lt;/p></description></item><item><title>Java 异常处理机制详解</title><link>https://ksmaple.github.io/posts/java-exception/</link><pubDate>Thu, 09 Apr 2026 15:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-exception/</guid><description><![CDATA[<h2 id="异常概述">异常概述</h2>
-<p>异常（Exception）是程序运行过程中发生的不正常事件，中断了程序的正常执行流程。</p>
-<h2 id="异常体系结构">异常体系结构</h2>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>基础知识 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</link><description>基础知识 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="self" type="application/rss+xml"/><item><title>CPU调度与上下文切换</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/cpu%E8%B0%83%E5%BA%A6/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/cpu%E8%B0%83%E5%BA%A6/</guid><description><![CDATA[<h1 id="cpu调度与上下文切换">CPU调度与上下文切换</h1>
+<blockquote>
+<p><strong>核心结论</strong>：CPU通过时间片轮转调度多个进程/线程，上下文切换保存和恢复执行状态的代价在微秒级，进程切换比线程切换开销大（需切换地址空间），理解调度策略是优化系统响应和吞吐的关键。</p>
+</blockquote>
+<hr>
+<h2 id="cpu通过调度算法在时间片上复用上下文切换保存执行状态进程和线程在地址空间共享上存在本质差异">CPU通过调度算法在时间片上复用，上下文切换保存执行状态，进程和线程在地址空间共享上存在本质差异</h2>
+<h3 id="进程-vs-线程资源分配的基本单位-vs-cpu调度的基本单位">进程 vs 线程：资源分配的基本单位 vs CPU调度的基本单位</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>进程（Process）</th>
+          <th>线程（Thread）</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>定义</td>
+          <td>资源分配的基本单位</td>
+          <td>CPU调度的基本单位</td>
+      </tr>
+      <tr>
+          <td>地址空间</td>
+          <td>独立（虚拟内存）</td>
+          <td>共享进程地址空间</td>
+      </tr>
+      <tr>
+          <td>切换开销</td>
+          <td>大（需切换页表、TLB刷新）</td>
+          <td>小（仅保存寄存器、栈指针）</td>
+      </tr>
+      <tr>
+          <td>通信方式</td>
+          <td>IPC（管道、消息队列、共享内存）</td>
+          <td>直接读写共享内存（需同步）</td>
+      </tr>
+      <tr>
+          <td>创建速度</td>
+          <td>慢（需分配独立资源）</td>
+          <td>快（共享进程资源）</td>
+      </tr>
+      <tr>
+          <td>崩溃影响</td>
+          <td>不影响其他进程</td>
+          <td>可能导致整个进程崩溃</td>
+      </tr>
+  </tbody>
+</table>
 <div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
     <div class="code-header language-">
         <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
         <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
         <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Throwable
-</span></span><span class="line"><span class="cl">├── Error（严重错误，不应捕获）
-</span></span><span class="line"><span class="cl">│   ├── OutOfMemoryError
-</span></span><span class="line"><span class="cl">│   ├── StackOverflowError
-</span></span><span class="line"><span class="cl">│   └── ...
-</span></span><span class="line"><span class="cl">└── Exception（程序可处理）
-</span></span><span class="line"><span class="cl">    ├── RuntimeException（运行时异常）
-</span></span><span class="line"><span class="cl">    │   ├── NullPointerException
-</span></span><span class="line"><span class="cl">    │   ├── ArrayIndexOutOfBoundsException
-</span></span><span class="line"><span class="cl">    │   ├── IllegalArgumentException
-</span></span><span class="line"><span class="cl">    │   └── ...
-</span></span><span class="line"><span class="cl">    └── 其他异常（受检异常）
-</span></span><span class="line"><span class="cl">        ├── IOException
-</span></span><span class="line"><span class="cl">        ├── SQLException
-</span></span><span class="line"><span class="cl">        ├── ClassNotFoundException
-</span></span><span class="line"><span class="cl">        └── ...</span></span></code></pre></div></div>
-<h2 id="异常分类">异常分类</h2>
-<h3 id="1-受检异常checked-exception">1. 受检异常（Checked Exception）</h3>
-<ul>
-<li>编译时检查</li>
-<li>必须处理或声明抛出</li>
-<li>继承自 <code>Exception</code> 但不是 <code>RuntimeException</code></li>
-</ul>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 必须处理</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">readFile</span><span class="p">()</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">FileReader</span><span class="w"> </span><span class="n">reader</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">FileReader</span><span class="p">(</span><span class="s">&#34;file.txt&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
-<h3 id="2-非受检异常unchecked-exception">2. 非受检异常（Unchecked Exception）</h3>
-<ul>
-<li>运行时检查</li>
-<li>不强制处理</li>
-<li>继承自 <code>RuntimeException</code></li>
-</ul>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 不强制处理，但应该避免</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">divide</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span><span class="p">;</span><span class="w">  </span><span class="c1">// 可能抛出 ArithmeticException</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
-<h2 id="异常处理">异常处理</h2>
-<h3 id="try-catch">try-catch</h3>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 可能抛出异常的代码</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">10</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">ArithmeticException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 处理异常</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;除数不能为0&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
-<h3 id="多个-catch">多个 catch</h3>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 可能抛出多种异常</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">5</span><span class="o">]</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">arr</span><span class="o">[</span><span class="n">10</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">100</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">ArrayIndexOutOfBoundsException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;数组越界&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;其他异常&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
-<p><strong>注意</strong>：子类异常在前，父类异常在后。</p>]]></description></item><item><title>Java Stream API 详解</title><link>https://ksmaple.github.io/posts/java-stream-api/</link><pubDate>Thu, 09 Apr 2026 13:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-stream-api/</guid><description><![CDATA[<h2 id="什么是-stream">什么是 Stream</h2>
-<p>Stream 是 Java 8 引入的函数式编程特性，用于对集合数据进行高效、声明式的操作。</p>
-<p><strong>特点：</strong></p>
-<ul>
-<li>链式操作，代码简洁</li>
-<li>支持并行处理</li>
-<li>惰性求值，性能优化</li>
-<li>不修改原数据源</li>
-</ul>
-<h2 id="创建-stream">创建 Stream</h2>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-java">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.stream.*</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.*</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 1. 从集合创建</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="s">&#34;a&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;b&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;c&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stream1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">list</span><span class="p">.</span><span class="na">stream</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">parallelStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">list</span><span class="p">.</span><span class="na">parallelStream</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 2. 从数组创建</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stream2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Arrays</span><span class="p">.</span><span class="na">stream</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">String</span><span class="o">[]</span><span class="p">{</span><span class="s">&#34;a&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;b&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;c&#34;</span><span class="p">});</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 3. 使用 Stream.of</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stream3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Stream</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&#34;a&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;b&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;c&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 4. 无限流</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">infiniteStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Stream</span><span class="p">.</span><span class="na">iterate</span><span class="p">(</span><span class="n">0</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">2</span><span class="p">).</span><span class="na">limit</span><span class="p">(</span><span class="n">10</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">Double</span><span class="o">&gt;</span><span class="w"> </span><span class="n">randomStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Stream</span><span class="p">.</span><span class="na">generate</span><span class="p">(</span><span class="n">Math</span><span class="p">::</span><span class="n">random</span><span class="p">).</span><span class="na">limit</span><span class="p">(</span><span class="n">5</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 5. 从文件创建（IO流）</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lines</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Files</span><span class="p">.</span><span class="na">lines</span><span class="p">(</span><span class="n">Paths</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">&#34;file.txt&#34;</span><span class="p">));</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="c1">// 6. 空流</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="n">Stream</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">emptyStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Stream</span><span class="p">.</span><span class="na">empty</span><span class="p">();</span></span></span></code></pre></div></div>
-<h2 id="中间操作intermediate-operations">中间操作（Intermediate Operations）</h2>
-<p>中间操作返回新的 Stream，可以链式调用。</p>]]></description></item><item><title>Java 集合框架详解</title><link>https://ksmaple.github.io/posts/java-collections/</link><pubDate>Thu, 09 Apr 2026 10:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-collections/</guid><description><![CDATA[<h2 id="概述">概述</h2>
-<p>Java 集合框架（Java Collections Framework）是 Java 提供的一套用于存储和操作一组数据的类和接口。它是 Java 编程中最常用的工具之一。</p>
-<h2 id="集合体系结构">集合体系结构</h2>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-">
-        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
-        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Collection
-</span></span><span class="line"><span class="cl">├── List（有序、可重复）
-</span></span><span class="line"><span class="cl">│   ├── ArrayList
-</span></span><span class="line"><span class="cl">│   ├── LinkedList
-</span></span><span class="line"><span class="cl">│   └── Vector
-</span></span><span class="line"><span class="cl">│       └── Stack
-</span></span><span class="line"><span class="cl">├── Set（无序、不可重复）
-</span></span><span class="line"><span class="cl">│   ├── HashSet
-</span></span><span class="line"><span class="cl">│   │   └── LinkedHashSet
-</span></span><span class="line"><span class="cl">│   └── TreeSet
-</span></span><span class="line"><span class="cl">└── Queue（队列）
-</span></span><span class="line"><span class="cl">    ├── LinkedList
-</span></span><span class="line"><span class="cl">    ├── PriorityQueue
-</span></span><span class="line"><span class="cl">    └── Deque
-</span></span><span class="line"><span class="cl">        ├── ArrayDeque
-</span></span><span class="line"><span class="cl">        └── LinkedList
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">进程内存布局：
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">Map（键值对）
-</span></span><span class="line"><span class="cl">├── HashMap
-</span></span><span class="line"><span class="cl">│   └── LinkedHashMap
-</span></span><span class="line"><span class="cl">├── TreeMap
-</span></span><span class="line"><span class="cl">├── Hashtable
-</span></span><span class="line"><span class="cl">│   └── Properties
-</span></span><span class="line"><span class="cl">└── ConcurrentHashMap</span></span></code></pre></div></div>
-<h2 id="list-详解">List 详解</h2>
-<h3 id="arraylist-vs-linkedlist">ArrayList vs LinkedList</h3>
-<h3 id="arraylist">ArrayList</h3>
-<p>基于动态数组实现，查询快、插入删除慢。</p>]]></description></item></channel></rss>
+</span></span><span class="line"><span class="cl">高地址 ┌─────────────────┐
+</span></span><span class="line"><span class="cl">       │    栈 (Stack)    │  ← 局部变量、函数调用，向下增长
+</span></span><span class="line"><span class="cl">       │        ↓        │
+</span></span><span class="line"><span class="cl">       │                 │
+</span></span><span class="line"><span class="cl">       │    堆 (Heap)     │  ← 动态分配，向上增长
+</span></span><span class="line"><span class="cl">       │        ↑        │
+</span></span><span class="line"><span class="cl">       ├─────────────────┤
+</span></span><span class="line"><span class="cl">       │    数据段        │  ← 全局变量、静态变量
+</span></span><span class="line"><span class="cl">       ├─────────────────┤
+</span></span><span class="line"><span class="cl">       │    代码段        │  ← 可执行代码
+</span></span><span class="line"><span class="cl">低地址 └─────────────────┘
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">线程内存：共享进程的代码段、数据段、堆，独占栈</span></span></code></pre></div></div>
+<h3 id="cpu调度算法响应时间-vs-吞吐量的权衡">CPU调度算法：响应时间 vs 吞吐量的权衡</h3>
+<table>
+  <thead>
+      <tr>
+          <th>算法</th>
+          <th>原理</th>
+          <th>优点</th>
+          <th>缺点</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>先来先服务（FCFS）</td>
+          <td>按到达顺序执行</td>
+          <td>简单公平</td>
+          <td>长任务阻塞短任务</td>
+          <td>批处理</td>
+      </tr>
+      <tr>
+          <td>短作业优先（SJF）</td>
+          <td>预估执行时间最短优先</td>
+          <td>平均等待时间最小</td>
+          <td>长任务饥饿</td>
+          <td>已知任务长度</td>
+      </tr>
+      <tr>
+          <td>时间片轮转（RR）</td>
+          <td>每个任务执行固定时间片</td>
+          <td>响应性好</td>
+          <td>时间片大小难定</td>
+          <td>交互式系统</td>
+      </tr>
+      <tr>
+          <td>优先级调度</td>
+          <td>优先级高先执行</td>
+          <td>重要任务优先</td>
+          <td>低优先级饥饿</td>
+          <td>实时系统</td>
+      </tr>
+      <tr>
+          <td>多级反馈队列（MLFQ）</td>
+          <td>动态调整优先级和时间片</td>
+          <td>兼顾响应和吞吐</td>
+          <td>参数复杂</td>
+          <td>通用操作系统</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Linux CFS（完全公平调度器）核心思想：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">- 每个进程有一个 vruntime（虚拟运行时间）
+</span></span><span class="line"><span class="cl">- 实际运行时间 weighted by 优先级
+</span></span><span class="line"><span class="cl">- 调度时选择 vruntime 最小的进程执行
+</span></span><span class="line"><span class="cl">- 保证所有进程获得公平的CPU时间比例
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">计算公式：
+</span></span><span class="line"><span class="cl">  vruntime += delta_exec * (NICE_0_LOAD / weight)
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  高优先级（nice值小）→ weight大 → vruntime增长慢 → 获得更多CPU时间</span></span></code></pre></div></div>
+<h3 id="上下文切换保存当前状态恢复目标状态">上下文切换：保存当前状态、恢复目标状态</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">上下文切换过程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 触发切换
+</span></span><span class="line"><span class="cl">   - 时间片用完（时钟中断）
+</span></span><span class="line"><span class="cl">   - 进程阻塞（等待IO）
+</span></span><span class="line"><span class="cl">   - 高优先级进程就绪
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 保存当前上下文
+</span></span><span class="line"><span class="cl">   - 通用寄存器（RAX, RBX, RCX...）
+</span></span><span class="line"><span class="cl">   - 程序计数器PC（下条指令地址）
+</span></span><span class="line"><span class="cl">   - 状态寄存器
+</span></span><span class="line"><span class="cl">   - 栈指针SP
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 切换到新上下文
+</span></span><span class="line"><span class="cl">   - 加载目标进程的寄存器值
+</span></span><span class="line"><span class="cl">   - 加载新页表（进程切换时）
+</span></span><span class="line"><span class="cl">   - 刷新TLB（进程切换时，部分条目）
+</span></span><span class="line"><span class="cl">   - 跳转到新的PC执行
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">开销来源：
+</span></span><span class="line"><span class="cl">  - 直接开销：寄存器保存/恢复（~1000个时钟周期）
+</span></span><span class="line"><span class="cl">  - 间接开销：Cache失效、TLB未命中（更严重）</span></span></code></pre></div></div>
+<hr>
+<h2 id="实现原理与关键机制">实现原理与关键机制</h2>
+<h3 id="用户态-vs-内核态cpu特权级的隔离">用户态 vs 内核态：CPU特权级的隔离</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Ring 0: 内核态（操作系统运行）
+</span></span><span class="line"><span class="cl">  - 可执行所有指令
+</span></span><span class="line"><span class="cl">  - 可访问所有内存
+</span></span><span class="line"><span class="cl">  - 直接操作硬件
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Ring 3: 用户态（应用程序运行）
+</span></span><span class="line"><span class="cl">  - 受限指令集
+</span></span><span class="line"><span class="cl">  - 只能访问用户空间内存
+</span></span><span class="line"><span class="cl">  - 通过系统调用请求内核服务
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">系统调用过程：
+</span></span><span class="line"><span class="cl">  用户程序 → int 0x80 / syscall 指令 → CPU切换到Ring 0
+</span></span><span class="line"><span class="cl">         → 执行内核处理函数 → 返回结果 → 切换回Ring 3
+</span></span><span class="line"><span class="cl">         
+</span></span><span class="line"><span class="cl">  代价：用户态↔内核态切换（几十到几百个时钟周期）</span></span></code></pre></div></div>
+<h3 id="协程用户线程比线程更轻量的调度单元">协程/用户线程：比线程更轻量的调度单元</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>内核线程</th>
+          <th>用户线程/协程</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>调度者</td>
+          <td>操作系统内核</td>
+          <td>用户态运行时（JVM/Go运行时）</td>
+      </tr>
+      <tr>
+          <td>切换代价</td>
+          <td>微秒级</td>
+          <td>纳秒级（无需进入内核）</td>
+      </tr>
+      <tr>
+          <td>并发数</td>
+          <td>数千（平台线程）/百万（虚拟线程）</td>
+          <td>百万级</td>
+      </tr>
+      <tr>
+          <td>阻塞影响</td>
+          <td>阻塞内核线程</td>
+          <td>协程让出，不阻塞载体线程</td>
+      </tr>
+      <tr>
+          <td>多核利用</td>
+          <td>内核自动调度到多核</td>
+          <td>需M:N映射到内核线程</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java 21 虚拟线程（协程）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="kd">var</span><span class="w"> </span><span class="n">executor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newVirtualThreadPerTaskExecutor</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">executor</span><span class="p">.</span><span class="na">submit</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 阻塞操作（如HTTP请求）会自动卸载虚拟线程</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">httpClient</span><span class="p">.</span><span class="na">send</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="na">body</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">});</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Go Goroutine</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">go</span><span class="w"> </span><span class="nf">func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 轻量级，由Go运行时调度</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">processRequest</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}()</span></span></span></code></pre></div></div>
+<h3 id="linux中的进程状态">Linux中的进程状态</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">        创建
+</span></span><span class="line"><span class="cl">          ↓
+</span></span><span class="line"><span class="cl">    ┌───────────┐
+</span></span><span class="line"><span class="cl">    │  就绪态    │ ←────── 时间片用完 / 被抢占
+</span></span><span class="line"><span class="cl">    │ (TASK_RUNNING) │
+</span></span><span class="line"><span class="cl">    └─────┬─────┘
+</span></span><span class="line"><span class="cl">          ↓ 被调度
+</span></span><span class="line"><span class="cl">    ┌───────────┐
+</span></span><span class="line"><span class="cl">    │  运行态    │
+</span></span><span class="line"><span class="cl">    │ (TASK_RUNNING) │
+</span></span><span class="line"><span class="cl">    └─────┬─────┘
+</span></span><span class="line"><span class="cl">          ↓ 等待IO / sleep
+</span></span><span class="line"><span class="cl">    ┌───────────┐
+</span></span><span class="line"><span class="cl">    │  阻塞态    │
+</span></span><span class="line"><span class="cl">    │(TASK_INTERRUPTIBLE)│
+</span></span><span class="line"><span class="cl">    └─────┬─────┘
+</span></span><span class="line"><span class="cl">          ↓ IO完成 / 被唤醒
+</span></span><span class="line"><span class="cl">          ─────────────→ 就绪态
+</span></span><span class="line"><span class="cl">          
+</span></span><span class="line"><span class="cl">    终止态 (TASK_DEAD)</span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐方案</th>
+          <th>原因</th>
+          <th>风险</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>CPU密集型计算</td>
+          <td>线程数 ≈ CPU核数</td>
+          <td>减少上下文切换</td>
+          <td>线程数过多导致调度开销</td>
+      </tr>
+      <tr>
+          <td>IO密集型（传统）</td>
+          <td>线程数 &raquo; CPU核数</td>
+          <td>阻塞时其他线程可执行</td>
+          <td>线程数过多内存耗尽</td>
+      </tr>
+      <tr>
+          <td>IO密集型（现代）</td>
+          <td>虚拟线程/协程</td>
+          <td>百万级并发，自动调度</td>
+          <td>需避免钉住载体线程</td>
+      </tr>
+      <tr>
+          <td>实时系统</td>
+          <td>优先级调度 + 绑定CPU</td>
+          <td>保证关键任务响应</td>
+          <td>低优先级任务可能饥饿</td>
+      </tr>
+      <tr>
+          <td>批处理系统</td>
+          <td>吞吐量优先调度</td>
+          <td>最大化CPU利用率</td>
+          <td>交互响应差</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1线程数越多越好">问题1：线程数越多越好？</h3>
+<p><strong>根因</strong>：线程过多导致频繁上下文切换，Cache失效，反而降低吞吐量
+<strong>解决</strong>：CPU密集型线程数≈核数，IO密集型用虚拟线程或线程池控制</p>]]></description></item><item><title>DNS解析与CDN</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/dns%E4%B8%8Ecdn/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/dns%E4%B8%8Ecdn/</guid><description><![CDATA[<h1 id="dns解析与cdn">DNS解析与CDN</h1>
+<blockquote>
+<p><strong>核心结论</strong>：DNS通过分布式层级系统将域名解析为IP地址，CDN利用DNS的智能调度和边缘节点缓存，将内容分发到离用户最近的节点，二者结合是互联网性能优化的基础设施。</p>
+</blockquote>
+<hr>
+<h2 id="dns通过分布式层级数据库实现域名到ip的映射cdn在此基础上叠加边缘缓存和智能调度">DNS通过分布式层级数据库实现域名到IP的映射，CDN在此基础上叠加边缘缓存和智能调度</h2>
+<h3 id="dns域名空间树状层级结构">DNS域名空间：树状层级结构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">                    根域名服务器 (.)
+</span></span><span class="line"><span class="cl">                         │
+</span></span><span class="line"><span class="cl">    ┌────────────────────┼────────────────────┐
+</span></span><span class="line"><span class="cl">    │                    │                    │
+</span></span><span class="line"><span class="cl">   com                  org                  cn
+</span></span><span class="line"><span class="cl">    │                    │                    │
+</span></span><span class="line"><span class="cl"> example              wikipedia            baidu
+</span></span><span class="line"><span class="cl">    │                    │                    │
+</span></span><span class="line"><span class="cl">   www                 www                  www
+</span></span><span class="line"><span class="cl">    │
+</span></span><span class="line"><span class="cl">  记录: A 93.184.216.34
+</span></span><span class="line"><span class="cl">        CNAME example.cdn.com</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>根域名（Root）</td>
+          <td>最顶层，全球13组（字母A-M）</td>
+          <td><code>.</code></td>
+      </tr>
+      <tr>
+          <td>顶级域（TLD）</td>
+          <td>通用（gTLD）或国家/地区（ccTLD）</td>
+          <td><code>.com</code> <code>.org</code> <code>.cn</code></td>
+      </tr>
+      <tr>
+          <td>二级域</td>
+          <td>注册购买的主体域名</td>
+          <td><code>example.com</code></td>
+      </tr>
+      <tr>
+          <td>子域</td>
+          <td>二级域下的扩展</td>
+          <td><code>www.example.com</code> <code>api.example.com</code></td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="dns解析流程从递归查询到本地缓存">DNS解析流程：从递归查询到本地缓存</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户输入 www.example.com
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 浏览器缓存 → 检查是否最近解析过
+</span></span><span class="line"><span class="cl">2. 操作系统缓存 (/etc/hosts, DNS Client Service)
+</span></span><span class="line"><span class="cl">3. 本地DNS服务器（ISP或公共DNS如8.8.8.8）
+</span></span><span class="line"><span class="cl">   └── 递归查询开始 ──────────────────────────┐
+</span></span><span class="line"><span class="cl">                                              │
+</span></span><span class="line"><span class="cl">4. 本地DNS → 根域名服务器（.）                 │
+</span></span><span class="line"><span class="cl">   ← 返回 com 的NS记录                        │
+</span></span><span class="line"><span class="cl">                                              │
+</span></span><span class="line"><span class="cl">5. 本地DNS → com 顶级域服务器                  │
+</span></span><span class="line"><span class="cl">   ← 返回 example.com 的NS记录                │
+</span></span><span class="line"><span class="cl">                                              │
+</span></span><span class="line"><span class="cl">6. 本地DNS → example.com 权威DNS服务器         │
+</span></span><span class="line"><span class="cl">   ← 返回 www.example.com 的A记录: 93.184.216.34│
+</span></span><span class="line"><span class="cl">                                              │
+</span></span><span class="line"><span class="cl">7. 本地DNS缓存结果，返回给用户 ────────────────┘
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">总耗时：通常 20-120ms（取决于缓存命中率）</span></span></code></pre></div></div>
+<p><strong>DNS记录类型</strong>：</p>]]></description></item><item><title>Hash表</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%93%88%E5%B8%8C%E8%A1%A8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%93%88%E5%B8%8C%E8%A1%A8/</guid><description><![CDATA[<h1 id="hash表">Hash表</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Hash表通过哈希函数将键映射到数组索引，实现O(1)的平均查找效率，冲突解决和扩容机制是工程实现的关键，一致性Hash则解决了分布式环境下的数据分布问题。</p>
+</blockquote>
+<hr>
+<h2 id="hash表通过哈希函数数组实现o1查找冲突解决和动态扩容是工程实现的核心机制">Hash表通过哈希函数+数组实现O(1)查找，冲突解决和动态扩容是工程实现的核心机制</h2>
+<h3 id="核心原理哈希函数将任意键映射到有限数组空间">核心原理：哈希函数将任意键映射到有限数组空间</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">键(Key) ──→ 哈希函数 ──→ 哈希值 ──→ 取模 ──→ 数组索引
+</span></span><span class="line"><span class="cl">                                
+</span></span><span class="line"><span class="cl">&#34;apple&#34;    hashCode()    93029231    % 16     → 15
+</span></span><span class="line"><span class="cl">&#34;banana&#34;   hashCode()    63595437    % 16     → 13
+</span></span><span class="line"><span class="cl">&#34;cherry&#34;   hashCode()    12345678    % 16     → 14</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java HashMap 的扰动函数：高16位与低16位异或，减少低位的规律性</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">hash</span><span class="p">(</span><span class="n">Object</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">h</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">0</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="na">hashCode</span><span class="p">())</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">&gt;&gt;&gt;</span><span class="w"> </span><span class="n">16</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 数组索引计算：(n-1) &amp; hash 等价于 hash % n，当n为2的幂时</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">n</span><span class="o">=</span><span class="n">16</span><span class="p">:</span><span class="w">  </span><span class="p">(</span><span class="n">16</span><span class="o">-</span><span class="n">1</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">hash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0b1111</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">hash</span><span class="w">  </span><span class="err">→</span><span class="w"> </span><span class="n">取低4位</span></span></span></code></pre></div></div>
+<h3 id="冲突解决链地址法-vs-开放寻址法">冲突解决：链地址法 vs 开放寻址法</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方法</th>
+          <th>原理</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>链地址法</td>
+          <td>冲突元素组成链表/树</td>
+          <td>实现简单、删除方便</td>
+          <td>缓存不友好、链表过长退化</td>
+      </tr>
+      <tr>
+          <td>开放寻址法</td>
+          <td>冲突时探测下一个空位</td>
+          <td>缓存友好、无指针开销</td>
+          <td>删除复杂、装填因子受限</td>
+      </tr>
+      <tr>
+          <td>再哈希法</td>
+          <td>多个哈希函数依次尝试</td>
+          <td>分布均匀</td>
+          <td>计算开销大</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>链地址法（Java HashMap采用）</strong>：</p>]]></description></item><item><title>HTTPS与TLS</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/https%E4%B8%8Etls/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/https%E4%B8%8Etls/</guid><description><![CDATA[<h1 id="https与tls">HTTPS与TLS</h1>
+<blockquote>
+<p><strong>核心结论</strong>：HTTPS通过TLS协议在HTTP之上提供加密、认证和完整性保护，TLS握手协商对称密钥，证书链验证服务端身份，是当前Web安全的基石。</p>
+</blockquote>
+<hr>
+<h2 id="https通过tls协议实现加密传输身份认证和数据完整性tls握手是性能和安全的关键">HTTPS通过TLS协议实现加密传输、身份认证和数据完整性，TLS握手是性能和安全的关键</h2>
+<h3 id="tlsssl演进从ssl到tls-13">TLS/SSL演进：从SSL到TLS 1.3</h3>
+<table>
+  <thead>
+      <tr>
+          <th>版本</th>
+          <th>年份</th>
+          <th>关键变化</th>
+          <th>现状</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>SSL 2.0</td>
+          <td>1995</td>
+          <td>首个公开发布版本</td>
+          <td>已废弃（严重安全漏洞）</td>
+      </tr>
+      <tr>
+          <td>SSL 3.0</td>
+          <td>1996</td>
+          <td>广泛应用</td>
+          <td>已废弃（POODLE攻击）</td>
+      </tr>
+      <tr>
+          <td>TLS 1.0</td>
+          <td>1999</td>
+          <td>标准化，与SSL 3.0几乎相同</td>
+          <td>已废弃</td>
+      </tr>
+      <tr>
+          <td>TLS 1.1</td>
+          <td>2006</td>
+          <td>引入显式IV防CBC攻击</td>
+          <td>已废弃</td>
+      </tr>
+      <tr>
+          <td>TLS 1.2</td>
+          <td>2008</td>
+          <td>支持AEAD、SHA-256、扩展</td>
+          <td>当前主流</td>
+      </tr>
+      <tr>
+          <td>TLS 1.3</td>
+          <td>2018</td>
+          <td>简化握手、删除弱算法、0-RTT</td>
+          <td>推荐部署</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="tls-12-握手2-rtt建立安全连接">TLS 1.2 握手：2-RTT建立安全连接</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">客户端                                               服务端
+</span></span><span class="line"><span class="cl">  |        ClientHello (支持的加密套件、随机数)        |
+</span></span><span class="line"><span class="cl">  |  ──────────────────────────────────────────────&gt;  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  ServerHello (选定加密套件、随机数)                 |
+</span></span><span class="line"><span class="cl">  |  Certificate (服务端证书链)                         |
+</span></span><span class="line"><span class="cl">  |  [ServerKeyExchange] (DHE/ECDHE参数)              |
+</span></span><span class="line"><span class="cl">  |  ServerHelloDone                                   |
+</span></span><span class="line"><span class="cl">  |  &lt;──────────────────────────────────────────────  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  ClientKeyExchange (预主密钥，用公钥加密)            |
+</span></span><span class="line"><span class="cl">  |  [ChangeCipherSpec]                                |
+</span></span><span class="line"><span class="cl">  |  Finished (验证握手完整性)                          |
+</span></span><span class="line"><span class="cl">  |  ──────────────────────────────────────────────&gt;  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  [ChangeCipherSpec]                                |
+</span></span><span class="line"><span class="cl">  |  Finished                                          |
+</span></span><span class="line"><span class="cl">  |  &lt;──────────────────────────────────────────────  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  ↓                                                   ↓
+</span></span><span class="line"><span class="cl">应用数据传输（对称加密）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">总耗时：2-RTT（ClientHello → ServerHello → Finished）</span></span></code></pre></div></div>
+<h3 id="tls-13-握手1-rtt首次-0-rtt重连">TLS 1.3 握手：1-RTT（首次）/ 0-RTT（重连）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">首次连接（1-RTT）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">客户端                                               服务端
+</span></span><span class="line"><span class="cl">  |  ClientHello (密钥共享 + 支持的组)                 |
+</span></span><span class="line"><span class="cl">  |  ──────────────────────────────────────────────&gt;  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  ServerHello (选定密钥共享)                         |
+</span></span><span class="line"><span class="cl">  |  {EncryptedExtensions} (加密传输)                  |
+</span></span><span class="line"><span class="cl">  |  {Certificate}                                     |
+</span></span><span class="line"><span class="cl">  |  {CertificateVerify}                               |
+</span></span><span class="line"><span class="cl">  |  {Finished}                                        |
+</span></span><span class="line"><span class="cl">  |  &lt;──────────────────────────────────────────────  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  {Finished}                                        |
+</span></span><span class="line"><span class="cl">  |  ──────────────────────────────────────────────&gt;  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  ↓                                                   ↓
+</span></span><span class="line"><span class="cl">应用数据传输
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">重连（0-RTT）：
+</span></span><span class="line"><span class="cl">  客户端发送早期数据（Early Data），使用上一次会话的PSK
+</span></span><span class="line"><span class="cl">  → 无需等待服务端响应即可发送应用数据</span></span></code></pre></div></div>
+<p><strong>TLS 1.3 的简化</strong>：</p>]]></description></item><item><title>HTTP演进</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/http%E6%BC%94%E8%BF%9B/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/http%E6%BC%94%E8%BF%9B/</guid><description><![CDATA[<h1 id="http演进">HTTP演进</h1>
+<blockquote>
+<p><strong>核心结论</strong>：HTTP从1.0到3.0的演进主线是&quot;减少连接数→复用连接→消除队头阻塞→降低握手延迟&quot;，每次升级都在解决前一代的瓶颈，但协议复杂度也相应增加。</p>
+</blockquote>
+<hr>
+<h2 id="http从10到30围绕连接效率队头阻塞握手延迟三个核心问题逐步优化">HTTP从1.0到3.0围绕连接效率、队头阻塞、握手延迟三个核心问题逐步优化</h2>
+<h3 id="http10无状态的请求-响应协议">HTTP/1.0：无状态的请求-响应协议</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">每次请求新建TCP连接：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">客户端                  服务端
+</span></span><span class="line"><span class="cl">  |  TCP握手 (SYN-SYN/ACK-ACK)  |
+</span></span><span class="line"><span class="cl">  | &lt;-------------------------&gt; |
+</span></span><span class="line"><span class="cl">  |      GET /page1.html        |
+</span></span><span class="line"><span class="cl">  |  ------------------------&gt;  |
+</span></span><span class="line"><span class="cl">  |      200 OK + 数据           |
+</span></span><span class="line"><span class="cl">  |  &lt;------------------------  |
+</span></span><span class="line"><span class="cl">  |      TCP挥手 (FIN-ACK...)   |
+</span></span><span class="line"><span class="cl">  | &lt;-------------------------&gt; |
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  [下一个请求重复以上全过程]</span></span></code></pre></div></div>
+<p><strong>核心问题</strong>：</p>
+<ul>
+<li>每个请求独立TCP连接，三次握手开销大</li>
+<li>无法复用连接，浏览器同时只能发少量请求（6-8个域名并发）</li>
+</ul>
+<h3 id="http11持久连接与管道化">HTTP/1.1：持久连接与管道化</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>解决的问题</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>持久连接（Keep-Alive）</td>
+          <td>复用TCP连接发送多个请求</td>
+          <td>减少握手开销</td>
+      </tr>
+      <tr>
+          <td>管道化（Pipelining）</td>
+          <td>连续发送多个请求不等待响应</td>
+          <td>提高吞吐量</td>
+      </tr>
+      <tr>
+          <td>分块传输（Chunked）</td>
+          <td>服务端分块发送，无需预知Content-Length</td>
+          <td>动态内容传输</td>
+      </tr>
+      <tr>
+          <td>缓存控制</td>
+          <td><code>Cache-Control</code>、<code>ETag</code>、<code>Last-Modified</code></td>
+          <td>减少重复传输</td>
+      </tr>
+      <tr>
+          <td>Host头</td>
+          <td>支持同一IP多域名</td>
+          <td>虚拟主机</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">HTTP/1.1 持久连接：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">客户端                  服务端
+</span></span><span class="line"><span class="cl">  |  TCP握手                |
+</span></span><span class="line"><span class="cl">  | &lt;---------------------&gt; |
+</span></span><span class="line"><span class="cl">  |  GET /page1.html        |
+</span></span><span class="line"><span class="cl">  |  --------------------&gt;  |
+</span></span><span class="line"><span class="cl">  |  200 OK                 |
+</span></span><span class="line"><span class="cl">  |  &lt;--------------------  |
+</span></span><span class="line"><span class="cl">  |  GET /style.css         |
+</span></span><span class="line"><span class="cl">  |  --------------------&gt;  |
+</span></span><span class="line"><span class="cl">  |  200 OK                 |
+</span></span><span class="line"><span class="cl">  |  &lt;--------------------  |
+</span></span><span class="line"><span class="cl">  |  GET /image.jpg         |
+</span></span><span class="line"><span class="cl">  |  --------------------&gt;  |
+</span></span><span class="line"><span class="cl">  |  200 OK                 |
+</span></span><span class="line"><span class="cl">  |  &lt;--------------------  |
+</span></span><span class="line"><span class="cl">  |  Connection: close      |
+</span></span><span class="line"><span class="cl">  |  [可选挥手或保持]         |</span></span></code></pre></div></div>
+<p><strong>HTTP/1.1 的队头阻塞问题</strong>：</p>]]></description></item><item><title>Java常用标准库</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/java%E6%A0%87%E5%87%86%E5%BA%93/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/java%E6%A0%87%E5%87%86%E5%BA%93/</guid><description><![CDATA[<h1 id="java常用标准库">Java常用标准库</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Java标准库通过集合框架（数据结构）、IO/NIO（数据传输）、并发工具包（JUC，线程协作）三大支柱支撑日常开发，其中集合的选型直接决定程序的时间/空间复杂度，NIO的Channel+Buffer模型是高并发IO的关键。</p>
+</blockquote>
+<hr>
+<h2 id="java标准库通过集合ionio并发工具包三大支柱支撑日常开发选型决定性能基线">Java标准库通过集合、IO/NIO、并发工具包三大支柱支撑日常开发，选型决定性能基线</h2>
+<h3 id="集合框架数据结构的选择决定算法复杂度">集合框架：数据结构的选择决定算法复杂度</h3>
+<p>Java集合按单线程/多线程、有序/无序、允许重复/不允许等维度划分：</p>
+<table>
+  <thead>
+      <tr>
+          <th>接口</th>
+          <th>典型实现</th>
+          <th>底层结构</th>
+          <th>时间复杂度</th>
+          <th>线程安全</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>List</code></td>
+          <td><code>ArrayList</code></td>
+          <td>动态数组</td>
+          <td>查询O(1)，插入O(n)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>List</code></td>
+          <td><code>LinkedList</code></td>
+          <td>双向链表</td>
+          <td>查询O(n)，头尾插入O(1)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Set</code></td>
+          <td><code>HashSet</code></td>
+          <td><code>HashMap</code>封装</td>
+          <td>增删查O(1)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Set</code></td>
+          <td><code>TreeSet</code></td>
+          <td>红黑树</td>
+          <td>增删查O(log n)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Map</code></td>
+          <td><code>HashMap</code></td>
+          <td>数组+链表+红黑树</td>
+          <td>增删查O(1)~O(log n)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Map</code></td>
+          <td><code>TreeMap</code></td>
+          <td>红黑树</td>
+          <td>增删查O(log n)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Queue</code></td>
+          <td><code>PriorityQueue</code></td>
+          <td>小顶堆</td>
+          <td>入队O(log n)，出队O(1)</td>
+          <td>否</td>
+      </tr>
+      <tr>
+          <td><code>Queue</code></td>
+          <td><code>ArrayDeque</code></td>
+          <td>循环数组</td>
+          <td>双端操作O(1)</td>
+          <td>否</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// HashMap 关键源码：扰动函数减少哈希冲突</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">hash</span><span class="p">(</span><span class="n">Object</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">h</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">0</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="na">hashCode</span><span class="p">())</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">&gt;&gt;&gt;</span><span class="w"> </span><span class="n">16</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<p><strong>HashMap扩容机制</strong>：</p>]]></description></item><item><title>Java与其他语言对比</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/java%E4%B8%8E%E5%85%B6%E4%BB%96%E8%AF%AD%E8%A8%80%E5%AF%B9%E6%AF%94/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/java%E4%B8%8E%E5%85%B6%E4%BB%96%E8%AF%AD%E8%A8%80%E5%AF%B9%E6%AF%94/</guid><description><![CDATA[<h1 id="java与其他语言对比">Java与其他语言对比</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Java、Go、Python分别占据企业级后端、云原生基础设施、数据科学/脚本三个生态位，选型应基于团队能力、性能要求、部署环境而非语言优劣。</p>
+</blockquote>
+<hr>
+<h2 id="javagopython在类型系统并发模型运行时三个维度差异显著适用于不同场景">Java、Go、Python在类型系统、并发模型、运行时三个维度差异显著，适用于不同场景</h2>
+<h3 id="类型系统静态编译-vs-动态解释-vs-渐进类型">类型系统：静态编译 vs 动态解释 vs 渐进类型</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>Java</th>
+          <th>Go</th>
+          <th>Python</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>类型检查</td>
+          <td>静态、强类型</td>
+          <td>静态、强类型</td>
+          <td>动态、强类型</td>
+      </tr>
+      <tr>
+          <td>泛型</td>
+          <td>编译期擦除</td>
+          <td>接口实现（无泛型）</td>
+          <td>无原生泛型（3.10+ Type Hints）</td>
+      </tr>
+      <tr>
+          <td>空安全</td>
+          <td>无原生（Optional包装）</td>
+          <td>无（零值初始化）</td>
+          <td>无（None运行时检查）</td>
+      </tr>
+      <tr>
+          <td>编译产物</td>
+          <td>JVM字节码</td>
+          <td>静态二进制</td>
+          <td>解释执行/pyc字节码</td>
+      </tr>
+      <tr>
+          <td>启动速度</td>
+          <td>慢（JVM预热）</td>
+          <td>极快</td>
+          <td>中等</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java：编译期类型检查，运行时擦除</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">1</span><span class="p">);</span><span class="w">  </span><span class="o">//</span><span class="w"> </span><span class="n">编译报错</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-go">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// Go：接口隐式实现，无继承</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="kd">type</span><span class="w"> </span><span class="nx">Reader</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="nf">Read</span><span class="p">(</span><span class="nx">p</span><span class="w"> </span><span class="p">[]</span><span class="kt">byte</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nx">n</span><span class="w"> </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="c1">// 任何有Read方法的类型自动实现Reader接口</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-python">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># Python：运行时类型检查，鸭子类型</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">process</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>  <span class="c1"># 类型提示不阻止运行，运行时TypeError</span></span></span></code></pre></div></div>
+<h3 id="并发模型线程池-vs-goroutine-vs-多进程">并发模型：线程池 vs Goroutine vs 多进程</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>Java</th>
+          <th>Go</th>
+          <th>Python</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>并发单元</td>
+          <td>OS线程/虚拟线程</td>
+          <td>Goroutine（用户态线程）</td>
+          <td>OS进程（GIL限制）</td>
+      </tr>
+      <tr>
+          <td>调度</td>
+          <td>JVM/OS内核</td>
+          <td>Go运行时（M:N模型）</td>
+          <td>OS内核</td>
+      </tr>
+      <tr>
+          <td>通信方式</td>
+          <td>共享内存+锁</td>
+          <td>Channel（CSP模型）</td>
+          <td>Queue/管道</td>
+      </tr>
+      <tr>
+          <td>典型并发数</td>
+          <td>数千（平台线程）/百万（虚拟线程）</td>
+          <td>百万级</td>
+          <td>数十（多进程）</td>
+      </tr>
+      <tr>
+          <td>适用场景</td>
+          <td>企业级复杂业务</td>
+          <td>云原生、网络服务</td>
+          <td>数据处理、脚本</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java 21 虚拟线程：接近Goroutine的体验</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="kd">var</span><span class="w"> </span><span class="n">executor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newVirtualThreadPerTaskExecutor</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">executor</span><span class="p">.</span><span class="na">submit</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;Task 1&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">executor</span><span class="p">.</span><span class="na">submit</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;Task 2&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-go">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// Go：Goroutine + Channel 是核心原语</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">go</span><span class="w"> </span><span class="kd">func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">ch</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">&#34;message&#34;</span><span class="w">  </span><span class="c1">// 发送</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">msg</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&lt;-</span><span class="nx">ch</span><span class="w">  </span><span class="c1">// 接收</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-python">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># Python：GIL限制多线程并行，多进程是真爱</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+</span></span><span class="line"><span class="cl"><span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">process_func</span><span class="p">,</span> <span class="n">data_list</span><span class="p">)</span></span></span></code></pre></div></div>
+<h3 id="运行时与部署jvm生态-vs-静态二进制-vs-解释器">运行时与部署：JVM生态 vs 静态二进制 vs 解释器</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>Java</th>
+          <th>Go</th>
+          <th>Python</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>运行时</td>
+          <td>JVM（需安装）</td>
+          <td>自包含二进制</td>
+          <td>Python解释器</td>
+      </tr>
+      <tr>
+          <td>内存管理</td>
+          <td>GC（多种选择）</td>
+          <td>GC（单一实现）</td>
+          <td>引用计数+循环GC</td>
+      </tr>
+      <tr>
+          <td>包管理</td>
+          <td>Maven/Gradle</td>
+          <td>Go Modules</td>
+          <td>pip/conda/poetry</td>
+      </tr>
+      <tr>
+          <td>容器镜像</td>
+          <td>大（JRE基础镜像）</td>
+          <td>极小（静态链接）</td>
+          <td>中等</td>
+      </tr>
+      <tr>
+          <td>热更新</td>
+          <td>困难（需重启）</td>
+          <td>困难（需重启）</td>
+          <td>容易（解释执行）</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="实现原理与关键机制">实现原理与关键机制</h2>
+<h3 id="java虚拟线程-vs-go-goroutine-的实现差异">Java虚拟线程 vs Go Goroutine 的实现差异</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>Java虚拟线程</th>
+          <th>Go Goroutine</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>栈管理</td>
+          <td>堆上分配，可动态伸缩</td>
+          <td>起始于2KB，可动态伸缩</td>
+      </tr>
+      <tr>
+          <td>调度器</td>
+          <td>ForkJoinPool（ work-stealing ）</td>
+          <td>G-M-P模型</td>
+      </tr>
+      <tr>
+          <td>阻塞处理</td>
+          <td>卸载到堆，释放Carrier线程</td>
+          <td>G让出P，M复用</td>
+      </tr>
+      <tr>
+          <td>与OS线程关系</td>
+          <td>M:N（虚拟线程:平台线程）</td>
+          <td>M:N（Goroutine:OS线程）</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="python-gil简化的代价">Python GIL：简化的代价</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">GIL（Global Interpreter Lock）：任何时刻只有一个线程执行Python字节码
+</span></span><span class="line"><span class="cl">          ↓
+</span></span><span class="line"><span class="cl">多线程无法利用多核CPU（IO密集型除外）
+</span></span><span class="line"><span class="cl">          ↓
+</span></span><span class="line"><span class="cl">CPU密集型任务必须使用多进程（multiprocessing）</span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐语言</th>
+          <th>原因</th>
+          <th>风险</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>大型分布式企业系统</td>
+          <td>Java</td>
+          <td>生态完善、框架成熟、人才充足</td>
+          <td>启动慢、内存占用高</td>
+      </tr>
+      <tr>
+          <td>云原生基础设施、微服务</td>
+          <td>Go</td>
+          <td>编译快、镜像小、并发模型简单</td>
+          <td>生态不如Java丰富</td>
+      </tr>
+      <tr>
+          <td>数据科学、机器学习</td>
+          <td>Python</td>
+          <td>库生态无敌（PyTorch/TensorFlow）</td>
+          <td>生产性能差，需配合C扩展</td>
+      </tr>
+      <tr>
+          <td>快速原型、运维脚本</td>
+          <td>Python</td>
+          <td>开发速度快、可读性高</td>
+          <td>类型安全弱，大型项目维护困难</td>
+      </tr>
+      <tr>
+          <td>高并发网络服务</td>
+          <td>Go/Java21</td>
+          <td>百万级并发支持</td>
+          <td>Go错误处理繁琐，Java需升级JDK</td>
+      </tr>
+      <tr>
+          <td>遗留系统维护</td>
+          <td>Java8/11</td>
+          <td>稳定性优先</td>
+          <td>技术债务累积</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="混合架构建议">混合架构建议</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">┌─────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">│           API Gateway (Go)              │  ← 高并发、低延迟入口
+</span></span><span class="line"><span class="cl">│         静态二进制、快速启动              │
+</span></span><span class="line"><span class="cl">└─────────────────────────────────────────┘
+</span></span><span class="line"><span class="cl">                   ↓
+</span></span><span class="line"><span class="cl">┌─────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">│      业务服务集群 (Java/Spring Boot)      │  ← 复杂业务、事务处理
+</span></span><span class="line"><span class="cl">│        JDK21 + 虚拟线程 + G1/ZGC         │
+</span></span><span class="line"><span class="cl">└─────────────────────────────────────────┘
+</span></span><span class="line"><span class="cl">                   ↓
+</span></span><span class="line"><span class="cl">┌─────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl">│    数据/ML Pipeline (Python)             │  ← 模型推理、数据分析
+</span></span><span class="line"><span class="cl">│      FastAPI + PyTorch/TensorFlow        │
+</span></span><span class="line"><span class="cl">└─────────────────────────────────────────┘</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1go比java快">问题1：Go比Java快？</h3>
+<p><strong>根因</strong>：Go启动快、内存占用小，但长时间运行后JIT优化的Java吞吐量更高
+<strong>结论</strong>：短生命周期选Go，长生命周期计算密集型选Java</p>]]></description></item><item><title>Java与系统交互</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/java%E7%B3%BB%E7%BB%9F%E4%BA%A4%E4%BA%92/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/java%E7%B3%BB%E7%BB%9F%E4%BA%A4%E4%BA%92/</guid><description><![CDATA[<h1 id="java与系统交互">Java与系统交互</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Java通过JNI调用本地代码扩展能力，通过JVM的系统调用封装与OS交互，通过JNA简化本地调用，理解这些机制边界是排查native崩溃和性能瓶颈的关键。</p>
+</blockquote>
+<hr>
+<h2 id="java通过jnijna调用本地代码通过jvm封装与操作系统交互二者结合弥补了纯java的系统能力边界">Java通过JNI/JNA调用本地代码，通过JVM封装与操作系统交互，二者结合弥补了纯Java的系统能力边界</h2>
+<h3 id="jnijava与本地代码的桥梁">JNI：Java与本地代码的桥梁</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Java调用Native方法的流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Java代码
+</span></span><span class="line"><span class="cl">  ↓ 调用 native 方法
+</span></span><span class="line"><span class="cl">JNI层（C/C++实现）
+</span></span><span class="line"><span class="cl">  ↓ 转换Java对象到本地数据结构
+</span></span><span class="line"><span class="cl">本地库（.dll/.so）
+</span></span><span class="line"><span class="cl">  ↓ 执行系统调用或硬件操作
+</span></span><span class="line"><span class="cl">操作系统内核</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java声明native方法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">NativeExample</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">loadLibrary</span><span class="p">(</span><span class="s">&#34;nativeexample&#34;</span><span class="p">);</span><span class="w">  </span><span class="c1">// 加载libnativeexample.so</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">native</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">native</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">reverse</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">s</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">NativeExample</span><span class="w"> </span><span class="n">ne</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">NativeExample</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">ne</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">3</span><span class="p">,</span><span class="w"> </span><span class="n">5</span><span class="p">));</span><span class="w">  </span><span class="c1">// 调用本地实现</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-c">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// nativeexample.c（JNI实现）
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;jni.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;NativeExample.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="nf">Java_NativeExample_add</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">,</span> <span class="n">jint</span> <span class="n">a</span><span class="p">,</span> <span class="n">jint</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">JNIEXPORT</span> <span class="n">jstring</span> <span class="n">JNICALL</span> <span class="nf">Java_NativeExample_reverse</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">,</span> <span class="n">jstring</span> <span class="n">str</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">chars</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="nf">GetStringUTFChars</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">str</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">len</span> <span class="o">=</span> <span class="nf">strlen</span><span class="p">(</span><span class="n">chars</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="n">len</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">len</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">chars</span><span class="p">[</span><span class="n">len</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">i</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span><span class="p">[</span><span class="n">len</span><span class="p">]</span> <span class="o">=</span> <span class="sc">&#39;\0&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="nf">ReleaseStringUTFChars</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">str</span><span class="p">,</span> <span class="n">chars</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="nf">NewStringUTF</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">result</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<p><strong>JNI的数据类型映射</strong>：</p>]]></description></item><item><title>Java语言特性与关键词</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/java%E8%AF%AD%E8%A8%80%E7%89%B9%E6%80%A7/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/java%E8%AF%AD%E8%A8%80%E7%89%B9%E6%80%A7/</guid><description><![CDATA[<h1 id="java语言特性与关键词">Java语言特性与关键词</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Java通过面向对象、泛型、Lambda表达式和Stream API四大核心机制，实现了类型安全与表达能力的平衡，其中泛型编译期擦除和Lambda的方法引用转换是理解底层实现的关键。</p>
+</blockquote>
+<hr>
+<h2 id="java通过面向对象泛型lambda和stream四大机制实现类型安全与表达能力的平衡">Java通过面向对象、泛型、Lambda和Stream四大机制实现类型安全与表达能力的平衡</h2>
+<h3 id="面向对象封装继承多态是代码组织的基础范式">面向对象：封装、继承、多态是代码组织的基础范式</h3>
+<p>Java的面向对象并非纯粹（保留基本类型和静态方法），而是在工程实践中权衡后的设计：</p>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>实现方式</th>
+          <th>关键约束</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>封装</td>
+          <td>访问修饰符 + 包机制</td>
+          <td><code>private</code>仅在类内，<code>protected</code>含子类和同包</td>
+      </tr>
+      <tr>
+          <td>继承</td>
+          <td>单继承（类）、多实现（接口）</td>
+          <td>避免菱形继承问题</td>
+      </tr>
+      <tr>
+          <td>多态</td>
+          <td>虚方法表 + 动态绑定</td>
+          <td><code>final</code>/<code>static</code>/<code>private</code>方法不参与动态绑定</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 多态的本质：运行时根据实际类型调用方法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">class</span> <span class="nc">Animal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">speak</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">class</span> <span class="nc">Dog</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Animal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nd">@Override</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">speak</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;wang&#34;</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Animal</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dog</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">a</span><span class="p">.</span><span class="na">speak</span><span class="p">();</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">运行时绑定到</span><span class="w"> </span><span class="n">Dog</span><span class="p">.</span><span class="na">speak</span><span class="p">()</span></span></span></code></pre></div></div>
+<h3 id="泛型编译期类型擦除换取兼容性运行时无泛型信息">泛型：编译期类型擦除换取兼容性，运行时无泛型信息</h3>
+<p>泛型的设计目标是编译期类型检查，而非运行期性能优化。</p>
+<p><strong>类型擦除规则</strong>：</p>
+<ul>
+<li><code>List&lt;String&gt;</code> 和 <code>List&lt;Integer&gt;</code> 运行时都是 <code>List</code></li>
+<li>泛型参数替换为上限（无上限则替换为 <code>Object</code>）</li>
+<li>编译器插入强制类型转换代码</li>
+</ul>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 擦除前</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">&#34;hello&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">String</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">list</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">0</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 擦除后（JVM看到的字节码）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">List</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">&#34;hello&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">String</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="n">list</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">0</span><span class="p">);</span><span class="w">  </span><span class="o">//</span><span class="w"> </span><span class="n">编译器插入强转</span></span></span></code></pre></div></div>
+<p><strong>通配符的PECS原则</strong>：</p>]]></description></item><item><title>JDK版本演进</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/jdk%E6%BC%94%E8%BF%9B/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/jdk%E6%BC%94%E8%BF%9B/</guid><description><![CDATA[<h1 id="jdk版本演进">JDK版本演进</h1>
+<blockquote>
+<p><strong>核心结论</strong>：JDK从8到21的演进主线是&quot;语法糖简化开发 + JVM性能提升 + 并发模型现代化&quot;，其中8的Stream/Lambda、11的ZGC、17的密封类和21的虚拟线程是影响架构决策的关键版本。</p>
+</blockquote>
+<hr>
+<h2 id="jdk每3年一个lts版本核心演进围绕语法简化gc优化并发模型三条主线">JDK每3年一个LTS版本，核心演进围绕语法简化、GC优化、并发模型三条主线</h2>
+<h3 id="jdk-82014函数式编程与stream革命">JDK 8（2014）：函数式编程与Stream革命</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>影响</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Lambda表达式</td>
+          <td>函数式接口的简洁语法</td>
+          <td>替代大量匿名内部类</td>
+      </tr>
+      <tr>
+          <td>Stream API</td>
+          <td>声明式集合处理</td>
+          <td>内部迭代、惰性求值、并行支持</td>
+      </tr>
+      <tr>
+          <td>方法引用</td>
+          <td><code>Class::method</code>语法</td>
+          <td>进一步简化Lambda</td>
+      </tr>
+      <tr>
+          <td>接口默认方法</td>
+          <td><code>default</code>关键字</td>
+          <td>接口可扩展不破坏实现类</td>
+      </tr>
+      <tr>
+          <td>新日期时间API</td>
+          <td><code>java.time</code>包</td>
+          <td>线程安全、设计清晰</td>
+      </tr>
+      <tr>
+          <td>PermGen移除</td>
+          <td>方法区移至Metaspace（本地内存）</td>
+          <td>减少OOM，但内存不自动回收</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// JDK8 前后对比</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Before</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Collections</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Comparator</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">compare</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="na">length</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="na">length</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">});</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// After</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">list</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">Comparator</span><span class="p">.</span><span class="na">comparingInt</span><span class="p">(</span><span class="n">String</span><span class="p">::</span><span class="n">length</span><span class="p">));</span></span></span></code></pre></div></div>
+<h3 id="jdk-112018现代化与性能突破">JDK 11（2018）：现代化与性能突破</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>影响</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>ZGC实验性引入</td>
+          <td>可扩展低延迟GC</td>
+          <td>目标停顿&lt;10ms，堆大小无关</td>
+      </tr>
+      <tr>
+          <td>HTTP Client标准化</td>
+          <td><code>java.net.http</code>包</td>
+          <td>支持HTTP/2、异步、流式</td>
+      </tr>
+      <tr>
+          <td>var局部变量推断</td>
+          <td><code>var list = new ArrayList&lt;&gt;()</code></td>
+          <td>减少冗余类型声明</td>
+      </tr>
+      <tr>
+          <td>字符串增强</td>
+          <td><code>isBlank()</code>、<code>lines()</code>、<code>strip()</code></td>
+          <td>更实用的字符串操作</td>
+      </tr>
+      <tr>
+          <td>移除Java EE和CORBA模块</td>
+          <td>精简JDK</td>
+          <td>需额外引入依赖</td>
+      </tr>
+      <tr>
+          <td>Flight Recorder开源</td>
+          <td>JFR免费使用</td>
+          <td>生产环境低开销 profiling</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// HTTP Client 异步请求</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">HttpClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HttpClient</span><span class="p">.</span><span class="na">newHttpClient</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">HttpRequest</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HttpRequest</span><span class="p">.</span><span class="na">newBuilder</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="n">URI</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="s">&#34;https://api.example.com/data&#34;</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">client</span><span class="p">.</span><span class="na">sendAsync</span><span class="p">(</span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">HttpResponse</span><span class="p">.</span><span class="na">BodyHandlers</span><span class="p">.</span><span class="na">ofString</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="p">.</span><span class="na">thenApply</span><span class="p">(</span><span class="n">HttpResponse</span><span class="p">::</span><span class="n">body</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="p">.</span><span class="na">thenAccept</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">::</span><span class="n">println</span><span class="p">);</span></span></span></code></pre></div></div>
+<h3 id="jdk-172021-sealed类与模式匹配">JDK 17（2021）： sealed类与模式匹配</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>影响</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>密封类（Sealed Classes）</td>
+          <td><code>sealed</code>、<code>permits</code>控制继承</td>
+          <td>编译期 exhaustive switch检查</td>
+      </tr>
+      <tr>
+          <td>模式匹配（switch预览）</td>
+          <td><code>switch(obj)</code>自动类型匹配</td>
+          <td>减少强制类型转换</td>
+      </tr>
+      <tr>
+          <td>恢复浮点运算严格性</td>
+          <td>JEP 306</td>
+          <td>跨平台一致性</td>
+      </tr>
+      <tr>
+          <td>移除实验性AOT和JIT编译器</td>
+          <td>GraalVM替代</td>
+          <td>使用GraalVM实现Native Image</td>
+      </tr>
+      <tr>
+          <td>MacOS/AArch64移植</td>
+          <td>Apple Silicon支持</td>
+          <td>性能大幅提升</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 密封类：明确控制哪些类可以继承</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="kd">sealed</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Shape</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">permits</span><span class="w"> </span><span class="n">Circle</span><span class="p">,</span><span class="w"> </span><span class="n">Rectangle</span><span class="p">,</span><span class="w"> </span><span class="n">Square</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Circle</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Shape</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Rectangle</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Shape</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="kd">sealed</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Square</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Shape</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// switch 模式匹配（JDK17预览，21正式）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">String</span><span class="w"> </span><span class="n">desc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">shape</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">Circle</span><span class="w"> </span><span class="n">c</span><span class="w">    </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&#34;圆，半径&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="na">radius</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">Rectangle</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&#34;矩形&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="na">width</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34;x&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="na">height</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">Square</span><span class="w"> </span><span class="n">s</span><span class="w">    </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&#34;正方形&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="na">side</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">};</span></span></span></code></pre></div></div>
+<h3 id="jdk-212023虚拟线程与结构化并发">JDK 21（2023）：虚拟线程与结构化并发</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>影响</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>虚拟线程（Virtual Threads）</td>
+          <td>JVM管理的轻量级线程</td>
+          <td>百万级并发，告别线程池调优</td>
+      </tr>
+      <tr>
+          <td>结构化并发（预览）</td>
+          <td><code>StructuredTaskScope</code></td>
+          <td>子任务生命周期与父任务绑定</td>
+      </tr>
+      <tr>
+          <td>序列集合接口</td>
+          <td><code>SequencedCollection</code></td>
+          <td>统一有序集合操作</td>
+      </tr>
+      <tr>
+          <td>分代ZGC</td>
+          <td>默认启用</td>
+          <td>更低内存占用，更好性能</td>
+      </tr>
+      <tr>
+          <td>Record模式匹配</td>
+          <td>解构Record类型</td>
+          <td>更简洁的数据处理</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 虚拟线程：创建成本极低，无需池化</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="kd">var</span><span class="w"> </span><span class="n">executor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newVirtualThreadPerTaskExecutor</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">IntStream</span><span class="p">.</span><span class="na">range</span><span class="p">(</span><span class="n">0</span><span class="p">,</span><span class="w"> </span><span class="n">1_000_000</span><span class="p">).</span><span class="na">forEach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">executor</span><span class="p">.</span><span class="na">submit</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="n">1</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">  </span><span class="o">//</span><span class="w"> </span><span class="n">100万个并发任务</span><span class="err">，</span><span class="n">1个OS线程可处理数千虚拟线程</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="实现原理与关键机制">实现原理与关键机制</h2>
+<h3 id="虚拟线程-vs-平台线程">虚拟线程 vs 平台线程</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>平台线程（OS线程）</th>
+          <th>虚拟线程</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>创建成本</td>
+          <td>~1MB栈空间</td>
+          <td>~几百字节</td>
+      </tr>
+      <tr>
+          <td>调度器</td>
+          <td>OS内核</td>
+          <td>JVM用户态调度器（ForkJoinPool）</td>
+      </tr>
+      <tr>
+          <td>阻塞代价</td>
+          <td>OS线程阻塞</td>
+          <td>虚拟线程卸载（unmount），OS线程复用</td>
+      </tr>
+      <tr>
+          <td>适用场景</td>
+          <td>CPU密集型、持有锁</td>
+          <td>IO密集型、大量并发</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">平台线程：Java Thread → JVM Thread → OS Thread（1:1:1）
+</span></span><span class="line"><span class="cl">虚拟线程：   Java VThread → Carrier Thread（M:N映射）
+</span></span><span class="line"><span class="cl">                      ↓
+</span></span><span class="line"><span class="cl">              阻塞时VThread挂载到堆栈，Carrier释放</span></span></code></pre></div></div>
+<p><strong>虚拟线程的陷阱</strong>：</p>]]></description></item></channel></rss>

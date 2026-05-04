@@ -1,0 +1,158 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>一致性 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E4%B8%80%E8%87%B4%E6%80%A7/</link><description>一致性 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E4%B8%80%E8%87%B4%E6%80%A7/" rel="self" type="application/rss+xml"/><item><title>缓存设计模式</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/%E7%BC%93%E5%AD%98%E6%A8%A1%E5%BC%8F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/%E7%BC%93%E5%AD%98%E6%A8%A1%E5%BC%8F/</guid><description><![CDATA[<h1 id="缓存设计模式">缓存设计模式</h1>
+<blockquote>
+<p><strong>核心结论</strong>：缓存面临的三大经典问题——穿透、击穿、雪崩——本质分别是查询不存在数据、热点Key过期、大量Key同时过期，解决方案分别从布隆过滤器、互斥锁、随机过期时间三个方向入手。</p>
+</blockquote>
+<hr>
+<h2 id="缓存穿透击穿雪崩是生产环境三大经典问题分别从过滤加锁分散三个维度解决">缓存穿透、击穿、雪崩是生产环境三大经典问题，分别从过滤、加锁、分散三个维度解决</h2>
+<h3 id="缓存穿透查询不存在的数据">缓存穿透：查询不存在的数据</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">场景：恶意请求大量不存在的Key
+</span></span><span class="line"><span class="cl">      请求Key → 缓存未命中 → DB查询（也不存在）→ 返回空
+</span></span><span class="line"><span class="cl">      重复上述过程，DB被大量无效查询压垮
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">解决方案：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 布隆过滤器（推荐）
+</span></span><span class="line"><span class="cl">   预热时将所有有效Key加入布隆过滤器
+</span></span><span class="line"><span class="cl">   查询时先查布隆过滤器：
+</span></span><span class="line"><span class="cl">     - 判断不存在 → 直接返回，不走缓存和DB
+</span></span><span class="line"><span class="cl">     - 判断可能存在 → 查缓存 → 查DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 缓存空值
+</span></span><span class="line"><span class="cl">   即使DB不存在，也在缓存中存空值（短过期时间，如30秒）
+</span></span><span class="line"><span class="cl">   SET key &#34;&#34; EX 30
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">   风险：大量不存在的Key会占用缓存内存</span></span></code></pre></div></div>
+<h3 id="缓存击穿热点key过期瞬间">缓存击穿：热点Key过期瞬间</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">场景：热点Key刚好过期，大量请求同时打到DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      Thread-1: Key过期 → 查DB → 重建缓存（耗时1秒）
+</span></span><span class="line"><span class="cl">      Thread-2: Key过期 → 查DB → 重建缓存
+</span></span><span class="line"><span class="cl">      Thread-3: Key过期 → 查DB → 重建缓存
+</span></span><span class="line"><span class="cl">      ... 大量线程同时查DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">解决方案：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 互斥锁（分布式锁）
+</span></span><span class="line"><span class="cl">   只允许一个线程重建缓存：
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">   public String getData(String key) {
+</span></span><span class="line"><span class="cl">       String value = redis.get(key);
+</span></span><span class="line"><span class="cl">       if (value == null) {
+</span></span><span class="line"><span class="cl">           // 获取分布式锁
+</span></span><span class="line"><span class="cl">           if (redis.setnx(&#34;lock:&#34; + key, &#34;1&#34;, 60)) {
+</span></span><span class="line"><span class="cl">               try {
+</span></span><span class="line"><span class="cl">                   value = db.query(key);
+</span></span><span class="line"><span class="cl">                   redis.setex(key, 3600, value);
+</span></span><span class="line"><span class="cl">               } finally {
+</span></span><span class="line"><span class="cl">                   redis.del(&#34;lock:&#34; + key);
+</span></span><span class="line"><span class="cl">               }
+</span></span><span class="line"><span class="cl">           } else {
+</span></span><span class="line"><span class="cl">               // 其他线程等待后重试
+</span></span><span class="line"><span class="cl">               Thread.sleep(100);
+</span></span><span class="line"><span class="cl">               return getData(key);
+</span></span><span class="line"><span class="cl">           }
+</span></span><span class="line"><span class="cl">       }
+</span></span><span class="line"><span class="cl">       return value;
+</span></span><span class="line"><span class="cl">   }
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 逻辑过期（永不过期）
+</span></span><span class="line"><span class="cl">   不设置TTL，在Value中存储逻辑过期时间
+</span></span><span class="line"><span class="cl">   发现过期后异步重建，旧数据继续返回
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">   数据结构：{ &#34;data&#34;: &#34;xxx&#34;, &#34;expireAt&#34;: 1714400000 }</span></span></code></pre></div></div>
+<h3 id="缓存雪崩大量key同时过期">缓存雪崩：大量Key同时过期</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">场景：缓存重启、批量导入、固定过期时间导致大量Key同时失效
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      10:00:00  key1过期, key2过期, key3过期 ... key10000过期
+</span></span><span class="line"><span class="cl">      大量请求同时打到DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">解决方案：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 随机过期时间
+</span></span><span class="line"><span class="cl">   基础过期时间 + 随机偏移：
+</span></span><span class="line"><span class="cl">   EXPIRE key (3600 + random(0, 300))
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">2. 多级缓存
+</span></span><span class="line"><span class="cl">   L1：本地缓存（Caffeine）→ L2：Redis → DB
+</span></span><span class="line"><span class="cl">   本地缓存兜底，防止全部穿透到DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 高可用架构
+</span></span><span class="line"><span class="cl">   Redis集群 + 哨兵，避免单点故障</span></span></code></pre></div></div>
+<h3 id="缓存与数据库一致性">缓存与数据库一致性</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方案</th>
+          <th>写操作</th>
+          <th>读操作</th>
+          <th>一致性</th>
+          <th>复杂度</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Cache Aside</td>
+          <td>先更新DB，再删缓存</td>
+          <td>先读缓存，miss则读DB写缓存</td>
+          <td>最终一致</td>
+          <td>低</td>
+      </tr>
+      <tr>
+          <td>Read/Write Through</td>
+          <td>读写都走缓存，缓存同步更新DB</td>
+          <td>同左</td>
+          <td>强一致</td>
+          <td>中</td>
+      </tr>
+      <tr>
+          <td>Write Behind</td>
+          <td>只写缓存，异步批量写DB</td>
+          <td>读缓存</td>
+          <td>弱一致</td>
+          <td>高</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Cache Aside（最常用）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">读：
+</span></span><span class="line"><span class="cl">  读缓存 → hit → 返回
+</span></span><span class="line"><span class="cl">        → miss → 读DB → 写缓存 → 返回
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">写：
+</span></span><span class="line"><span class="cl">  写DB → 删缓存（不是更新缓存）
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  为什么删不是更新？
+</span></span><span class="line"><span class="cl">  - 并发写可能导致缓存脏数据
+</span></span><span class="line"><span class="cl">  - 删缓存简单，下次读自然重建
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">延迟双删（进一步优化）：
+</span></span><span class="line"><span class="cl">  1. 删缓存
+</span></span><span class="line"><span class="cl">  2. 更新DB
+</span></span><span class="line"><span class="cl">  3. 睡眠500ms（等待主从同步）
+</span></span><span class="line"><span class="cl">  4. 再次删缓存</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1先删缓存还是先更新db">问题1：先删缓存还是先更新DB？</h3>
+<p><strong>根因</strong>：并发时序导致数据不一致
+<strong>分析</strong>：</p>]]></description></item></channel></rss>

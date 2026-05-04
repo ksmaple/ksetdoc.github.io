@@ -1,0 +1,228 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>脚手架 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E8%84%9A%E6%89%8B%E6%9E%B6/</link><description>脚手架 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E8%84%9A%E6%89%8B%E6%9E%B6/" rel="self" type="application/rss+xml"/><item><title>Smart-Admin管理系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE%E5%AE%9E%E8%B7%B5/smart-admin/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE%E5%AE%9E%E8%B7%B5/smart-admin/</guid><description><![CDATA[<h1 id="smart-admin管理系统">Smart-Admin管理系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Smart-Admin是一个基于Java + Vue3的中小型企业级中后台管理脚手架，通过模块化的组织架构（组织/部门/岗位/员工）和前后端分离设计，提供了开箱即用的SaaS多租户管理后台，适合作为内部系统或轻量级SaaS的启动模板。</p>
+</blockquote>
+<hr>
+<h2 id="smart-admin通过rbac权限模型多组织架构和标准化crud封装降低中后台系统开发成本">Smart-Admin通过RBAC权限模型、多组织架构和标准化CRUD封装，降低中后台系统开发成本</h2>
+<h3 id="技术栈">技术栈</h3>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>技术</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>前端</td>
+          <td>Vue3 + Vite + Pinia + ElementPlus</td>
+          <td>组合式API，开发体验好</td>
+      </tr>
+      <tr>
+          <td>后端</td>
+          <td>Spring Boot + MyBatis-Plus</td>
+          <td>主流Java技术栈</td>
+      </tr>
+      <tr>
+          <td>权限</td>
+          <td>Sa-Token + RBAC</td>
+          <td>注解式权限控制</td>
+      </tr>
+      <tr>
+          <td>多租户</td>
+          <td>MyBatis-Plus TenantLine</td>
+          <td>行级数据隔离</td>
+      </tr>
+      <tr>
+          <td>数据库</td>
+          <td>MySQL</td>
+          <td>支持多租户共享Schema</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="组织架构设计">组织架构设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">租户（Tenant）
+</span></span><span class="line"><span class="cl">├── 组织（Organization）
+</span></span><span class="line"><span class="cl">│   ├── 部门（Department）
+</span></span><span class="line"><span class="cl">│   │   └── 员工（Employee）
+</span></span><span class="line"><span class="cl">│   └── 岗位（Position）
+</span></span><span class="line"><span class="cl">│       └── 员工（Employee）
+</span></span><span class="line"><span class="cl">└── 角色（Role）
+</span></span><span class="line"><span class="cl">    └── 菜单/按钮权限（Permission）</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>实体</th>
+          <th>说明</th>
+          <th>关系</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>租户</td>
+          <td>SaaS顶层隔离单位</td>
+          <td>所有数据的owner</td>
+      </tr>
+      <tr>
+          <td>组织</td>
+          <td>企业/公司主体</td>
+          <td>一个租户可有多个组织</td>
+      </tr>
+      <tr>
+          <td>部门</td>
+          <td>树形结构</td>
+          <td>支持层级汇报线</td>
+      </tr>
+      <tr>
+          <td>岗位</td>
+          <td>职能标签</td>
+          <td>与部门正交，可跨部门</td>
+      </tr>
+      <tr>
+          <td>员工</td>
+          <td>系统用户</td>
+          <td>关联部门+岗位+账号</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="权限模型">权限模型</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 菜单权限（前端路由控制）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@SaCheckPermission</span><span class="p">(</span><span class="s">&#34;system:menu:query&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@GetMapping</span><span class="p">(</span><span class="s">&#34;/menu/list&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">MenuVO</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 按钮权限（前端按钮显隐+后端接口校验）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@SaCheckPermission</span><span class="p">(</span><span class="s">&#34;system:user:add&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@PostMapping</span><span class="p">(</span><span class="s">&#34;/user/add&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="nd">@RequestBody</span><span class="w"> </span><span class="n">UserAddForm</span><span class="w"> </span><span class="n">form</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span></span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>权限类型</th>
+          <th>控制粒度</th>
+          <th>实现方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>菜单权限</td>
+          <td>页面级别</td>
+          <td>前端路由守卫 + 菜单树过滤</td>
+      </tr>
+      <tr>
+          <td>按钮权限</td>
+          <td>操作级别</td>
+          <td>前端指令 + 后端注解校验</td>
+      </tr>
+      <tr>
+          <td>数据权限</td>
+          <td>数据行级别</td>
+          <td>注解拦截 + SQL动态拼接</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="数据权限扩展">数据权限扩展</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 自定义数据权限注解</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@DataScope</span><span class="p">(</span><span class="n">deptAlias</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;d&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">userAlias</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;u&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@GetMapping</span><span class="p">(</span><span class="s">&#34;/list&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">userMapper</span><span class="p">.</span><span class="na">selectList</span><span class="p">(</span><span class="n">wrapper</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 自动拼接数据范围条件</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 全部数据：不拼接</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 本部门数据：WHERE dept_id = 当前部门</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 本部门及以下：WHERE dept_id IN (子部门列表)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">仅本人</span><span class="err">：</span><span class="n">WHERE</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">当前用户</span></span></span></code></pre></div></div>
+<h3 id="标准crud封装">标准CRUD封装</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Service层标准化</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">UserService</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">ServiceImpl</span><span class="o">&lt;</span><span class="n">UserMapper</span><span class="p">,</span><span class="w"> </span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// MyBatis-Plus内置方法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">IPage</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">page</span><span class="p">(</span><span class="n">UserQueryForm</span><span class="w"> </span><span class="n">form</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">LambdaQueryWrapper</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="n">wrapper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LambdaQueryWrapper</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">wrapper</span><span class="p">.</span><span class="na">like</span><span class="p">(</span><span class="n">StringUtils</span><span class="p">.</span><span class="na">isNotBlank</span><span class="p">(</span><span class="n">form</span><span class="p">.</span><span class="na">getName</span><span class="p">()),</span><span class="w"> </span><span class="n">User</span><span class="p">::</span><span class="n">getName</span><span class="p">,</span><span class="w"> </span><span class="n">form</span><span class="p">.</span><span class="na">getName</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">wrapper</span><span class="p">.</span><span class="na">eq</span><span class="p">(</span><span class="n">form</span><span class="p">.</span><span class="na">getStatus</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">User</span><span class="p">::</span><span class="n">getStatus</span><span class="p">,</span><span class="w"> </span><span class="n">form</span><span class="p">.</span><span class="na">getStatus</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">page</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Page</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">form</span><span class="p">.</span><span class="na">getPageNum</span><span class="p">(),</span><span class="w"> </span><span class="n">form</span><span class="p">.</span><span class="na">getPageSize</span><span class="p">()),</span><span class="w"> </span><span class="n">wrapper</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="前端标准化">前端标准化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-javascript">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-javascript" data-lang="javascript"><span class="line"><span class="cl"><span class="c1">// 通用表格Hook封装
+</span></span></span><span class="line"><span class="cl"><span class="kr">export</span> <span class="kd">function</span> <span class="nx">useTable</span><span class="p">(</span><span class="nx">api</span><span class="p">,</span> <span class="nx">params</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">loading</span> <span class="o">=</span> <span class="nx">ref</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">tableData</span> <span class="o">=</span> <span class="nx">ref</span><span class="p">([]);</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">pagination</span> <span class="o">=</span> <span class="nx">reactive</span><span class="p">({</span> <span class="nx">pageNum</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">pageSize</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nx">total</span><span class="o">:</span> <span class="mi">0</span> <span class="p">});</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">loadData</span> <span class="o">=</span> <span class="kr">async</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">loading</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kr">const</span> <span class="nx">res</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">api</span><span class="p">({</span> <span class="p">...</span><span class="nx">params</span><span class="p">,</span> <span class="p">...</span><span class="nx">pagination</span> <span class="p">});</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">tableData</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">res</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">list</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">pagination</span><span class="p">.</span><span class="nx">total</span> <span class="o">=</span> <span class="nx">res</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">total</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">loading</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">};</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">{</span> <span class="nx">loading</span><span class="p">,</span> <span class="nx">tableData</span><span class="p">,</span> <span class="nx">pagination</span><span class="p">,</span> <span class="nx">loadData</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="二次开发要点">二次开发要点</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>做法</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>新增业务模块</td>
+          <td>参照system模块复制，修改表名和字段</td>
+      </tr>
+      <tr>
+          <td>扩展登录方式</td>
+          <td>扩展Sa-Token多账号体系或自定义Realm</td>
+      </tr>
+      <tr>
+          <td>更换UI组件库</td>
+          <td>前端替换ElementPlus为AntDesign</td>
+      </tr>
+      <tr>
+          <td>增加工作流</td>
+          <td>集成Flowable或Camunda</td>
+      </tr>
+      <tr>
+          <td>消息通知</td>
+          <td>集成WebSocket或SSE推送</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1将脚手架直接用于超大规模saas">问题1：将脚手架直接用于超大规模SaaS</h3>
+<p><strong>根因</strong>：未评估多租户方案是否满足未来数据量
+<strong>解决</strong>：千万级以下用户行级隔离足够，更大规模需评估独立数据库方案</p>]]></description></item></channel></rss>

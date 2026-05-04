@@ -1,0 +1,315 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>调度 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E8%B0%83%E5%BA%A6/</link><description>调度 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E8%B0%83%E5%BA%A6/" rel="self" type="application/rss+xml"/><item><title>CPU调度与上下文切换</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/cpu%E8%B0%83%E5%BA%A6/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/cpu%E8%B0%83%E5%BA%A6/</guid><description><![CDATA[<h1 id="cpu调度与上下文切换">CPU调度与上下文切换</h1>
+<blockquote>
+<p><strong>核心结论</strong>：CPU通过时间片轮转调度多个进程/线程，上下文切换保存和恢复执行状态的代价在微秒级，进程切换比线程切换开销大（需切换地址空间），理解调度策略是优化系统响应和吞吐的关键。</p>
+</blockquote>
+<hr>
+<h2 id="cpu通过调度算法在时间片上复用上下文切换保存执行状态进程和线程在地址空间共享上存在本质差异">CPU通过调度算法在时间片上复用，上下文切换保存执行状态，进程和线程在地址空间共享上存在本质差异</h2>
+<h3 id="进程-vs-线程资源分配的基本单位-vs-cpu调度的基本单位">进程 vs 线程：资源分配的基本单位 vs CPU调度的基本单位</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>进程（Process）</th>
+          <th>线程（Thread）</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>定义</td>
+          <td>资源分配的基本单位</td>
+          <td>CPU调度的基本单位</td>
+      </tr>
+      <tr>
+          <td>地址空间</td>
+          <td>独立（虚拟内存）</td>
+          <td>共享进程地址空间</td>
+      </tr>
+      <tr>
+          <td>切换开销</td>
+          <td>大（需切换页表、TLB刷新）</td>
+          <td>小（仅保存寄存器、栈指针）</td>
+      </tr>
+      <tr>
+          <td>通信方式</td>
+          <td>IPC（管道、消息队列、共享内存）</td>
+          <td>直接读写共享内存（需同步）</td>
+      </tr>
+      <tr>
+          <td>创建速度</td>
+          <td>慢（需分配独立资源）</td>
+          <td>快（共享进程资源）</td>
+      </tr>
+      <tr>
+          <td>崩溃影响</td>
+          <td>不影响其他进程</td>
+          <td>可能导致整个进程崩溃</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">进程内存布局：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">高地址 ┌─────────────────┐
+</span></span><span class="line"><span class="cl">       │    栈 (Stack)    │  ← 局部变量、函数调用，向下增长
+</span></span><span class="line"><span class="cl">       │        ↓        │
+</span></span><span class="line"><span class="cl">       │                 │
+</span></span><span class="line"><span class="cl">       │    堆 (Heap)     │  ← 动态分配，向上增长
+</span></span><span class="line"><span class="cl">       │        ↑        │
+</span></span><span class="line"><span class="cl">       ├─────────────────┤
+</span></span><span class="line"><span class="cl">       │    数据段        │  ← 全局变量、静态变量
+</span></span><span class="line"><span class="cl">       ├─────────────────┤
+</span></span><span class="line"><span class="cl">       │    代码段        │  ← 可执行代码
+</span></span><span class="line"><span class="cl">低地址 └─────────────────┘
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">线程内存：共享进程的代码段、数据段、堆，独占栈</span></span></code></pre></div></div>
+<h3 id="cpu调度算法响应时间-vs-吞吐量的权衡">CPU调度算法：响应时间 vs 吞吐量的权衡</h3>
+<table>
+  <thead>
+      <tr>
+          <th>算法</th>
+          <th>原理</th>
+          <th>优点</th>
+          <th>缺点</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>先来先服务（FCFS）</td>
+          <td>按到达顺序执行</td>
+          <td>简单公平</td>
+          <td>长任务阻塞短任务</td>
+          <td>批处理</td>
+      </tr>
+      <tr>
+          <td>短作业优先（SJF）</td>
+          <td>预估执行时间最短优先</td>
+          <td>平均等待时间最小</td>
+          <td>长任务饥饿</td>
+          <td>已知任务长度</td>
+      </tr>
+      <tr>
+          <td>时间片轮转（RR）</td>
+          <td>每个任务执行固定时间片</td>
+          <td>响应性好</td>
+          <td>时间片大小难定</td>
+          <td>交互式系统</td>
+      </tr>
+      <tr>
+          <td>优先级调度</td>
+          <td>优先级高先执行</td>
+          <td>重要任务优先</td>
+          <td>低优先级饥饿</td>
+          <td>实时系统</td>
+      </tr>
+      <tr>
+          <td>多级反馈队列（MLFQ）</td>
+          <td>动态调整优先级和时间片</td>
+          <td>兼顾响应和吞吐</td>
+          <td>参数复杂</td>
+          <td>通用操作系统</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Linux CFS（完全公平调度器）核心思想：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">- 每个进程有一个 vruntime（虚拟运行时间）
+</span></span><span class="line"><span class="cl">- 实际运行时间 weighted by 优先级
+</span></span><span class="line"><span class="cl">- 调度时选择 vruntime 最小的进程执行
+</span></span><span class="line"><span class="cl">- 保证所有进程获得公平的CPU时间比例
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">计算公式：
+</span></span><span class="line"><span class="cl">  vruntime += delta_exec * (NICE_0_LOAD / weight)
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  高优先级（nice值小）→ weight大 → vruntime增长慢 → 获得更多CPU时间</span></span></code></pre></div></div>
+<h3 id="上下文切换保存当前状态恢复目标状态">上下文切换：保存当前状态、恢复目标状态</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">上下文切换过程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 触发切换
+</span></span><span class="line"><span class="cl">   - 时间片用完（时钟中断）
+</span></span><span class="line"><span class="cl">   - 进程阻塞（等待IO）
+</span></span><span class="line"><span class="cl">   - 高优先级进程就绪
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 保存当前上下文
+</span></span><span class="line"><span class="cl">   - 通用寄存器（RAX, RBX, RCX...）
+</span></span><span class="line"><span class="cl">   - 程序计数器PC（下条指令地址）
+</span></span><span class="line"><span class="cl">   - 状态寄存器
+</span></span><span class="line"><span class="cl">   - 栈指针SP
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 切换到新上下文
+</span></span><span class="line"><span class="cl">   - 加载目标进程的寄存器值
+</span></span><span class="line"><span class="cl">   - 加载新页表（进程切换时）
+</span></span><span class="line"><span class="cl">   - 刷新TLB（进程切换时，部分条目）
+</span></span><span class="line"><span class="cl">   - 跳转到新的PC执行
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">开销来源：
+</span></span><span class="line"><span class="cl">  - 直接开销：寄存器保存/恢复（~1000个时钟周期）
+</span></span><span class="line"><span class="cl">  - 间接开销：Cache失效、TLB未命中（更严重）</span></span></code></pre></div></div>
+<hr>
+<h2 id="实现原理与关键机制">实现原理与关键机制</h2>
+<h3 id="用户态-vs-内核态cpu特权级的隔离">用户态 vs 内核态：CPU特权级的隔离</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Ring 0: 内核态（操作系统运行）
+</span></span><span class="line"><span class="cl">  - 可执行所有指令
+</span></span><span class="line"><span class="cl">  - 可访问所有内存
+</span></span><span class="line"><span class="cl">  - 直接操作硬件
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Ring 3: 用户态（应用程序运行）
+</span></span><span class="line"><span class="cl">  - 受限指令集
+</span></span><span class="line"><span class="cl">  - 只能访问用户空间内存
+</span></span><span class="line"><span class="cl">  - 通过系统调用请求内核服务
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">系统调用过程：
+</span></span><span class="line"><span class="cl">  用户程序 → int 0x80 / syscall 指令 → CPU切换到Ring 0
+</span></span><span class="line"><span class="cl">         → 执行内核处理函数 → 返回结果 → 切换回Ring 3
+</span></span><span class="line"><span class="cl">         
+</span></span><span class="line"><span class="cl">  代价：用户态↔内核态切换（几十到几百个时钟周期）</span></span></code></pre></div></div>
+<h3 id="协程用户线程比线程更轻量的调度单元">协程/用户线程：比线程更轻量的调度单元</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>内核线程</th>
+          <th>用户线程/协程</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>调度者</td>
+          <td>操作系统内核</td>
+          <td>用户态运行时（JVM/Go运行时）</td>
+      </tr>
+      <tr>
+          <td>切换代价</td>
+          <td>微秒级</td>
+          <td>纳秒级（无需进入内核）</td>
+      </tr>
+      <tr>
+          <td>并发数</td>
+          <td>数千（平台线程）/百万（虚拟线程）</td>
+          <td>百万级</td>
+      </tr>
+      <tr>
+          <td>阻塞影响</td>
+          <td>阻塞内核线程</td>
+          <td>协程让出，不阻塞载体线程</td>
+      </tr>
+      <tr>
+          <td>多核利用</td>
+          <td>内核自动调度到多核</td>
+          <td>需M:N映射到内核线程</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java 21 虚拟线程（协程）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="kd">var</span><span class="w"> </span><span class="n">executor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newVirtualThreadPerTaskExecutor</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">executor</span><span class="p">.</span><span class="na">submit</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 阻塞操作（如HTTP请求）会自动卸载虚拟线程</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">httpClient</span><span class="p">.</span><span class="na">send</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="na">body</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">});</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Go Goroutine</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">go</span><span class="w"> </span><span class="nf">func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 轻量级，由Go运行时调度</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">processRequest</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}()</span></span></span></code></pre></div></div>
+<h3 id="linux中的进程状态">Linux中的进程状态</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">        创建
+</span></span><span class="line"><span class="cl">          ↓
+</span></span><span class="line"><span class="cl">    ┌───────────┐
+</span></span><span class="line"><span class="cl">    │  就绪态    │ ←────── 时间片用完 / 被抢占
+</span></span><span class="line"><span class="cl">    │ (TASK_RUNNING) │
+</span></span><span class="line"><span class="cl">    └─────┬─────┘
+</span></span><span class="line"><span class="cl">          ↓ 被调度
+</span></span><span class="line"><span class="cl">    ┌───────────┐
+</span></span><span class="line"><span class="cl">    │  运行态    │
+</span></span><span class="line"><span class="cl">    │ (TASK_RUNNING) │
+</span></span><span class="line"><span class="cl">    └─────┬─────┘
+</span></span><span class="line"><span class="cl">          ↓ 等待IO / sleep
+</span></span><span class="line"><span class="cl">    ┌───────────┐
+</span></span><span class="line"><span class="cl">    │  阻塞态    │
+</span></span><span class="line"><span class="cl">    │(TASK_INTERRUPTIBLE)│
+</span></span><span class="line"><span class="cl">    └─────┬─────┘
+</span></span><span class="line"><span class="cl">          ↓ IO完成 / 被唤醒
+</span></span><span class="line"><span class="cl">          ─────────────→ 就绪态
+</span></span><span class="line"><span class="cl">          
+</span></span><span class="line"><span class="cl">    终止态 (TASK_DEAD)</span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>推荐方案</th>
+          <th>原因</th>
+          <th>风险</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>CPU密集型计算</td>
+          <td>线程数 ≈ CPU核数</td>
+          <td>减少上下文切换</td>
+          <td>线程数过多导致调度开销</td>
+      </tr>
+      <tr>
+          <td>IO密集型（传统）</td>
+          <td>线程数 &raquo; CPU核数</td>
+          <td>阻塞时其他线程可执行</td>
+          <td>线程数过多内存耗尽</td>
+      </tr>
+      <tr>
+          <td>IO密集型（现代）</td>
+          <td>虚拟线程/协程</td>
+          <td>百万级并发，自动调度</td>
+          <td>需避免钉住载体线程</td>
+      </tr>
+      <tr>
+          <td>实时系统</td>
+          <td>优先级调度 + 绑定CPU</td>
+          <td>保证关键任务响应</td>
+          <td>低优先级任务可能饥饿</td>
+      </tr>
+      <tr>
+          <td>批处理系统</td>
+          <td>吞吐量优先调度</td>
+          <td>最大化CPU利用率</td>
+          <td>交互响应差</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1线程数越多越好">问题1：线程数越多越好？</h3>
+<p><strong>根因</strong>：线程过多导致频繁上下文切换，Cache失效，反而降低吞吐量
+<strong>解决</strong>：CPU密集型线程数≈核数，IO密集型用虚拟线程或线程池控制</p>]]></description></item></channel></rss>

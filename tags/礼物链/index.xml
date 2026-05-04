@@ -1,0 +1,74 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>礼物链 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E7%A4%BC%E7%89%A9%E9%93%BE/</link><description>礼物链 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E7%A4%BC%E7%89%A9%E9%93%BE/" rel="self" type="application/rss+xml"/><item><title>送礼系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%A4%BC%E7%89%A9%E7%B3%BB%E7%BB%9F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%A4%BC%E7%89%A9%E7%B3%BB%E7%BB%9F/</guid><description><![CDATA[<h1 id="送礼系统">送礼系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：送礼系统的核心是礼物购买、赠送、展示三个链路，通过礼物链特效增强互动体验，通过幂等设计和事务保障资金安全，通过异步消息解耦礼物展示与账户扣减。</p>
+</blockquote>
+<hr>
+<h2 id="送礼系统通过礼物链聚合连续赠送通过事务保障资金一致通过异步解耦展示与扣减">送礼系统通过礼物链聚合连续赠送、通过事务保障资金一致、通过异步解耦展示与扣减</h2>
+<h3 id="核心链路购买赠送展示结算">核心链路：购买→赠送→展示→结算</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户送礼流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 选择礼物 → 确认赠送
+</span></span><span class="line"><span class="cl">2. 账户扣减（余额/钻石）
+</span></span><span class="line"><span class="cl">   - 本地事务：扣减用户余额 + 记录消费流水
+</span></span><span class="line"><span class="cl">3. 礼物消息发送（MQ）
+</span></span><span class="line"><span class="cl">4. 直播间展示（礼物动画、礼物链）
+</span></span><span class="line"><span class="cl">5. 主播收益结算（异步日结/实时）</span></span></code></pre></div></div>
+<p><strong>礼物链（Gift Combo）</strong>：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户连续快速送同一礼物：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">送玫瑰 x1 → 展示 &#34;Tom 送出 玫瑰 x1&#34;
+</span></span><span class="line"><span class="cl">送玫瑰 x2 → 合并为 &#34;Tom 送出 玫瑰 x3&#34;
+</span></span><span class="line"><span class="cl">送玫瑰 x5 → 合并为 &#34;Tom 送出 玫瑰 x8&#34;
+</span></span><span class="line"><span class="cl">... 连续赠送合并为链式展示
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">实现：
+</span></span><span class="line"><span class="cl">- 客户端缓存最近赠送的礼物类型
+</span></span><span class="line"><span class="cl">- 相同礼物在窗口期内合并计数
+</span></span><span class="line"><span class="cl">- 服务端验证窗口期内的总数量</span></span></code></pre></div></div>
+<h3 id="关键设计">关键设计</h3>
+<table>
+  <thead>
+      <tr>
+          <th>设计点</th>
+          <th>方案</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>幂等性</td>
+          <td>礼物订单号唯一索引</td>
+          <td>防重复扣款</td>
+      </tr>
+      <tr>
+          <td>扣款顺序</td>
+          <td>先扣款后发MQ</td>
+          <td>避免发了礼物没扣到钱</td>
+      </tr>
+      <tr>
+          <td>展示降级</td>
+          <td>送礼量过大时合并显示</td>
+          <td>防止客户端卡顿</td>
+      </tr>
+      <tr>
+          <td>收益结算</td>
+          <td>异步日结，对账兜底</td>
+          <td>实时性要求低</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1连续送礼扣款成功但展示丢失">问题1：连续送礼扣款成功但展示丢失</h3>
+<p><strong>根因</strong>：MQ消费失败或客户端丢消息
+<strong>解决</strong>：MQ重试 + 客户端ACK + 对账补偿</p>]]></description></item></channel></rss>

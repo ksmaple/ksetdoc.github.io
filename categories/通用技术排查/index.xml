@@ -1,0 +1,918 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>通用技术排查 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/</link><description>通用技术排查 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/" rel="self" type="application/rss+xml"/><item><title>Dubbo初始化对象失败（2.3版本）</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/dubbo%E5%88%9D%E5%A7%8B%E5%8C%96%E6%95%85%E9%9A%9C/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/dubbo%E5%88%9D%E5%A7%8B%E5%8C%96%E6%95%85%E9%9A%9C/</guid><description><![CDATA[<h1 id="dubbo初始化对象失败23版本">Dubbo初始化对象失败（2.3版本）</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Dubbo 2.3版本在Spring Boot环境下，若消费者Bean初始化早于配置中心或注册中心就绪，会导致ReferenceBean创建失败，通过调整初始化顺序、启用延迟加载或升级版本可解决。</p>
+</blockquote>
+<hr>
+<h2 id="问题现象">问题现象</h2>
+<p>服务启动报错：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">org.springframework.beans.factory.BeanCreationException: 
+</span></span><span class="line"><span class="cl">Error creating bean with name &#39;orderService&#39;: 
+</span></span><span class="line"><span class="cl">Initialization of bean failed
+</span></span><span class="line"><span class="cl">Caused by: java.lang.IllegalStateException: 
+</span></span><span class="line"><span class="cl">Failed to check the status of the service xxx. 
+</span></span><span class="line"><span class="cl">No provider available for the service xxx from registry xxx</span></span></code></pre></div></div>
+<h3 id="影响范围">影响范围</h3>
+<ul>
+<li>服务启动失败，无法提供或消费RPC服务</li>
+<li>生产环境发布时偶现，本地开发必现</li>
+<li>影响服务间调用链路</li>
+</ul>
+<hr>
+<h2 id="排查过程">排查过程</h2>
+<h3 id="第一步确认dubbo版本与配置">第一步：确认Dubbo版本与配置</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># application.yml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">dubbo</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">application</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">order-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">registry</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l">nacos://nacos:8848</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">consumer</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">   </span><span class="c"># 启动时检查提供者是否存在</span></span></span></code></pre></div></div>
+<h3 id="第二步分析启动时序">第二步：分析启动时序</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Spring Boot启动流程：
+</span></span><span class="line"><span class="cl">1. 加载配置
+</span></span><span class="line"><span class="cl">2. 创建Bean（包括Dubbo ReferenceBean）
+</span></span><span class="line"><span class="cl">3. Dubbo尝试从注册中心查找提供者
+</span></span><span class="line"><span class="cl">4. 若提供者未注册或网络不通 → 初始化失败
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">问题：consumer.check=true 时，引用初始化必须找到提供者</span></span></code></pre></div></div>
+<h3 id="第三步定位具体原因">第三步：定位具体原因</h3>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>表现</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>提供者未启动</td>
+          <td>消费者先启动，注册中心无服务地址</td>
+      </tr>
+      <tr>
+          <td>网络分区</td>
+          <td>消费者无法连接到注册中心</td>
+      </tr>
+      <tr>
+          <td>版本不匹配</td>
+          <td>消费者version/group与提供者不一致</td>
+      </tr>
+      <tr>
+          <td>Nacos延迟</td>
+          <td>服务注册有延迟，消费者查询时数据未同步</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="根因分析">根因分析</h2>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Dubbo 2.3 默认行为：
+</span></span><span class="line"><span class="cl">ReferenceBean 初始化 → 立即连接注册中心 → 检查提供者
+</span></span><span class="line"><span class="cl">                          ↓
+</span></span><span class="line"><span class="cl">                    检查失败 + check=true
+</span></span><span class="line"><span class="cl">                          ↓
+</span></span><span class="line"><span class="cl">                    抛出异常，Spring容器启动失败</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>根因</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>强依赖启动顺序</td>
+          <td>消费者假设提供者已就绪</td>
+      </tr>
+      <tr>
+          <td>check=true默认值</td>
+          <td>2.3版本consumer.check默认true</td>
+      </tr>
+      <tr>
+          <td>同步初始化阻塞</td>
+          <td>ReferenceBean在Spring启动阶段同步创建</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="解决方案">解决方案</h2>
+<h3 id="方案一关闭启动检查推荐开发环境">方案一：关闭启动检查（推荐开发环境）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">dubbo</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">consumer</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">   </span><span class="c"># 启动时不检查提供者，调用时再发现</span></span></span></code></pre></div></div>
+<h3 id="方案二延迟初始化">方案二：延迟初始化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 消费者Bean延迟加载</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@DubboReference</span><span class="p">(</span><span class="n">lazy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span><span class="w">  </span><span class="c1">// 首次调用时才初始化代理</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">OrderService</span><span class="w"> </span><span class="n">orderService</span><span class="p">;</span></span></span></code></pre></div></div>
+<h3 id="方案三指定重试与超时">方案三：指定重试与超时</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">dubbo</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">consumer</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">check</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="m">3000</span></span></span></code></pre></div></div>
+<h3 id="方案四升级dubbo版本">方案四：升级Dubbo版本</h3>
+<table>
+  <thead>
+      <tr>
+          <th>版本</th>
+          <th>改进</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>2.7+</td>
+          <td>配置更灵活，支持应用级注册</td>
+      </tr>
+      <tr>
+          <td>3.0+</td>
+          <td>支持Mesh、性能优化、Triple协议</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-xml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="line"><span class="cl"><span class="c">&lt;!-- 升级到3.x --&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&lt;dependency&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;groupId&gt;</span>org.apache.dubbo<span class="nt">&lt;/groupId&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;artifactId&gt;</span>dubbo<span class="nt">&lt;/artifactId&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;version&gt;</span>3.2.0<span class="nt">&lt;/version&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&lt;/dependency&gt;</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="复盘与预防">复盘与预防</h2>
+<table>
+  <thead>
+      <tr>
+          <th>措施</th>
+          <th>执行方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>环境差异化配置</td>
+          <td>开发环境check=false，生产环境视情况</td>
+      </tr>
+      <tr>
+          <td>健康检查</td>
+          <td>上线前检查提供者注册状态</td>
+      </tr>
+      <tr>
+          <td>发布顺序</td>
+          <td>先发布提供者，验证后再发布消费者</td>
+      </tr>
+      <tr>
+          <td>版本管理</td>
+          <td>制定Dubbo版本升级计划，避免长期停留在旧版本</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="../../%e8%bf%9b%e9%98%b6%e5%b1%82/Java%e6%8a%80%e6%9c%af%e6%a1%86%e6%9e%b6/Dubbo.md" rel="">Dubbo RPC框架</a></li>
+<li>[Spring Boot自动配置](../../进阶层/Java技术框架/Spring Boot自动配置.md)</li>
+</ul>]]></description></item><item><title>ES磁盘不足与分片内存调优</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/es%E7%A3%81%E7%9B%98%E5%88%86%E7%89%87%E8%B0%83%E4%BC%98/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/es%E7%A3%81%E7%9B%98%E5%88%86%E7%89%87%E8%B0%83%E4%BC%98/</guid><description><![CDATA[<h1 id="es磁盘不足与分片内存调优">ES磁盘不足与分片内存调优</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Elasticsearch的稳定性高度依赖磁盘空间和JVM内存的合理规划，磁盘不足会触发只读保护导致写入中断，分片过多会耗尽堆内存引发OOM，通过索引生命周期管理、分片数量规划和水位线监控可预防此类问题。</p>
+</blockquote>
+<hr>
+<h2 id="问题现象">问题现象</h2>
+<p>线上ES集群出现以下异常：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># 现象1：写入被拒绝
+</span></span><span class="line"><span class="cl">cluster_block_exception: index [logs-2024-01] blocked by: [FORBIDDEN/12/index read-only / allow delete (api)];
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># 现象2：节点频繁GC
+</span></span><span class="line"><span class="cl">[gc][23451] overhead, spent [2.1s] collecting in the last [2.3s]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># 现象3：节点掉线
+</span></span><span class="line"><span class="cl">Master node discovery: node-left reason: disconnected</span></span></code></pre></div></div>
+<h3 id="影响范围">影响范围</h3>
+<ul>
+<li>日志写入失败，数据丢失风险</li>
+<li>查询延迟飙升，影响检索功能</li>
+<li>节点频繁掉线，集群稳定性下降</li>
+</ul>
+<hr>
+<h2 id="排查过程">排查过程</h2>
+<h3 id="第一步检查集群健康状态">第一步：检查集群健康状态</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 集群整体状态</span>
+</span></span><span class="line"><span class="cl">GET _cluster/health
+</span></span><span class="line"><span class="cl"><span class="c1"># status: red/yellow, unassigned_shards &gt; 0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 节点磁盘和内存</span>
+</span></span><span class="line"><span class="cl">GET _nodes/stats/fs,os,jvm
+</span></span><span class="line"><span class="cl"><span class="c1"># fs.total.free_in_bytes: 磁盘剩余</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># jvm.mem.heap_used_percent: 堆内存使用百分比</span></span></span></code></pre></div></div>
+<h3 id="第二步分析磁盘使用">第二步：分析磁盘使用</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 查看各索引占用空间</span>
+</span></span><span class="line"><span class="cl">GET _cat/indices?v<span class="p">&amp;</span><span class="nv">s</span><span class="o">=</span>store.size:desc
+</span></span><span class="line"><span class="cl"><span class="c1"># 发现旧日志索引占用了80%空间</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 查看磁盘水位线</span>
+</span></span><span class="line"><span class="cl">GET _cluster/settings?include_defaults<span class="o">=</span>true<span class="p">&amp;</span><span class="nv">filter_path</span><span class="o">=</span>**.disk.watermark
+</span></span><span class="line"><span class="cl"><span class="c1"># low: 85%, high: 90%, flood_stage: 95%</span></span></span></code></pre></div></div>
+<h3 id="第三步分析内存使用">第三步：分析内存使用</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 分片级别内存占用</span>
+</span></span><span class="line"><span class="cl">GET _cat/shards?v<span class="p">&amp;</span><span class="nv">s</span><span class="o">=</span>store:desc
+</span></span><span class="line"><span class="cl"><span class="c1"># 发现单个节点承载300+分片</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 段内存占用（Lucene底层）</span>
+</span></span><span class="line"><span class="cl">GET _nodes/stats/indices/segments?filter_path<span class="o">=</span>nodes.*.indices.segments
+</span></span><span class="line"><span class="cl"><span class="c1"># memory_in_bytes 过大</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="根因分析">根因分析</h2>
+<h3 id="磁盘不足根因">磁盘不足根因</h3>
+<table>
+  <thead>
+      <tr>
+          <th>因素</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>缺乏清理机制</td>
+          <td>日志索引只增不减，无限累积</td>
+      </tr>
+      <tr>
+          <td>副本设置过多</td>
+          <td>重要索引5副本，空间放大</td>
+      </tr>
+      <tr>
+          <td>无生命周期管理</td>
+          <td>冷热数据未分离</td>
+      </tr>
+      <tr>
+          <td>水位线触发</td>
+          <td>磁盘使用&gt;95%自动进入只读</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="内存不足根因">内存不足根因</h3>
+<table>
+  <thead>
+      <tr>
+          <th>因素</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>分片过多</td>
+          <td>每分片都有堆内存开销，推荐单节点&lt;600分片</td>
+      </tr>
+      <tr>
+          <td>字段爆炸</td>
+          <td>动态映射导致字段数失控</td>
+      </tr>
+      <tr>
+          <td>聚合查询</td>
+          <td>大聚合占用大量内存</td>
+      </tr>
+      <tr>
+          <td>堆内存设置不当</td>
+          <td>超过32GB无法使用CompressedOops</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="解决方案">解决方案</h2>
+<h3 id="磁盘空间紧急恢复">磁盘空间紧急恢复</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 1. 释放只读限制（临时）</span>
+</span></span><span class="line"><span class="cl">PUT */_settings
+</span></span><span class="line"><span class="cl"><span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;index.blocks.read_only_allow_delete&#34;</span>: null
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 删除过期索引（确认无用后）</span>
+</span></span><span class="line"><span class="cl">DELETE /logs-2023-*
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. 收缩副本（临时释放空间）</span>
+</span></span><span class="line"><span class="cl">PUT /important-index/_settings
+</span></span><span class="line"><span class="cl"><span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;number_of_replicas&#34;</span>: <span class="m">0</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></div></div>
+<h3 id="索引生命周期管理ilm">索引生命周期管理（ILM）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-json">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="err">PUT</span> <span class="err">_ilm/policy/logs_policy</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;policy&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;phases&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;hot&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;actions&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="nt">&#34;rollover&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;max_size&#34;</span><span class="p">:</span> <span class="s2">&#34;50GB&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;max_age&#34;</span><span class="p">:</span> <span class="s2">&#34;1d&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">},</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;warm&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;min_age&#34;</span><span class="p">:</span> <span class="s2">&#34;7d&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;actions&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="nt">&#34;shrink&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;number_of_shards&#34;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">          <span class="nt">&#34;forcemerge&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;max_num_segments&#34;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">},</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;cold&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;min_age&#34;</span><span class="p">:</span> <span class="s2">&#34;30d&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;actions&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="nt">&#34;freeze&#34;</span><span class="p">:</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">},</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;delete&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;min_age&#34;</span><span class="p">:</span> <span class="s2">&#34;90d&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;actions&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="nt">&#34;delete&#34;</span><span class="p">:</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="分片与内存优化">分片与内存优化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 1. 合理设置分片数</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 经验：单分片20-50GB，避免过小分片</span>
+</span></span><span class="line"><span class="cl">PUT /new-index
+</span></span><span class="line"><span class="cl"><span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;settings&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;number_of_shards&#34;</span>: 3,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;number_of_replicas&#34;</span>: <span class="m">1</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 限制字段数</span>
+</span></span><span class="line"><span class="cl">PUT _cluster/settings
+</span></span><span class="line"><span class="cl"><span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;persistent&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;mapping.total_fields.limit&#34;</span>: <span class="m">1000</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. JVM配置</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># jvm.options</span>
+</span></span><span class="line"><span class="cl">-Xms16g
+</span></span><span class="line"><span class="cl">-Xmx16g  <span class="c1"># 不超过32GB，留一半内存给Lucene文件缓存</span></span></span></code></pre></div></div>
+<h3 id="监控告警配置">监控告警配置</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># Prometheus规则示例</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">groups</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">elasticsearch</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l">EsDiskHigh</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l">elasticsearch_filesystem_data_free_percent &lt; 15</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l">5m</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;ES节点磁盘不足&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l">EsHeapHigh</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l">elasticsearch_jvm_memory_used_bytes / elasticsearch_jvm_memory_max_bytes &gt; 0.85</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l">5m</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;ES堆内存使用率过高&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l">EsShardTooMany</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l">elasticsearch_indices_shards_total &gt; 600</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;ES节点分片数过多&#34;</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="复盘与预防">复盘与预防</h2>
+<table>
+  <thead>
+      <tr>
+          <th>措施</th>
+          <th>执行方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>容量规划</td>
+          <td>按日增量<em>保留天数</em>（1+副本数）估算磁盘</td>
+      </tr>
+      <tr>
+          <td>强制ILM</td>
+          <td>所有日志类索引必须绑定生命周期策略</td>
+      </tr>
+      <tr>
+          <td>分片审核</td>
+          <td>新建索引Review分片数，避免默认5分片</td>
+      </tr>
+      <tr>
+          <td>定期ForceMerge</td>
+          <td>只读索引定期合并段，减少内存占用</td>
+      </tr>
+      <tr>
+          <td>冷热分离</td>
+          <td>热节点SSD、温节点SATA、冷节点可搜索快照</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="../../%e5%b7%a5%e7%a8%8b%e5%b1%82/%e6%90%9c%e7%b4%a2%e4%b8%8e%e6%8e%a8%e8%8d%90/Elasticsearch%e6%a0%b8%e5%bf%83.md" rel="">Elasticsearch核心</a></li>
+<li><a href="../../%e5%b7%a5%e7%a8%8b%e5%b1%82/%e6%90%9c%e7%b4%a2%e4%b8%8e%e6%8e%a8%e8%8d%90/ES%e8%bf%90%e7%bb%b4.md" rel="">ES运维问题</a></li>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e7%bc%96%e7%a8%8b%e8%af%ad%e8%a8%80/jvm-internals.md" rel="">JVM原理</a></li>
+</ul>]]></description></item><item><title>Redisson编解码器创建异常</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/redisson%E7%BC%96%E8%A7%A3%E7%A0%81%E5%BC%82%E5%B8%B8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/redisson%E7%BC%96%E8%A7%A3%E7%A0%81%E5%BC%82%E5%B8%B8/</guid><description><![CDATA[<h1 id="redisson编解码器创建异常">Redisson编解码器创建异常</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Redisson默认使用Kryo编解码器时，若类加载器环境复杂（如OSGi、热部署）或类无默认构造函数，会导致编解码器初始化失败，显式指定FstCodec或JsonJacksonCodec并确保类可被正确加载可规避此问题。</p>
+</blockquote>
+<hr>
+<h2 id="问题现象">问题现象</h2>
+<p>线上服务启动时偶发报错：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">org.redisson.client.RedisException: 
+</span></span><span class="line"><span class="cl">Codec for class xxx not found
+</span></span><span class="line"><span class="cl">    at org.redisson.codec.Kryo5Codec$1.encode(Kryo5Codec.java:xx)
+</span></span><span class="line"><span class="cl">Caused by: com.esotericsoftware.kryo.KryoException: 
+</span></span><span class="line"><span class="cl">Unable to find class: com.example.UserDTO</span></span></code></pre></div></div>
+<h3 id="影响范围">影响范围</h3>
+<ul>
+<li>服务启动阶段约30%概率失败</li>
+<li>影响缓存读写功能，但Redis服务本身正常</li>
+<li>重启可能恢复，但不可接受</li>
+</ul>
+<hr>
+<h2 id="排查过程">排查过程</h2>
+<h3 id="第一步确认编解码器配置">第一步：确认编解码器配置</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 原有配置（未显式指定，使用默认值）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Config</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Config</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">useClusterServers</span><span class="p">().</span><span class="na">addNodeAddress</span><span class="p">(</span><span class="s">&#34;redis://...&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">未设置</span><span class="w"> </span><span class="n">codec</span><span class="err">，</span><span class="n">默认使用</span><span class="w"> </span><span class="n">Kryo5Codec</span></span></span></code></pre></div></div>
+<h3 id="第二步分析类加载环境">第二步：分析类加载环境</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="err">项目使用</span> <span class="n">Spring</span> <span class="n">Boot</span> <span class="o">+</span> <span class="err">热部署</span> <span class="n">devtools</span>
+</span></span><span class="line"><span class="cl"><span class="err">├──</span> <span class="err">主类加载器：</span><span class="n">AppClassLoader</span>
+</span></span><span class="line"><span class="cl"><span class="err">├──</span> <span class="n">devtools</span> <span class="err">重启类加载器：</span><span class="n">RestartClassLoader</span>
+</span></span><span class="line"><span class="cl"><span class="err">└──</span> <span class="n">Kryo</span> <span class="err">内部缓存的</span> <span class="n">Class</span> <span class="err">引用来自旧类加载器</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">问题：热部署后类加载器变化，</span><span class="n">Kryo缓存的Class引用失效</span></span></span></code></pre></div></div>
+<h3 id="第三步复现验证">第三步：复现验证</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 本地复现步骤</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">1</span><span class="p">.</span><span class="w"> </span><span class="n">启动应用</span><span class="err">，</span><span class="n">写入缓存</span><span class="err">（</span><span class="n">Kryo注册类</span><span class="err">）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">2</span><span class="p">.</span><span class="w"> </span><span class="n">修改代码触发</span><span class="w"> </span><span class="n">devtools</span><span class="w"> </span><span class="n">热重启</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">3</span><span class="p">.</span><span class="w"> </span><span class="n">再次读写缓存</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">抛出</span><span class="w"> </span><span class="n">KryoException</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="根因分析">根因分析</h2>
+<table>
+  <thead>
+      <tr>
+          <th>因素</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Kryo默认行为</td>
+          <td>缓存Class引用以提升序列化性能</td>
+      </tr>
+      <tr>
+          <td>热部署机制</td>
+          <td>devtools使用RestartClassLoader重新加载类</td>
+      </tr>
+      <tr>
+          <td>引用失效</td>
+          <td>Kryo缓存的Class来自旧类加载器，热部署后无法匹配新类加载器的类</td>
+      </tr>
+      <tr>
+          <td>默认无参构造</td>
+          <td>部分DTO类缺少默认构造函数，Kryo无法实例化</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="解决方案">解决方案</h2>
+<h3 id="方案一更换编解码器推荐">方案一：更换编解码器（推荐）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 显式使用 JsonJacksonCodec，避免类加载器依赖</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Config</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Config</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setCodec</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JsonJacksonCodec</span><span class="p">());</span><span class="w">  </span><span class="c1">// JSON序列化，不缓存Class引用</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">useClusterServers</span><span class="p">().</span><span class="na">addNodeAddress</span><span class="p">(</span><span class="s">&#34;redis://...&#34;</span><span class="p">);</span></span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>编解码器</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Kryo5Codec</td>
+          <td>序列化体积小、速度快</td>
+          <td>类加载器敏感、需无参构造</td>
+      </tr>
+      <tr>
+          <td>FstCodec</td>
+          <td>性能接近Kryo</td>
+          <td>同样存在类加载器问题</td>
+      </tr>
+      <tr>
+          <td>JsonJacksonCodec</td>
+          <td>兼容性好、可读性强</td>
+          <td>体积大、速度慢</td>
+      </tr>
+      <tr>
+          <td>TypedJsonJacksonCodec</td>
+          <td>带类型信息</td>
+          <td>兼容性和体积的平衡</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="方案二禁用热部署开发环境">方案二：禁用热部署（开发环境）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># application.yml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spring</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">devtools</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">  </span><span class="c"># 开发环境若无需热部署可关闭</span></span></span></code></pre></div></div>
+<h3 id="方案三确保类可被正确加载">方案三：确保类可被正确加载</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 为DTO添加无参构造函数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">UserDTO</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">Serializable</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">serialVersionUID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">1L</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 必须：无参构造</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">UserDTO</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 业务构造</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">UserDTO</span><span class="p">(</span><span class="n">Long</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">id</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="复盘与预防">复盘与预防</h2>
+<table>
+  <thead>
+      <tr>
+          <th>措施</th>
+          <th>执行方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>编码规范</td>
+          <td>所有缓存对象必须实现Serializable、保留无参构造</td>
+      </tr>
+      <tr>
+          <td>配置检查</td>
+          <td>Redisson配置必须显式指定Codec，禁止依赖默认值</td>
+      </tr>
+      <tr>
+          <td>环境统一</td>
+          <td>开发和生产使用相同的Codec配置</td>
+      </tr>
+      <tr>
+          <td>升级评估</td>
+          <td>升级Redisson版本时评估Codec兼容性变化</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="../../%e8%bf%9b%e9%98%b6%e5%b1%82/%e7%bc%93%e5%ad%98%e6%8a%80%e6%9c%af/Redis%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84.md" rel="">Redis核心数据结构</a></li>
+<li><a href="../../%e8%bf%9b%e9%98%b6%e5%b1%82/%e7%bc%93%e5%ad%98%e6%8a%80%e6%9c%af/Redis%e6%8c%81%e4%b9%85%e5%8c%96%e4%b8%8e%e9%ab%98%e5%8f%af%e7%94%a8.md" rel="">Redis持久化与高可用</a></li>
+</ul>]]></description></item><item><title>网络延迟与稳定性排查</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/%E7%BD%91%E7%BB%9C%E5%BB%B6%E8%BF%9F%E6%8E%92%E6%9F%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/%E7%BD%91%E7%BB%9C%E5%BB%B6%E8%BF%9F%E6%8E%92%E6%9F%A5/</guid><description><![CDATA[<h1 id="网络延迟与稳定性排查">网络延迟与稳定性排查</h1>
+<blockquote>
+<p><strong>核心结论</strong>：网络延迟问题通常由DNS解析、路由跳变、TCP重传、带宽竞争或应用层超时配置不当引起，通过分层排查（物理层→网络层→传输层→应用层）可以快速定位根因。</p>
+</blockquote>
+<hr>
+<h2 id="问题现象">问题现象</h2>
+<p>线上服务出现间歇性超时：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Caused by: java.net.SocketTimeoutException: Read timed out
+</span></span><span class="line"><span class="cl">    at java.net.SocketInputStream.socketRead0(Native Method)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">HTTP调用P99从50ms上升到800ms
+</span></span><span class="line"><span class="cl">部分请求正常，部分请求超时</span></span></code></pre></div></div>
+<h3 id="影响范围">影响范围</h3>
+<ul>
+<li>服务间RPC调用超时率上升</li>
+<li>用户体验下降，接口响应变慢</li>
+<li>触发熔断，影响正常流量</li>
+</ul>
+<hr>
+<h2 id="排查过程">排查过程</h2>
+<h3 id="第一步确认问题层级">第一步：确认问题层级</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">OSI分层排查：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">应用层（L7）→ HTTP/RPC超时配置是否合理？
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">传输层（L4）→ TCP连接是否正常？是否有重传？
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">网络层（L3）→ 路由是否跳变？是否有丢包？
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">链路层（L2）→ 网卡/交换机是否有错误？
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">物理层（L1）→ 带宽是否打满？光纤/网线是否正常？</span></span></code></pre></div></div>
+<h3 id="第二步网络层排查命令">第二步：网络层排查命令</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 1. 测试连通性和延迟</span>
+</span></span><span class="line"><span class="cl">ping -c <span class="m">100</span> target-ip
+</span></span><span class="line"><span class="cl"><span class="c1"># 关注：丢包率、延迟波动</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 追踪路由路径</span>
+</span></span><span class="line"><span class="cl">traceroute target-ip
+</span></span><span class="line"><span class="cl"><span class="c1"># 关注：哪一跳延迟突增</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. 更详细的网络质量检测</span>
+</span></span><span class="line"><span class="cl">mtr --report --report-cycles <span class="m">100</span> target-ip
+</span></span><span class="line"><span class="cl"><span class="c1"># 关注：Loss%和Last列</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 4. TCP连接状态</span>
+</span></span><span class="line"><span class="cl">ss -tan <span class="p">|</span> awk <span class="s1">&#39;{print $1}&#39;</span> <span class="p">|</span> sort <span class="p">|</span> uniq -c
+</span></span><span class="line"><span class="cl"><span class="c1"># 关注：TIME_WAIT、CLOSE_WAIT数量</span></span></span></code></pre></div></div>
+<h3 id="第三步传输层排查">第三步：传输层排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 查看TCP重传率</span>
+</span></span><span class="line"><span class="cl">cat /proc/net/snmp <span class="p">|</span> grep Tcp:
+</span></span><span class="line"><span class="cl"><span class="c1"># RetransSegs / OutSegs = 重传率，&gt;1%需关注</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 抓包分析（生产慎用）</span>
+</span></span><span class="line"><span class="cl">tcpdump -i eth0 host target-ip -w capture.pcap
+</span></span><span class="line"><span class="cl"><span class="c1"># Wireshark分析：Filter tcp.analysis.retransmission</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 连接跟踪</span>
+</span></span><span class="line"><span class="cl">conntrack -L <span class="p">|</span> grep target-ip <span class="p">|</span> wc -l
+</span></span><span class="line"><span class="cl"><span class="c1"># 连接数是否超过阈值</span></span></span></code></pre></div></div>
+<h3 id="第四步应用层排查">第四步：应用层排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 检查连接池配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">HikariConfig</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HikariConfig</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setConnectionTimeout</span><span class="p">(</span><span class="n">5000</span><span class="p">);</span><span class="w">   </span><span class="c1">// 获取连接等待时间</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setMaxLifetime</span><span class="p">(</span><span class="n">1800000</span><span class="p">);</span><span class="w">      </span><span class="c1">// 连接最大生命周期</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setMaximumPoolSize</span><span class="p">(</span><span class="n">50</span><span class="p">);</span><span class="w">       </span><span class="c1">// 最大连接数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// HTTP客户端超时配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">RestTemplate</span><span class="w"> </span><span class="n">restTemplate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RestTemplate</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">SimpleClientHttpRequestFactory</span><span class="w"> </span><span class="n">factory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SimpleClientHttpRequestFactory</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">factory</span><span class="p">.</span><span class="na">setConnectTimeout</span><span class="p">(</span><span class="n">3000</span><span class="p">);</span><span class="w">     </span><span class="c1">// 建立连接超时</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">factory</span><span class="p">.</span><span class="na">setReadTimeout</span><span class="p">(</span><span class="n">5000</span><span class="p">);</span><span class="w">        </span><span class="c1">// 读取响应超时</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">restTemplate</span><span class="p">.</span><span class="na">setRequestFactory</span><span class="p">(</span><span class="n">factory</span><span class="p">);</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="根因分析">根因分析</h2>
+<table>
+  <thead>
+      <tr>
+          <th>根因</th>
+          <th>现象</th>
+          <th>验证方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>DNS解析慢</td>
+          <td>首次请求慢，后续正常</td>
+          <td>dig/nslookup看解析时间</td>
+      </tr>
+      <tr>
+          <td>路由跳变</td>
+          <td>traceroute路径不稳定</td>
+          <td>多次traceroute对比</td>
+      </tr>
+      <tr>
+          <td>TCP重传</td>
+          <td>网络丢包或拥塞</td>
+          <td>/proc/net/snmp重传率</td>
+      </tr>
+      <tr>
+          <td>带宽打满</td>
+          <td>延迟伴随丢包</td>
+          <td>iftop/nload看流量</td>
+      </tr>
+      <tr>
+          <td>连接数耗尽</td>
+          <td>大量TIME_WAIT/CLOSE_WAIT</td>
+          <td>ss -tan统计</td>
+      </tr>
+      <tr>
+          <td>超时配置不当</td>
+          <td>超时时间小于正常RTT</td>
+          <td>对比ping延迟和超时配置</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="解决方案">解决方案</h2>
+<h3 id="网络层优化">网络层优化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 1. DNS优化：使用本地缓存或IP直连</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 路由优化：调整BGP策略或使用专线</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. 内核参数调优</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 减少TIME_WAIT</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s1">&#39;net.ipv4.tcp_tw_reuse = 1&#39;</span> &gt;&gt; /etc/sysctl.conf
+</span></span><span class="line"><span class="cl"><span class="c1"># 增大连接跟踪表</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s1">&#39;net.netfilter.nf_conntrack_max = 655350&#39;</span> &gt;&gt; /etc/sysctl.conf
+</span></span><span class="line"><span class="cl">sysctl -p</span></span></code></pre></div></div>
+<h3 id="应用层优化">应用层优化</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 1. 合理设置超时（基于P99 + 缓冲）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 若正常P99=100ms，设置readTimeout=300ms</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 2. 连接池预热</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@PostConstruct</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">warmUp</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 应用启动时预热连接池</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">dataSource</span><span class="p">.</span><span class="na">getConnection</span><span class="p">().</span><span class="na">close</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 3. 熔断降级</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;remoteService&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">fallbackMethod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;fallback&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Response</span><span class="w"> </span><span class="nf">callRemote</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">remoteClient</span><span class="p">.</span><span class="na">call</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="架构层优化">架构层优化</h3>
+<table>
+  <thead>
+      <tr>
+          <th>手段</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>就近部署</td>
+          <td>服务部署在同一可用区/机房</td>
+      </tr>
+      <tr>
+          <td>连接池复用</td>
+          <td>减少TCP握手开销</td>
+      </tr>
+      <tr>
+          <td>异步化</td>
+          <td>非关键调用改异步，降低延迟敏感度</td>
+      </tr>
+      <tr>
+          <td>本地缓存</td>
+          <td>减少跨网络调用次数</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="复盘与预防">复盘与预防</h2>
+<table>
+  <thead>
+      <tr>
+          <th>措施</th>
+          <th>执行方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>网络基线</td>
+          <td>定期记录各链路RTT和丢包率，建立正常基线</td>
+      </tr>
+      <tr>
+          <td>告警阈值</td>
+          <td>延迟超过基线200%时告警</td>
+      </tr>
+      <tr>
+          <td>超时设计</td>
+          <td>超时设置基于实际测量值，非拍脑袋</td>
+      </tr>
+      <tr>
+          <td>混沌工程</td>
+          <td>定期模拟网络延迟和丢包，验证系统韧性</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e7%bd%91%e7%bb%9c%e5%8d%8f%e8%ae%ae/tcp-udp.md" rel="">TCP vs UDP</a></li>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f/%e7%bd%91%e7%bb%9cIO%e6%a8%a1%e5%9e%8b.md" rel="">网络IO模型</a></li>
+</ul>]]></description></item></channel></rss>

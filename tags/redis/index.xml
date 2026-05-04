@@ -1,0 +1,483 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Redis - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/redis/</link><description>Redis - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/redis/" rel="self" type="application/rss+xml"/><item><title>Redisson编解码器创建异常</title><link>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/redisson%E7%BC%96%E8%A7%A3%E7%A0%81%E5%BC%82%E5%B8%B8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/bug%E9%97%AE%E9%A2%98/%E9%80%9A%E7%94%A8%E6%8A%80%E6%9C%AF%E6%8E%92%E6%9F%A5/redisson%E7%BC%96%E8%A7%A3%E7%A0%81%E5%BC%82%E5%B8%B8/</guid><description><![CDATA[<h1 id="redisson编解码器创建异常">Redisson编解码器创建异常</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Redisson默认使用Kryo编解码器时，若类加载器环境复杂（如OSGi、热部署）或类无默认构造函数，会导致编解码器初始化失败，显式指定FstCodec或JsonJacksonCodec并确保类可被正确加载可规避此问题。</p>
+</blockquote>
+<hr>
+<h2 id="问题现象">问题现象</h2>
+<p>线上服务启动时偶发报错：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">org.redisson.client.RedisException: 
+</span></span><span class="line"><span class="cl">Codec for class xxx not found
+</span></span><span class="line"><span class="cl">    at org.redisson.codec.Kryo5Codec$1.encode(Kryo5Codec.java:xx)
+</span></span><span class="line"><span class="cl">Caused by: com.esotericsoftware.kryo.KryoException: 
+</span></span><span class="line"><span class="cl">Unable to find class: com.example.UserDTO</span></span></code></pre></div></div>
+<h3 id="影响范围">影响范围</h3>
+<ul>
+<li>服务启动阶段约30%概率失败</li>
+<li>影响缓存读写功能，但Redis服务本身正常</li>
+<li>重启可能恢复，但不可接受</li>
+</ul>
+<hr>
+<h2 id="排查过程">排查过程</h2>
+<h3 id="第一步确认编解码器配置">第一步：确认编解码器配置</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 原有配置（未显式指定，使用默认值）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Config</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Config</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">useClusterServers</span><span class="p">().</span><span class="na">addNodeAddress</span><span class="p">(</span><span class="s">&#34;redis://...&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">未设置</span><span class="w"> </span><span class="n">codec</span><span class="err">，</span><span class="n">默认使用</span><span class="w"> </span><span class="n">Kryo5Codec</span></span></span></code></pre></div></div>
+<h3 id="第二步分析类加载环境">第二步：分析类加载环境</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="err">项目使用</span> <span class="n">Spring</span> <span class="n">Boot</span> <span class="o">+</span> <span class="err">热部署</span> <span class="n">devtools</span>
+</span></span><span class="line"><span class="cl"><span class="err">├──</span> <span class="err">主类加载器：</span><span class="n">AppClassLoader</span>
+</span></span><span class="line"><span class="cl"><span class="err">├──</span> <span class="n">devtools</span> <span class="err">重启类加载器：</span><span class="n">RestartClassLoader</span>
+</span></span><span class="line"><span class="cl"><span class="err">└──</span> <span class="n">Kryo</span> <span class="err">内部缓存的</span> <span class="n">Class</span> <span class="err">引用来自旧类加载器</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">问题：热部署后类加载器变化，</span><span class="n">Kryo缓存的Class引用失效</span></span></span></code></pre></div></div>
+<h3 id="第三步复现验证">第三步：复现验证</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 本地复现步骤</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">1</span><span class="p">.</span><span class="w"> </span><span class="n">启动应用</span><span class="err">，</span><span class="n">写入缓存</span><span class="err">（</span><span class="n">Kryo注册类</span><span class="err">）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">2</span><span class="p">.</span><span class="w"> </span><span class="n">修改代码触发</span><span class="w"> </span><span class="n">devtools</span><span class="w"> </span><span class="n">热重启</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">3</span><span class="p">.</span><span class="w"> </span><span class="n">再次读写缓存</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">抛出</span><span class="w"> </span><span class="n">KryoException</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="根因分析">根因分析</h2>
+<table>
+  <thead>
+      <tr>
+          <th>因素</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Kryo默认行为</td>
+          <td>缓存Class引用以提升序列化性能</td>
+      </tr>
+      <tr>
+          <td>热部署机制</td>
+          <td>devtools使用RestartClassLoader重新加载类</td>
+      </tr>
+      <tr>
+          <td>引用失效</td>
+          <td>Kryo缓存的Class来自旧类加载器，热部署后无法匹配新类加载器的类</td>
+      </tr>
+      <tr>
+          <td>默认无参构造</td>
+          <td>部分DTO类缺少默认构造函数，Kryo无法实例化</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="解决方案">解决方案</h2>
+<h3 id="方案一更换编解码器推荐">方案一：更换编解码器（推荐）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 显式使用 JsonJacksonCodec，避免类加载器依赖</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Config</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Config</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">setCodec</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JsonJacksonCodec</span><span class="p">());</span><span class="w">  </span><span class="c1">// JSON序列化，不缓存Class引用</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">config</span><span class="p">.</span><span class="na">useClusterServers</span><span class="p">().</span><span class="na">addNodeAddress</span><span class="p">(</span><span class="s">&#34;redis://...&#34;</span><span class="p">);</span></span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>编解码器</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Kryo5Codec</td>
+          <td>序列化体积小、速度快</td>
+          <td>类加载器敏感、需无参构造</td>
+      </tr>
+      <tr>
+          <td>FstCodec</td>
+          <td>性能接近Kryo</td>
+          <td>同样存在类加载器问题</td>
+      </tr>
+      <tr>
+          <td>JsonJacksonCodec</td>
+          <td>兼容性好、可读性强</td>
+          <td>体积大、速度慢</td>
+      </tr>
+      <tr>
+          <td>TypedJsonJacksonCodec</td>
+          <td>带类型信息</td>
+          <td>兼容性和体积的平衡</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="方案二禁用热部署开发环境">方案二：禁用热部署（开发环境）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># application.yml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">spring</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">devtools</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">  </span><span class="c"># 开发环境若无需热部署可关闭</span></span></span></code></pre></div></div>
+<h3 id="方案三确保类可被正确加载">方案三：确保类可被正确加载</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 为DTO添加无参构造函数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">UserDTO</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">Serializable</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">serialVersionUID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">1L</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 必须：无参构造</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">UserDTO</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 业务构造</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">UserDTO</span><span class="p">(</span><span class="n">Long</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">id</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="复盘与预防">复盘与预防</h2>
+<table>
+  <thead>
+      <tr>
+          <th>措施</th>
+          <th>执行方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>编码规范</td>
+          <td>所有缓存对象必须实现Serializable、保留无参构造</td>
+      </tr>
+      <tr>
+          <td>配置检查</td>
+          <td>Redisson配置必须显式指定Codec，禁止依赖默认值</td>
+      </tr>
+      <tr>
+          <td>环境统一</td>
+          <td>开发和生产使用相同的Codec配置</td>
+      </tr>
+      <tr>
+          <td>升级评估</td>
+          <td>升级Redisson版本时评估Codec兼容性变化</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="../../%e8%bf%9b%e9%98%b6%e5%b1%82/%e7%bc%93%e5%ad%98%e6%8a%80%e6%9c%af/Redis%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84.md" rel="">Redis核心数据结构</a></li>
+<li><a href="../../%e8%bf%9b%e9%98%b6%e5%b1%82/%e7%bc%93%e5%ad%98%e6%8a%80%e6%9c%af/Redis%e6%8c%81%e4%b9%85%e5%8c%96%e4%b8%8e%e9%ab%98%e5%8f%af%e7%94%a8.md" rel="">Redis持久化与高可用</a></li>
+</ul>]]></description></item><item><title>Redis持久化与高可用</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%8C%81%E4%B9%85%E5%8C%96%E4%B8%8E%E9%AB%98%E5%8F%AF%E7%94%A8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%8C%81%E4%B9%85%E5%8C%96%E4%B8%8E%E9%AB%98%E5%8F%AF%E7%94%A8/</guid><description><![CDATA[<h1 id="redis持久化与高可用">Redis持久化与高可用</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Redis通过RDB快照和AOF日志两种持久化方式保障数据安全，RDB适合全量备份和快速恢复，AOF适合实时持久化，生产环境通常同时使用；高可用通过主从复制、哨兵和集群三种架构逐级递进。</p>
+</blockquote>
+<hr>
+<h2 id="redis通过rdb快照aof日志实现持久化通过主从复制哨兵集群实现高可用扩展">Redis通过RDB快照+AOF日志实现持久化，通过主从复制+哨兵+集群实现高可用扩展</h2>
+<h3 id="持久化rdb与aof的权衡">持久化：RDB与AOF的权衡</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>RDB</th>
+          <th>AOF</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>原理</td>
+          <td>定时快照，保存内存数据</td>
+          <td>记录每条写命令</td>
+      </tr>
+      <tr>
+          <td>文件大小</td>
+          <td>紧凑（二进制压缩）</td>
+          <td>较大（可重写压缩）</td>
+      </tr>
+      <tr>
+          <td>恢复速度</td>
+          <td>快（直接加载内存）</td>
+          <td>慢（重放命令）</td>
+      </tr>
+      <tr>
+          <td>数据安全</td>
+          <td>可能丢失最后一次快照</td>
+          <td>最多丢失1秒数据（每秒刷盘）</td>
+      </tr>
+      <tr>
+          <td>性能影响</td>
+          <td>快照时fork子进程，短暂阻塞</td>
+          <td>持续fsync开销</td>
+      </tr>
+      <tr>
+          <td>适用场景</td>
+          <td>全量备份、灾难恢复</td>
+          <td>实时持久化、误操作恢复</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">RDB触发条件（默认）：
+</span></span><span class="line"><span class="cl">- 900秒内至少1个key变化
+</span></span><span class="line"><span class="cl">- 300秒内至少10个key变化
+</span></span><span class="line"><span class="cl">- 60秒内至少10000个key变化
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">AOF刷盘策略：
+</span></span><span class="line"><span class="cl">- always：每条命令fsync（最安全，最慢）
+</span></span><span class="line"><span class="cl">- everysec：每秒fsync（默认，平衡）
+</span></span><span class="line"><span class="cl">- no：由OS决定（最快，最不安全）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">混合持久化（Redis 4.0+）：
+</span></span><span class="line"><span class="cl">- AOF文件包含RDB前缀 + 增量AOF命令
+</span></span><span class="line"><span class="cl">- 重写时先生成RDB，再追加后续命令
+</span></span><span class="line"><span class="cl">- 兼顾恢复速度和数据安全</span></span></code></pre></div></div>
+<h3 id="主从复制读写分离的基础">主从复制：读写分离的基础</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">主从复制流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 从节点发送 SYNC 命令
+</span></span><span class="line"><span class="cl">2. 主节点执行 BGSAVE，生成RDB文件
+</span></span><span class="line"><span class="cl">3. 主节点发送RDB文件给从节点
+</span></span><span class="line"><span class="cl">4. 从节点加载RDB，清空旧数据
+</span></span><span class="line"><span class="cl">5. 主节点将复制期间的写命令缓存到replication buffer
+</span></span><span class="line"><span class="cl">6. 发送buffer中的命令给从节点
+</span></span><span class="line"><span class="cl">7. 后续持续同步：主节点写命令异步发送给从节点
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">复制方式：
+</span></span><span class="line"><span class="cl">- 全量复制：初次同步或主从断开过久
+</span></span><span class="line"><span class="cl">- 部分复制（PSYNC 2.0+）：基于复制偏移量，只同步差异</span></span></code></pre></div></div>
+<h3 id="哨兵sentinel自动故障转移">哨兵（Sentinel）：自动故障转移</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Sentinel架构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">       ┌─────────┐
+</span></span><span class="line"><span class="cl">       │ Client  │
+</span></span><span class="line"><span class="cl">       └────┬────┘
+</span></span><span class="line"><span class="cl">            │ 连接Sentinel获取主节点地址
+</span></span><span class="line"><span class="cl">            ↓
+</span></span><span class="line"><span class="cl">    ┌───────┴───────┐
+</span></span><span class="line"><span class="cl">    │  Sentinel-1   │
+</span></span><span class="line"><span class="cl">    │  Sentinel-2   │  （至少3个，奇数个）
+</span></span><span class="line"><span class="cl">    │  Sentinel-3   │
+</span></span><span class="line"><span class="cl">    └───────┬───────┘
+</span></span><span class="line"><span class="cl">            │ 监控 + 自动故障转移
+</span></span><span class="line"><span class="cl">            ↓
+</span></span><span class="line"><span class="cl">    ┌───────┴───────┐
+</span></span><span class="line"><span class="cl">    │    Master     │  ← 主节点（写）
+</span></span><span class="line"><span class="cl">    └───────┬───────┘
+</span></span><span class="line"><span class="cl">            │ 复制
+</span></span><span class="line"><span class="cl">    ┌───────┴───────┐
+</span></span><span class="line"><span class="cl">    │   Slave-1     │  ← 从节点（读）
+</span></span><span class="line"><span class="cl">    │   Slave-2     │
+</span></span><span class="line"><span class="cl">    └───────────────┘
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Sentinel职责：
+</span></span><span class="line"><span class="cl">1. 监控：周期性检查主从节点健康
+</span></span><span class="line"><span class="cl">2. 通知：故障时通知管理员或其他应用
+</span></span><span class="line"><span class="cl">3. 自动故障转移：主节点宕机，选举从节点为新主
+</span></span><span class="line"><span class="cl">4. 配置提供者：客户端向Sentinel查询当前主节点地址</span></span></code></pre></div></div>
+<h3 id="集群cluster水平扩展">集群（Cluster）：水平扩展</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Redis Cluster架构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">采用哈希槽（Hash Slot）分片，共16384个槽
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Master-A (0-5460)    Master-B (5461-10922)    Master-C (10923-16383)
+</span></span><span class="line"><span class="cl">    ↓                        ↓                         ↓
+</span></span><span class="line"><span class="cl"> Slave-A1                 Slave-B1                  Slave-C1
+</span></span><span class="line"><span class="cl"> Slave-A2                 Slave-B2                  Slave-C2
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Key路由：CRC16(key) % 16384 → 确定槽 → 确定节点
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Moved重定向：
+</span></span><span class="line"><span class="cl">  客户端请求Key到错误节点 → 返回MOVED slot ip:port
+</span></span><span class="line"><span class="cl">  客户端更新槽映射，重新请求</span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>架构</th>
+          <th>容量</th>
+          <th>可用性</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>缓存、可重建</td>
+          <td>单实例 + RDB</td>
+          <td>内存限制</td>
+          <td>低</td>
+      </tr>
+      <tr>
+          <td>读多写少</td>
+          <td>主从 + 哨兵</td>
+          <td>内存限制</td>
+          <td>高</td>
+      </tr>
+      <tr>
+          <td>大数据量</td>
+          <td>集群</td>
+          <td>线性扩展</td>
+          <td>高</td>
+      </tr>
+      <tr>
+          <td>跨机房</td>
+          <td>主从跨机房</td>
+          <td>内存限制</td>
+          <td>异地灾备</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1主从复制延迟导致数据不一致">问题1：主从复制延迟导致数据不一致</h3>
+<p><strong>根因</strong>：网络延迟、从节点处理慢
+<strong>解决</strong>：监控复制偏移量、强制读主库（关键读）、延迟阈值告警</p>]]></description></item><item><title>Redis发布订阅</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/redis%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/redis%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/</guid><description><![CDATA[<h1 id="redis发布订阅">Redis发布订阅</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Redis Pub/Sub通过频道实现简单的消息广播，适合实时性要求高的轻量级通知场景，但不支持持久化、确认和消费组，无法替代专业的消息队列。</p>
+</blockquote>
+<hr>
+<h2 id="redis-pubsub实现简单的消息广播轻量高效但缺乏可靠性和扩展性">Redis Pub/Sub实现简单的消息广播，轻量高效但缺乏可靠性和扩展性</h2>
+<h3 id="基本模型频道channel和模式pattern">基本模型：频道（Channel）和模式（Pattern）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">发布者                    Redis服务器                    订阅者
+</span></span><span class="line"><span class="cl">   |                         |                            |
+</span></span><span class="line"><span class="cl">   |  PUBLISH news &#34;hello&#34;   |                            |
+</span></span><span class="line"><span class="cl">   | ----------------------&gt; |                            |
+</span></span><span class="line"><span class="cl">   |                         | ---- PUSH &#34;hello&#34; --------&gt; | Subscriber-1 (SUBSCRIBE news)
+</span></span><span class="line"><span class="cl">   |                         | ---- PUSH &#34;hello&#34; --------&gt; | Subscriber-2 (SUBSCRIBE news)
+</span></span><span class="line"><span class="cl">   |                         |                            |
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">模式订阅：
+</span></span><span class="line"><span class="cl">  Subscriber-3: PSUBSCRIBE news.*
+</span></span><span class="line"><span class="cl">  可接收 news.sport, news.tech 等频道消息</span></span></code></pre></div></div>
+<p><strong>命令</strong>：</p>]]></description></item><item><title>Redis核心数据结构</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</guid><description><![CDATA[<h1 id="redis核心数据结构">Redis核心数据结构</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Redis通过底层六种数据结构（SDS、双向链表、压缩列表、哈希表、跳表、整数数组）实现对外五种数据类型，每种类型针对特定场景优化，理解底层实现是选择正确数据结构和预估内存的关键。</p>
+</blockquote>
+<hr>
+<h2 id="redis对外提供五种数据类型底层通过六种内部数据结构实现每种类型针对特定场景优化">Redis对外提供五种数据类型，底层通过六种内部数据结构实现，每种类型针对特定场景优化</h2>
+<h3 id="string最基础的二进制安全字符串">String：最基础的二进制安全字符串</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">底层实现：SDS（Simple Dynamic String）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">struct sdshdr {
+</span></span><span class="line"><span class="cl">    int len;      // 已使用长度
+</span></span><span class="line"><span class="cl">    int free;     // 未使用长度
+</span></span><span class="line"><span class="cl">    char buf[];   // 字符数组
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">特点：
+</span></span><span class="line"><span class="cl">- 二进制安全（可存储图片、序列化对象）
+</span></span><span class="line"><span class="cl">- O(1)获取长度
+</span></span><span class="line"><span class="cl">- 预分配空间，减少扩容
+</span></span><span class="line"><span class="cl">- 最大512MB</span></span></code></pre></div></div>
+<p><strong>String的典型应用</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>命令</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>缓存对象</td>
+          <td>SET / GET</td>
+          <td>存储JSON/Protobuf序列化数据</td>
+      </tr>
+      <tr>
+          <td>计数器</td>
+          <td>INCR / DECR</td>
+          <td>原子加减，适合限流统计</td>
+      </tr>
+      <tr>
+          <td>分布式锁</td>
+          <td>SETNX + EXPIRE</td>
+          <td>原子获取锁</td>
+      </tr>
+      <tr>
+          <td>会话存储</td>
+          <td>SETEX</td>
+          <td>带过期时间的缓存</td>
+      </tr>
+      <tr>
+          <td>共享配置</td>
+          <td>GET / SET</td>
+          <td>全局配置中心</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 计数器应用</span>
+</span></span><span class="line"><span class="cl">INCR page:view:1001        <span class="c1"># 文章1001的浏览量+1</span>
+</span></span><span class="line"><span class="cl">INCRBY page:view:1001 <span class="m">10</span>   <span class="c1"># 批量增加</span>
+</span></span><span class="line"><span class="cl">GET page:view:1001
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 分布式锁</span>
+</span></span><span class="line"><span class="cl">SET lock:order:123 NX EX <span class="m">30</span>  <span class="c1"># 原子设置锁，30秒过期</span></span></span></code></pre></div></div>
+<h3 id="hash适合存储对象的键值对集合">Hash：适合存储对象的键值对集合</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">底层实现：
+</span></span><span class="line"><span class="cl">- 数据少：ziplist（压缩列表）
+</span></span><span class="line"><span class="cl">- 数据多：hashtable（哈希表）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ziplist条件（默认）：
+</span></span><span class="line"><span class="cl">  field-value数量 &lt; 512，且每个值长度 &lt; 64字节</span></span></code></pre></div></div>
+<p><strong>Hash vs String存储对象</strong>：</p>]]></description></item></channel></rss>

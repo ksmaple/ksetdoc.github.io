@@ -1,0 +1,334 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>数据结构与算法 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/</link><description>数据结构与算法 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/" rel="self" type="application/rss+xml"/><item><title>Hash表</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%93%88%E5%B8%8C%E8%A1%A8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%93%88%E5%B8%8C%E8%A1%A8/</guid><description><![CDATA[<h1 id="hash表">Hash表</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Hash表通过哈希函数将键映射到数组索引，实现O(1)的平均查找效率，冲突解决和扩容机制是工程实现的关键，一致性Hash则解决了分布式环境下的数据分布问题。</p>
+</blockquote>
+<hr>
+<h2 id="hash表通过哈希函数数组实现o1查找冲突解决和动态扩容是工程实现的核心机制">Hash表通过哈希函数+数组实现O(1)查找，冲突解决和动态扩容是工程实现的核心机制</h2>
+<h3 id="核心原理哈希函数将任意键映射到有限数组空间">核心原理：哈希函数将任意键映射到有限数组空间</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">键(Key) ──→ 哈希函数 ──→ 哈希值 ──→ 取模 ──→ 数组索引
+</span></span><span class="line"><span class="cl">                                
+</span></span><span class="line"><span class="cl">&#34;apple&#34;    hashCode()    93029231    % 16     → 15
+</span></span><span class="line"><span class="cl">&#34;banana&#34;   hashCode()    63595437    % 16     → 13
+</span></span><span class="line"><span class="cl">&#34;cherry&#34;   hashCode()    12345678    % 16     → 14</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java HashMap 的扰动函数：高16位与低16位异或，减少低位的规律性</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">hash</span><span class="p">(</span><span class="n">Object</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">h</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">0</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="na">hashCode</span><span class="p">())</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">&gt;&gt;&gt;</span><span class="w"> </span><span class="n">16</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 数组索引计算：(n-1) &amp; hash 等价于 hash % n，当n为2的幂时</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">n</span><span class="o">=</span><span class="n">16</span><span class="p">:</span><span class="w">  </span><span class="p">(</span><span class="n">16</span><span class="o">-</span><span class="n">1</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">hash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0b1111</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">hash</span><span class="w">  </span><span class="err">→</span><span class="w"> </span><span class="n">取低4位</span></span></span></code></pre></div></div>
+<h3 id="冲突解决链地址法-vs-开放寻址法">冲突解决：链地址法 vs 开放寻址法</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方法</th>
+          <th>原理</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>链地址法</td>
+          <td>冲突元素组成链表/树</td>
+          <td>实现简单、删除方便</td>
+          <td>缓存不友好、链表过长退化</td>
+      </tr>
+      <tr>
+          <td>开放寻址法</td>
+          <td>冲突时探测下一个空位</td>
+          <td>缓存友好、无指针开销</td>
+          <td>删除复杂、装填因子受限</td>
+      </tr>
+      <tr>
+          <td>再哈希法</td>
+          <td>多个哈希函数依次尝试</td>
+          <td>分布均匀</td>
+          <td>计算开销大</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>链地址法（Java HashMap采用）</strong>：</p>]]></description></item><item><title>倒排索引</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/</guid><description><![CDATA[<h1 id="倒排索引">倒排索引</h1>
+<blockquote>
+<p><strong>核心结论</strong>：倒排索引将文档-词项的正向关系反转存储为词项-文档列表，使关键词查询从O(n)扫描降为O(1)查找，是搜索引擎和全文检索系统的核心数据结构。</p>
+</blockquote>
+<hr>
+<h2 id="倒排索引将文档包含哪些词反转为词出现在哪些文档实现关键词快速定位">倒排索引将&quot;文档包含哪些词&quot;反转为&quot;词出现在哪些文档&quot;，实现关键词快速定位</h2>
+<h3 id="核心结构词典--倒排列表">核心结构：词典 + 倒排列表</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">文档集合：
+</span></span><span class="line"><span class="cl">Doc1: &#34;Java is a programming language&#34;
+</span></span><span class="line"><span class="cl">Doc2: &#34;Python is also a programming language&#34;
+</span></span><span class="line"><span class="cl">Doc3: &#34;Java and Python are popular&#34;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">正向索引（文档 → 词）：
+</span></span><span class="line"><span class="cl">Doc1 → [Java, is, a, programming, language]
+</span></span><span class="line"><span class="cl">Doc2 → [Python, is, also, a, programming, language]
+</span></span><span class="line"><span class="cl">Doc3 → [Java, and, Python, are, popular]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">倒排索引（词 → 文档列表）：
+</span></span><span class="line"><span class="cl">Java         → [Doc1, Doc3]
+</span></span><span class="line"><span class="cl">Python       → [Doc2, Doc3]
+</span></span><span class="line"><span class="cl">programming  → [Doc1, Doc2]
+</span></span><span class="line"><span class="cl">language     → [Doc1, Doc2]
+</span></span><span class="line"><span class="cl">is           → [Doc1, Doc2]
+</span></span><span class="line"><span class="cl">popular      → [Doc3]
+</span></span><span class="line"><span class="cl">...</span></span></code></pre></div></div>
+<p><strong>倒排索引的存储结构</strong>：</p>]]></description></item><item><title>排序算法</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95/</guid><description><![CDATA[<h1 id="排序算法">排序算法</h1>
+<blockquote>
+<p><strong>核心结论</strong>：排序算法的选择取决于数据规模、内存限制和稳定性需求，快速排序是通用场景首选，归并排序适合链表和外部排序，堆排序适合内存受限且需持续获取TopK的场景。</p>
+</blockquote>
+<hr>
+<h2 id="常用排序算法在时间复杂度空间复杂度和稳定性三个维度各有侧重没有绝对最优">常用排序算法在时间复杂度、空间复杂度和稳定性三个维度各有侧重，没有绝对最优</h2>
+<h3 id="算法对比总览">算法对比总览</h3>
+<table>
+  <thead>
+      <tr>
+          <th>算法</th>
+          <th>平均时间</th>
+          <th>最坏时间</th>
+          <th>空间</th>
+          <th>稳定性</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>快速排序</td>
+          <td>O(n log n)</td>
+          <td>O(n²)</td>
+          <td>O(log n)栈</td>
+          <td>不稳定</td>
+          <td>通用数组排序</td>
+      </tr>
+      <tr>
+          <td>归并排序</td>
+          <td>O(n log n)</td>
+          <td>O(n log n)</td>
+          <td>O(n)</td>
+          <td>稳定</td>
+          <td>链表排序、外部排序</td>
+      </tr>
+      <tr>
+          <td>堆排序</td>
+          <td>O(n log n)</td>
+          <td>O(n log n)</td>
+          <td>O(1)</td>
+          <td>不稳定</td>
+          <td>TopK、内存受限</td>
+      </tr>
+      <tr>
+          <td>插入排序</td>
+          <td>O(n²)</td>
+          <td>O(n²)</td>
+          <td>O(1)</td>
+          <td>稳定</td>
+          <td>小规模、近乎有序</td>
+      </tr>
+      <tr>
+          <td>希尔排序</td>
+          <td>O(n^1.3)</td>
+          <td>O(n²)</td>
+          <td>O(1)</td>
+          <td>不稳定</td>
+          <td>中等规模</td>
+      </tr>
+      <tr>
+          <td>选择排序</td>
+          <td>O(n²)</td>
+          <td>O(n²)</td>
+          <td>O(1)</td>
+          <td>不稳定</td>
+          <td>理论意义</td>
+      </tr>
+      <tr>
+          <td>冒泡排序</td>
+          <td>O(n²)</td>
+          <td>O(n²)</td>
+          <td>O(1)</td>
+          <td>稳定</td>
+          <td>教学演示</td>
+      </tr>
+      <tr>
+          <td>计数排序</td>
+          <td>O(n+k)</td>
+          <td>O(n+k)</td>
+          <td>O(k)</td>
+          <td>稳定</td>
+          <td>数据范围小</td>
+      </tr>
+      <tr>
+          <td>桶排序</td>
+          <td>O(n)</td>
+          <td>O(n²)</td>
+          <td>O(n+k)</td>
+          <td>稳定</td>
+          <td>数据均匀分布</td>
+      </tr>
+      <tr>
+          <td>基数排序</td>
+          <td>O(d(n+k))</td>
+          <td>O(d(n+k))</td>
+          <td>O(n+k)</td>
+          <td>稳定</td>
+          <td>固定位数整数</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="快速排序分治原地分区的通用王者">快速排序：分治+原地分区的通用王者</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">quickSort</span><span class="p">(</span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">left</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">right</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">left</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">right</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 分区：选取基准，将数组分为 &lt;pivot 和 &gt;pivot 两部分</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">pivotIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">partition</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 递归排序左右两部分</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">quickSort</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="p">,</span><span class="w"> </span><span class="n">pivotIndex</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">quickSort</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="n">pivotIndex</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">1</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">partition</span><span class="p">(</span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">left</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">right</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">pivot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">arr</span><span class="o">[</span><span class="n">right</span><span class="o">]</span><span class="p">;</span><span class="w">  </span><span class="c1">// 选最右为基准</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">left</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">left</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">right</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">arr</span><span class="o">[</span><span class="n">j</span><span class="o">]</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">pivot</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">swap</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">i</span><span class="o">++</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">swap</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="p">);</span><span class="w">  </span><span class="c1">// 基准放到正确位置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<p><strong>快速排序的优化</strong>：</p>]]></description></item><item><title>树结构</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%A0%91%E7%BB%93%E6%9E%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%A0%91%E7%BB%93%E6%9E%84/</guid><description><![CDATA[<h1 id="树结构">树结构</h1>
+<blockquote>
+<p><strong>核心结论</strong>：红黑树通过颜色约束维持近似平衡保证O(log n)操作，B+树通过多叉结构降低磁盘IO成为数据库索引首选，跳表用概率平衡替代严格平衡实现简单高效的并发有序结构。</p>
+</blockquote>
+<hr>
+<h2 id="红黑树b树跳表分别通过颜色约束多叉节点和概率层级三种不同机制实现高效查找">红黑树、B+树、跳表分别通过颜色约束、多叉节点和概率层级三种不同机制实现高效查找</h2>
+<h3 id="红黑树近似平衡的二叉搜索树">红黑树：近似平衡的二叉搜索树</h3>
+<p><strong>红黑树的五条性质</strong>：</p>
+<ol>
+<li>节点是红色或黑色</li>
+<li>根节点是黑色</li>
+<li>所有叶子（NIL）是黑色</li>
+<li>红色节点的子节点必须是黑色（不能有两个连续红色）</li>
+<li>从任一节点到其叶子的所有路径包含相同数目的黑色节点</li>
+</ol>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">性质5的推论：最长路径不超过最短路径的2倍
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">最短路径：全黑节点        最长路径：红黑交替
+</span></span><span class="line"><span class="cl">    B                       B
+</span></span><span class="line"><span class="cl">   / \                     / \
+</span></span><span class="line"><span class="cl">  B   B                   R   B
+</span></span><span class="line"><span class="cl"> / \                     / \   \
+</span></span><span class="line"><span class="cl">B   B                   B   R   B
+</span></span><span class="line"><span class="cl">                            /
+</span></span><span class="line"><span class="cl">                           B
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">黑高=3，最短路径3，最长路径5（不超过2倍）</span></span></code></pre></div></div>
+<p><strong>红黑树的平衡调整</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>情况</th>
+          <th>触发条件</th>
+          <th>调整操作</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>左旋/右旋</td>
+          <td>局部不平衡</td>
+          <td>旋转节点，调整父子关系</td>
+      </tr>
+      <tr>
+          <td>变色</td>
+          <td>双红冲突</td>
+          <td>父、叔、祖父节点颜色翻转</td>
+      </tr>
+      <tr>
+          <td>LR/RL双旋</td>
+          <td>折线关系</td>
+          <td>先左旋/右旋，再右旋/左旋</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">插入调整示例（父节点红色，叔节点黑色）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    G(黑)              P(黑)
+</span></span><span class="line"><span class="cl">   /                  /    \
+</span></span><span class="line"><span class="cl">  P(红)    →        N(红)  G(红)
+</span></span><span class="line"><span class="cl">   \                       /
+</span></span><span class="line"><span class="cl">   N(红)                S(黑)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">情况：父红、叔黑、新节点是父的右孩子（折线）
+</span></span><span class="line"><span class="cl">调整：先对P左旋 → 再对G右旋 → 变色</span></span></code></pre></div></div>
+<p><strong>红黑树 vs AVL树</strong>：</p>]]></description></item><item><title>位图与布隆过滤器</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E4%BD%8D%E5%9B%BE%E4%B8%8E%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E4%BD%8D%E5%9B%BE%E4%B8%8E%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/</guid><description><![CDATA[<h1 id="位图与布隆过滤器">位图与布隆过滤器</h1>
+<blockquote>
+<p><strong>核心结论</strong>：位图用1bit表示一个状态，将存储空间压缩至1/8，适合大规模去重和状态标记；布隆过滤器在位图基础上增加多哈希函数，以可控的假阳性为代价实现O(1)的成员查询，是缓存穿透防护和大集合判存的经典方案。</p>
+</blockquote>
+<hr>
+<h2 id="位图将状态压缩到1bit布隆过滤器用多哈希位图实现概率型判存二者核心都是空间换时间">位图将状态压缩到1bit，布隆过滤器用多哈希+位图实现概率型判存，二者核心都是空间换时间</h2>
+<h3 id="位图bitmap用bit数组表示状态集合">位图（Bitmap）：用bit数组表示状态集合</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">存储10亿个int（约4GB） vs 位图标记10亿个状态（约119MB）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">10亿个整数（去重判断）：
+</span></span><span class="line"><span class="cl">  HashSet: 10亿 * 4字节 ≈ 4GB（不考虑HashMap开销）
+</span></span><span class="line"><span class="cl">  位图: 10亿 bit = 10^9 / 8 ≈ 119MB
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  压缩比: 4GB / 119MB ≈ 34倍</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java中的位图实现：BitSet</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">BitSet</span><span class="w"> </span><span class="n">bitSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BitSet</span><span class="p">(</span><span class="n">1000000000</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 标记数字n存在</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">bitSet</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="n">n</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 判断数字n是否存在</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kt">boolean</span><span class="w"> </span><span class="n">exists</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bitSet</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">n</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 位运算本质</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 第n位: arr[n/64] 的第 (n%64) 位</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 设置: arr[index] |= (1L &lt;&lt; offset)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">查询</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="n">arr</span><span class="o">[</span><span class="n">index</span><span class="o">]</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">offset</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">1</span></span></span></code></pre></div></div>
+<p><strong>位图的应用场景</strong>：</p>]]></description></item></channel></rss>

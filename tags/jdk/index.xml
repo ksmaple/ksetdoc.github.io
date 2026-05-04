@@ -1,0 +1,270 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Jdk - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/jdk/</link><description>Jdk - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/jdk/" rel="self" type="application/rss+xml"/><item><title>JDK版本演进</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/jdk%E6%BC%94%E8%BF%9B/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/jdk%E6%BC%94%E8%BF%9B/</guid><description><![CDATA[<h1 id="jdk版本演进">JDK版本演进</h1>
+<blockquote>
+<p><strong>核心结论</strong>：JDK从8到21的演进主线是&quot;语法糖简化开发 + JVM性能提升 + 并发模型现代化&quot;，其中8的Stream/Lambda、11的ZGC、17的密封类和21的虚拟线程是影响架构决策的关键版本。</p>
+</blockquote>
+<hr>
+<h2 id="jdk每3年一个lts版本核心演进围绕语法简化gc优化并发模型三条主线">JDK每3年一个LTS版本，核心演进围绕语法简化、GC优化、并发模型三条主线</h2>
+<h3 id="jdk-82014函数式编程与stream革命">JDK 8（2014）：函数式编程与Stream革命</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>影响</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Lambda表达式</td>
+          <td>函数式接口的简洁语法</td>
+          <td>替代大量匿名内部类</td>
+      </tr>
+      <tr>
+          <td>Stream API</td>
+          <td>声明式集合处理</td>
+          <td>内部迭代、惰性求值、并行支持</td>
+      </tr>
+      <tr>
+          <td>方法引用</td>
+          <td><code>Class::method</code>语法</td>
+          <td>进一步简化Lambda</td>
+      </tr>
+      <tr>
+          <td>接口默认方法</td>
+          <td><code>default</code>关键字</td>
+          <td>接口可扩展不破坏实现类</td>
+      </tr>
+      <tr>
+          <td>新日期时间API</td>
+          <td><code>java.time</code>包</td>
+          <td>线程安全、设计清晰</td>
+      </tr>
+      <tr>
+          <td>PermGen移除</td>
+          <td>方法区移至Metaspace（本地内存）</td>
+          <td>减少OOM，但内存不自动回收</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// JDK8 前后对比</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Before</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">Collections</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Comparator</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">compare</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="na">length</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="na">length</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">});</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// After</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">list</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">Comparator</span><span class="p">.</span><span class="na">comparingInt</span><span class="p">(</span><span class="n">String</span><span class="p">::</span><span class="n">length</span><span class="p">));</span></span></span></code></pre></div></div>
+<h3 id="jdk-112018现代化与性能突破">JDK 11（2018）：现代化与性能突破</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>影响</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>ZGC实验性引入</td>
+          <td>可扩展低延迟GC</td>
+          <td>目标停顿&lt;10ms，堆大小无关</td>
+      </tr>
+      <tr>
+          <td>HTTP Client标准化</td>
+          <td><code>java.net.http</code>包</td>
+          <td>支持HTTP/2、异步、流式</td>
+      </tr>
+      <tr>
+          <td>var局部变量推断</td>
+          <td><code>var list = new ArrayList&lt;&gt;()</code></td>
+          <td>减少冗余类型声明</td>
+      </tr>
+      <tr>
+          <td>字符串增强</td>
+          <td><code>isBlank()</code>、<code>lines()</code>、<code>strip()</code></td>
+          <td>更实用的字符串操作</td>
+      </tr>
+      <tr>
+          <td>移除Java EE和CORBA模块</td>
+          <td>精简JDK</td>
+          <td>需额外引入依赖</td>
+      </tr>
+      <tr>
+          <td>Flight Recorder开源</td>
+          <td>JFR免费使用</td>
+          <td>生产环境低开销 profiling</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// HTTP Client 异步请求</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">HttpClient</span><span class="w"> </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HttpClient</span><span class="p">.</span><span class="na">newHttpClient</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">HttpRequest</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HttpRequest</span><span class="p">.</span><span class="na">newBuilder</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="n">URI</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="s">&#34;https://api.example.com/data&#34;</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">client</span><span class="p">.</span><span class="na">sendAsync</span><span class="p">(</span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">HttpResponse</span><span class="p">.</span><span class="na">BodyHandlers</span><span class="p">.</span><span class="na">ofString</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="p">.</span><span class="na">thenApply</span><span class="p">(</span><span class="n">HttpResponse</span><span class="p">::</span><span class="n">body</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="p">.</span><span class="na">thenAccept</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">::</span><span class="n">println</span><span class="p">);</span></span></span></code></pre></div></div>
+<h3 id="jdk-172021-sealed类与模式匹配">JDK 17（2021）： sealed类与模式匹配</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>影响</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>密封类（Sealed Classes）</td>
+          <td><code>sealed</code>、<code>permits</code>控制继承</td>
+          <td>编译期 exhaustive switch检查</td>
+      </tr>
+      <tr>
+          <td>模式匹配（switch预览）</td>
+          <td><code>switch(obj)</code>自动类型匹配</td>
+          <td>减少强制类型转换</td>
+      </tr>
+      <tr>
+          <td>恢复浮点运算严格性</td>
+          <td>JEP 306</td>
+          <td>跨平台一致性</td>
+      </tr>
+      <tr>
+          <td>移除实验性AOT和JIT编译器</td>
+          <td>GraalVM替代</td>
+          <td>使用GraalVM实现Native Image</td>
+      </tr>
+      <tr>
+          <td>MacOS/AArch64移植</td>
+          <td>Apple Silicon支持</td>
+          <td>性能大幅提升</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 密封类：明确控制哪些类可以继承</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="kd">sealed</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Shape</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">permits</span><span class="w"> </span><span class="n">Circle</span><span class="p">,</span><span class="w"> </span><span class="n">Rectangle</span><span class="p">,</span><span class="w"> </span><span class="n">Square</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Circle</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Shape</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Rectangle</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Shape</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="kd">sealed</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Square</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Shape</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// switch 模式匹配（JDK17预览，21正式）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">String</span><span class="w"> </span><span class="n">desc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">shape</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">Circle</span><span class="w"> </span><span class="n">c</span><span class="w">    </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&#34;圆，半径&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="na">radius</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">Rectangle</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&#34;矩形&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="na">width</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34;x&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="na">height</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">Square</span><span class="w"> </span><span class="n">s</span><span class="w">    </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&#34;正方形&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="na">side</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">};</span></span></span></code></pre></div></div>
+<h3 id="jdk-212023虚拟线程与结构化并发">JDK 21（2023）：虚拟线程与结构化并发</h3>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>影响</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>虚拟线程（Virtual Threads）</td>
+          <td>JVM管理的轻量级线程</td>
+          <td>百万级并发，告别线程池调优</td>
+      </tr>
+      <tr>
+          <td>结构化并发（预览）</td>
+          <td><code>StructuredTaskScope</code></td>
+          <td>子任务生命周期与父任务绑定</td>
+      </tr>
+      <tr>
+          <td>序列集合接口</td>
+          <td><code>SequencedCollection</code></td>
+          <td>统一有序集合操作</td>
+      </tr>
+      <tr>
+          <td>分代ZGC</td>
+          <td>默认启用</td>
+          <td>更低内存占用，更好性能</td>
+      </tr>
+      <tr>
+          <td>Record模式匹配</td>
+          <td>解构Record类型</td>
+          <td>更简洁的数据处理</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 虚拟线程：创建成本极低，无需池化</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="kd">var</span><span class="w"> </span><span class="n">executor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newVirtualThreadPerTaskExecutor</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">IntStream</span><span class="p">.</span><span class="na">range</span><span class="p">(</span><span class="n">0</span><span class="p">,</span><span class="w"> </span><span class="n">1_000_000</span><span class="p">).</span><span class="na">forEach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">executor</span><span class="p">.</span><span class="na">submit</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="n">1</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">  </span><span class="o">//</span><span class="w"> </span><span class="n">100万个并发任务</span><span class="err">，</span><span class="n">1个OS线程可处理数千虚拟线程</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="实现原理与关键机制">实现原理与关键机制</h2>
+<h3 id="虚拟线程-vs-平台线程">虚拟线程 vs 平台线程</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>平台线程（OS线程）</th>
+          <th>虚拟线程</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>创建成本</td>
+          <td>~1MB栈空间</td>
+          <td>~几百字节</td>
+      </tr>
+      <tr>
+          <td>调度器</td>
+          <td>OS内核</td>
+          <td>JVM用户态调度器（ForkJoinPool）</td>
+      </tr>
+      <tr>
+          <td>阻塞代价</td>
+          <td>OS线程阻塞</td>
+          <td>虚拟线程卸载（unmount），OS线程复用</td>
+      </tr>
+      <tr>
+          <td>适用场景</td>
+          <td>CPU密集型、持有锁</td>
+          <td>IO密集型、大量并发</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">平台线程：Java Thread → JVM Thread → OS Thread（1:1:1）
+</span></span><span class="line"><span class="cl">虚拟线程：   Java VThread → Carrier Thread（M:N映射）
+</span></span><span class="line"><span class="cl">                      ↓
+</span></span><span class="line"><span class="cl">              阻塞时VThread挂载到堆栈，Carrier释放</span></span></code></pre></div></div>
+<p><strong>虚拟线程的陷阱</strong>：</p>]]></description></item></channel></rss>

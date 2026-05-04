@@ -1,0 +1,160 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Agents - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/agents/</link><description>Agents - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/agents/" rel="self" type="application/rss+xml"/><item><title>Claude Code与Agents</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/claude-code-agents/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/claude-code-agents/</guid><description><![CDATA[<h1 id="claude-code与agents">Claude Code与Agents</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Claude Code通过Skills定义可复用的任务模板、Rules约束行为边界、MCP扩展外部工具能力，将AI从问答助手升级为可执行复杂工程任务的Agent。</p>
+</blockquote>
+<hr>
+<h2 id="claude-code通过结构化指令和工具扩展将大模型能力封装为可重复执行的工程工作流">Claude Code通过结构化指令和工具扩展，将大模型能力封装为可重复执行的工程工作流</h2>
+<h3 id="skills可复用任务模板">Skills：可复用任务模板</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Skill = 触发词 + 上下文 + 执行逻辑
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">用户输入：/tech-doc learn Redis
+</span></span><span class="line"><span class="cl">Claude加载：.claude/skills/tech-doc.md 中定义的 learn 模板
+</span></span><span class="line"><span class="cl">执行结果：按模板格式生成学习笔记文档</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>Skill类型</th>
+          <th>用途</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>文档生成</td>
+          <td>按模板创建技术文档</td>
+          <td>/tech-doc <type> <topic></td>
+      </tr>
+      <tr>
+          <td>代码审查</td>
+          <td>按检查清单Review代码</td>
+          <td>/review security,performance</td>
+      </tr>
+      <tr>
+          <td>问题诊断</td>
+          <td>按排查流程定位问题</td>
+          <td>/debug memory-leak</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="rules行为约束与上下文">Rules：行为约束与上下文</h3>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>位置</th>
+          <th>作用范围</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>全局规则</td>
+          <td><code>~/.claude/CLAUDE.md</code></td>
+          <td>所有项目</td>
+      </tr>
+      <tr>
+          <td>项目规则</td>
+          <td><code>项目根目录/CLAUDE.md</code></td>
+          <td>当前项目</td>
+      </tr>
+      <tr>
+          <td>会话规则</td>
+          <td>对话中直接说明</td>
+          <td>当前会话</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-markdown">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl"><span class="gh"># CLAUDE.md 示例
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 编码规范
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 优先使用Java 17新特性
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 所有API接口必须标注 <span class="ni">@Operation</span> 注解
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 数据库操作使用MyBatis-Plus
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 常用命令
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 构建：mvn clean package
+</span></span><span class="line"><span class="cl">- 测试：mvn test -Dtest=ClassName<span class="ni">#methodName</span></span></span></code></pre></div></div>
+<h3 id="mcp外部工具扩展">MCP：外部工具扩展</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Claude Code ←→ MCP协议 ←→ 外部工具
+</span></span><span class="line"><span class="cl">                   ↓
+</span></span><span class="line"><span class="cl">            ├── 文件系统（读写代码）
+</span></span><span class="line"><span class="cl">            ├── 数据库（查询表结构）
+</span></span><span class="line"><span class="cl">            ├── API服务（调用内部接口）
+</span></span><span class="line"><span class="cl">            └── 版本控制（git操作）</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>能力</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>文件操作</td>
+          <td>读写、搜索、批量修改</td>
+          <td>代码重构</td>
+      </tr>
+      <tr>
+          <td>命令执行</td>
+          <td>运行测试、构建、部署</td>
+          <td>CI/CD集成</td>
+      </tr>
+      <tr>
+          <td>浏览器</td>
+          <td>抓取网页、验证UI</td>
+          <td>前端开发</td>
+      </tr>
+      <tr>
+          <td>数据库</td>
+          <td>查询schema、执行SQL</td>
+          <td>后端开发</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="agent协作模式">Agent协作模式</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>说明</th>
+          <th>场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>单Agent</td>
+          <td>一个Claude实例处理完整任务</td>
+          <td>常规编码任务</td>
+      </tr>
+      <tr>
+          <td>多Agent</td>
+          <td>多个实例分工协作</td>
+          <td>复杂系统设计和实现</td>
+      </tr>
+      <tr>
+          <td>人机协同</td>
+          <td>AI生成草稿，人工审核确认</td>
+          <td>关键业务代码</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1ai生成代码未经验证直接使用">问题1：AI生成代码未经验证直接使用</h3>
+<p><strong>根因</strong>：过度信任AI输出，未进行测试和审查
+<strong>解决</strong>：始终运行测试验证，关键逻辑人工Review，将AI输出视为草稿而非终稿</p>]]></description></item></channel></rss>

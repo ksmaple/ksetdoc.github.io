@@ -1,0 +1,788 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>业务系统设计 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/</link><description>业务系统设计 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/" rel="self" type="application/rss+xml"/><item><title>第三方系统交互设计</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%8E%A5%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%8E%A5%E5%85%A5/</guid><description><![CDATA[<h1 id="第三方系统交互设计">第三方系统交互设计</h1>
+<blockquote>
+<p><strong>核心结论</strong>：与第三方系统交互的核心挑战是网络不可靠和接口差异，通过统一接口层封装异构协议，通过幂等和重试保障可靠性，通过熔断降级保障自身稳定性。</p>
+</blockquote>
+<hr>
+<h2 id="第三方交互通过统一封装幂等重试熔断降级三大机制保障可靠性">第三方交互通过统一封装、幂等重试、熔断降级三大机制保障可靠性</h2>
+<h3 id="设计原则">设计原则</h3>
+<table>
+  <thead>
+      <tr>
+          <th>原则</th>
+          <th>说明</th>
+          <th>实现</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>统一封装</td>
+          <td>屏蔽第三方差异</td>
+          <td>适配器模式，统一出入参</td>
+      </tr>
+      <tr>
+          <td>幂等设计</td>
+          <td>重复调用无副作用</td>
+          <td>业务订单号唯一性</td>
+      </tr>
+      <tr>
+          <td>超时重试</td>
+          <td>网络抖动容错</td>
+          <td>指数退避，限制重试次数</td>
+      </tr>
+      <tr>
+          <td>熔断降级</td>
+          <td>第三方故障自我保护</td>
+          <td>失败率阈值触发熔断</td>
+      </tr>
+      <tr>
+          <td>异步解耦</td>
+          <td>降低耦合和延迟</td>
+          <td>MQ中转</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="接口层架构">接口层架构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">业务层
+</span></span><span class="line"><span class="cl">  ↓ 调用
+</span></span><span class="line"><span class="cl">统一接口层（Adapter）
+</span></span><span class="line"><span class="cl">  ├── 微信支付Adapter
+</span></span><span class="line"><span class="cl">  ├── 支付宝Adapter
+</span></span><span class="line"><span class="cl">  ├── 短信服务商Adapter
+</span></span><span class="line"><span class="cl">  └── 推送服务商Adapter
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">统一接口层职责：
+</span></span><span class="line"><span class="cl">  - 入参转换（内部标准 → 第三方格式）
+</span></span><span class="line"><span class="cl">  - 出参转换（第三方格式 → 内部标准）
+</span></span><span class="line"><span class="cl">  - 签名/验签
+</span></span><span class="line"><span class="cl">  - 超时/重试/熔断
+</span></span><span class="line"><span class="cl">  - 日志记录</span></span></code></pre></div></div>
+<h3 id="幂等与重试">幂等与重试</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 带幂等的HTTP调用</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Result</span><span class="w"> </span><span class="nf">callWithRetry</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">Request</span><span class="w"> </span><span class="n">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">idempotencyKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">generateKey</span><span class="p">(</span><span class="n">request</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">MAX_RETRY</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">httpClient</span><span class="p">.</span><span class="na">call</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">idempotencyKey</span><span class="p">,</span><span class="w"> </span><span class="n">TIMEOUT</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">TimeoutException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">MAX_RETRY</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="n">e</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">((</span><span class="kt">long</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="na">pow</span><span class="p">(</span><span class="n">2</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">100</span><span class="p">));</span><span class="w">  </span><span class="c1">// 指数退避</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RuntimeException</span><span class="p">(</span><span class="s">&#34;Should not reach here&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1第三方接口变更导致故障">问题1：第三方接口变更导致故障</h3>
+<p><strong>根因</strong>：直接依赖第三方数据结构
+<strong>解决</strong>：适配器层做字段映射，变更只改适配器</p>]]></description></item><item><title>多平台架构设计</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E5%A4%9A%E5%B9%B3%E5%8F%B0%E6%9E%B6%E6%9E%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E5%A4%9A%E5%B9%B3%E5%8F%B0%E6%9E%B6%E6%9E%84/</guid><description><![CDATA[<h1 id="多平台架构设计">多平台架构设计</h1>
+<blockquote>
+<p><strong>核心结论</strong>：多平台架构通过抽象公共层复用核心能力，通过配置化区分平台差异，通过插件化机制支持平台特有扩展，避免为每个平台独立开发一套系统。</p>
+</blockquote>
+<hr>
+<h2 id="多平台架构通过公共层复用配置化差异插件化扩展实现一套代码支撑多端">多平台架构通过公共层复用、配置化差异、插件化扩展实现一套代码支撑多端</h2>
+<h3 id="架构分层">架构分层</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">接入层（各平台独立）
+</span></span><span class="line"><span class="cl">├── Web端（React/Vue）
+</span></span><span class="line"><span class="cl">├── App端（iOS/Android）
+</span></span><span class="line"><span class="cl">├── 小程序（微信/支付宝）
+</span></span><span class="line"><span class="cl">└── H5
+</span></span><span class="line"><span class="cl">        ↓ 统一API网关
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">业务中台（公共能力）
+</span></span><span class="line"><span class="cl">├── 用户中心
+</span></span><span class="line"><span class="cl">├── 订单中心
+</span></span><span class="line"><span class="cl">├── 支付中心
+</span></span><span class="line"><span class="cl">└── 消息中心
+</span></span><span class="line"><span class="cl">        ↓ 平台配置
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">平台适配层
+</span></span><span class="line"><span class="cl">├── 平台配置（开关、文案、页面编排）
+</span></span><span class="line"><span class="cl">├── 差异化逻辑（不同平台不同实现）
+</span></span><span class="line"><span class="cl">└── 插件扩展点</span></span></code></pre></div></div>
+<h3 id="配置化设计">配置化设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-yaml">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># 平台配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">platform</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ios</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">payment_channels</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="l">apple_pay, alipay, wechat]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">features</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">live_stream</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">gift_combo</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">android</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">payment_channels</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="l">alipay, wechat]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">features</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">live_stream</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">gift_combo</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">web</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">payment_channels</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="l">alipay, wechat]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">features</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">live_stream</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1平台差异代码散落在各处">问题1：平台差异代码散落在各处</h3>
+<p><strong>根因</strong>：缺乏统一的适配层
+<strong>解决</strong>：集中平台判断逻辑，使用策略模式</p>]]></description></item><item><title>公会/主播/家族系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E5%85%AC%E4%BC%9A%E4%B8%8E%E4%B8%BB%E6%92%AD%E5%AE%B6%E6%97%8F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E5%85%AC%E4%BC%9A%E4%B8%8E%E4%B8%BB%E6%92%AD%E5%AE%B6%E6%97%8F/</guid><description><![CDATA[<h1 id="公会主播家族系统">公会/主播/家族系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：公会/主播/家族系统通过层级关系链管理组织结构和收益分配，核心挑战是层级关系的灵活查询、收益分成的精确计算，以及结算数据的幂等和可追溯。</p>
+</blockquote>
+<hr>
+<h2 id="公会系统通过层级关系管理组织通过配置化分成比例实现收益分配">公会系统通过层级关系管理组织，通过配置化分成比例实现收益分配</h2>
+<h3 id="层级模型">层级模型</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">平台
+</span></span><span class="line"><span class="cl">├── 公会A（分成比例30%）
+</span></span><span class="line"><span class="cl">│   ├── 主播A1（分成70%）
+</span></span><span class="line"><span class="cl">│   ├── 主播A2（分成70%）
+</span></span><span class="line"><span class="cl">│   └── 家族F1
+</span></span><span class="line"><span class="cl">│       ├── 成员M1
+</span></span><span class="line"><span class="cl">│       └── 成员M2
+</span></span><span class="line"><span class="cl">├── 公会B
+</span></span><span class="line"><span class="cl">│   └── 主播B1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">收益分配（用户打赏100元）：
+</span></span><span class="line"><span class="cl">  平台：100 * 50% = 50元
+</span></span><span class="line"><span class="cl">  公会：100 * 30% = 30元
+</span></span><span class="line"><span class="cl">  主播：100 * 20% = 20元</span></span></code></pre></div></div>
+<h3 id="数据模型设计">数据模型设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-sql">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="c1">-- 组织表
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">organization</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">name</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">type</span><span class="w"> </span><span class="n">ENUM</span><span class="p">(</span><span class="s1">&#39;guild&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;family&#39;</span><span class="p">),</span><span class="w">  </span><span class="c1">-- 公会/家族
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">parent_id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">              </span><span class="c1">-- 上级组织
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">divide_rate</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="w">      </span><span class="c1">-- 平台分成比例
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">status</span><span class="w"> </span><span class="n">TINYINT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- 成员关系表
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">member_relation</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">org_id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">user_id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">role</span><span class="w"> </span><span class="n">ENUM</span><span class="p">(</span><span class="s1">&#39;owner&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;member&#39;</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">divide_rate</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="w">      </span><span class="c1">-- 个人分成比例
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">join_time</span><span class="w"> </span><span class="n">DATETIME</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1层级关系查询性能差">问题1：层级关系查询性能差</h3>
+<p><strong>根因</strong>：递归查询层级效率低
+<strong>解决</strong>：路径枚举（path字段）、闭包表、或限制层级深度</p>]]></description></item><item><title>活动系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%B4%BB%E5%8A%A8%E7%B3%BB%E7%BB%9F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%B4%BB%E5%8A%A8%E7%B3%BB%E7%BB%9F/</guid><description><![CDATA[<h1 id="活动系统">活动系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：活动系统通过配置化规则引擎支撑多变的运营需求，通过库存控制和发放流水保障奖品安全，通过防刷策略拦截恶意用户，核心挑战是灵活性与稳定性的平衡。</p>
+</blockquote>
+<hr>
+<h2 id="活动系统通过规则引擎实现灵活配置通过库存和流水保障奖励安全通过多层防刷策略保障公平">活动系统通过规则引擎实现灵活配置，通过库存和流水保障奖励安全，通过多层防刷策略保障公平</h2>
+<h3 id="核心模块">核心模块</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模块</th>
+          <th>职责</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>活动配置</td>
+          <td>活动时间、参与条件、奖品配置</td>
+      </tr>
+      <tr>
+          <td>规则引擎</td>
+          <td>判断用户是否满足参与条件</td>
+      </tr>
+      <tr>
+          <td>奖品发放</td>
+          <td>库存扣减、发放记录、到账通知</td>
+      </tr>
+      <tr>
+          <td>防刷控制</td>
+          <td>频次限制、设备/IP/账号维度风控</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="规则引擎设计">规则引擎设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">规则配置（JSON/DSL）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">  &#34;rules&#34;: [
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;time&#34;, &#34;start&#34;: &#34;2026-01-01&#34;, &#34;end&#34;: &#34;2026-01-07&#34; },
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;user_level&#34;, &#34;min&#34;: 3 },
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;daily_limit&#34;, &#34;count&#34;: 3 }
+</span></span><span class="line"><span class="cl">  ],
+</span></span><span class="line"><span class="cl">  &#34;rewards&#34;: [
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;coupon&#34;, &#34;id&#34;: &#34;COUPON_001&#34;, &#34;stock&#34;: 1000 },
+</span></span><span class="line"><span class="cl">    { &#34;type&#34;: &#34;points&#34;, &#34;amount&#34;: 100 }
+</span></span><span class="line"><span class="cl">  ]
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">规则执行：
+</span></span><span class="line"><span class="cl">  1. 时间规则 → 当前时间在活动期内？
+</span></span><span class="line"><span class="cl">  2. 用户等级规则 → 用户等级 &gt;= 3？
+</span></span><span class="line"><span class="cl">  3. 频次规则 → 今日参与次数 &lt; 3？
+</span></span><span class="line"><span class="cl">  4. 全部通过 → 参与成功</span></span></code></pre></div></div>
+<h3 id="奖品发放与防刷">奖品发放与防刷</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">发放流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 校验用户资格（规则引擎）
+</span></span><span class="line"><span class="cl">2. 扣减奖品库存（Redis DECR / DB乐观锁）
+</span></span><span class="line"><span class="cl">3. 记录发放流水（用户ID、奖品、时间）
+</span></span><span class="line"><span class="cl">4. 异步到账通知（MQ）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">防刷策略：
+</span></span><span class="line"><span class="cl">- 账号维度：同一账号频次限制
+</span></span><span class="line"><span class="cl">- 设备维度：同一设备参与次数限制
+</span></span><span class="line"><span class="cl">- IP维度：同一IP参与次数限制
+</span></span><span class="line"><span class="cl">- 行为维度：异常行为模式识别（如秒级连续参与）</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1奖品超发">问题1：奖品超发</h3>
+<p><strong>根因</strong>：并发扣减库存导致负数
+<strong>解决</strong>：Redis原子扣减 + DB最终一致性</p>]]></description></item><item><title>送礼系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%A4%BC%E7%89%A9%E7%B3%BB%E7%BB%9F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%A4%BC%E7%89%A9%E7%B3%BB%E7%BB%9F/</guid><description><![CDATA[<h1 id="送礼系统">送礼系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：送礼系统的核心是礼物购买、赠送、展示三个链路，通过礼物链特效增强互动体验，通过幂等设计和事务保障资金安全，通过异步消息解耦礼物展示与账户扣减。</p>
+</blockquote>
+<hr>
+<h2 id="送礼系统通过礼物链聚合连续赠送通过事务保障资金一致通过异步解耦展示与扣减">送礼系统通过礼物链聚合连续赠送、通过事务保障资金一致、通过异步解耦展示与扣减</h2>
+<h3 id="核心链路购买赠送展示结算">核心链路：购买→赠送→展示→结算</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户送礼流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 选择礼物 → 确认赠送
+</span></span><span class="line"><span class="cl">2. 账户扣减（余额/钻石）
+</span></span><span class="line"><span class="cl">   - 本地事务：扣减用户余额 + 记录消费流水
+</span></span><span class="line"><span class="cl">3. 礼物消息发送（MQ）
+</span></span><span class="line"><span class="cl">4. 直播间展示（礼物动画、礼物链）
+</span></span><span class="line"><span class="cl">5. 主播收益结算（异步日结/实时）</span></span></code></pre></div></div>
+<p><strong>礼物链（Gift Combo）</strong>：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户连续快速送同一礼物：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">送玫瑰 x1 → 展示 &#34;Tom 送出 玫瑰 x1&#34;
+</span></span><span class="line"><span class="cl">送玫瑰 x2 → 合并为 &#34;Tom 送出 玫瑰 x3&#34;
+</span></span><span class="line"><span class="cl">送玫瑰 x5 → 合并为 &#34;Tom 送出 玫瑰 x8&#34;
+</span></span><span class="line"><span class="cl">... 连续赠送合并为链式展示
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">实现：
+</span></span><span class="line"><span class="cl">- 客户端缓存最近赠送的礼物类型
+</span></span><span class="line"><span class="cl">- 相同礼物在窗口期内合并计数
+</span></span><span class="line"><span class="cl">- 服务端验证窗口期内的总数量</span></span></code></pre></div></div>
+<h3 id="关键设计">关键设计</h3>
+<table>
+  <thead>
+      <tr>
+          <th>设计点</th>
+          <th>方案</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>幂等性</td>
+          <td>礼物订单号唯一索引</td>
+          <td>防重复扣款</td>
+      </tr>
+      <tr>
+          <td>扣款顺序</td>
+          <td>先扣款后发MQ</td>
+          <td>避免发了礼物没扣到钱</td>
+      </tr>
+      <tr>
+          <td>展示降级</td>
+          <td>送礼量过大时合并显示</td>
+          <td>防止客户端卡顿</td>
+      </tr>
+      <tr>
+          <td>收益结算</td>
+          <td>异步日结，对账兜底</td>
+          <td>实时性要求低</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1连续送礼扣款成功但展示丢失">问题1：连续送礼扣款成功但展示丢失</h3>
+<p><strong>根因</strong>：MQ消费失败或客户端丢消息
+<strong>解决</strong>：MQ重试 + 客户端ACK + 对账补偿</p>]]></description></item><item><title>统计系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%BB%9F%E8%AE%A1%E7%B3%BB%E7%BB%9F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%BB%9F%E8%AE%A1%E7%B3%BB%E7%BB%9F/</guid><description><![CDATA[<h1 id="统计系统">统计系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：统计系统通过埋点采集数据，通过实时链路（Flink/Kafka）提供秒级指标，通过离线链路（Hive/Spark）提供T+1精确报表，通过数据仓库分层实现数据治理。</p>
+</blockquote>
+<hr>
+<h2 id="统计系统通过埋点采集实时离线双链路计算支撑业务指标和运营决策">统计系统通过埋点采集、实时+离线双链路计算，支撑业务指标和运营决策</h2>
+<h3 id="数据采集埋点设计">数据采集：埋点设计</h3>
+<table>
+  <thead>
+      <tr>
+          <th>埋点类型</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>页面曝光</td>
+          <td>用户进入页面</td>
+          <td>page_view</td>
+      </tr>
+      <tr>
+          <td>点击事件</td>
+          <td>用户点击按钮</td>
+          <td>button_click</td>
+      </tr>
+      <tr>
+          <td>业务事件</td>
+          <td>核心业务流程</td>
+          <td>order_create, payment_success</td>
+      </tr>
+      <tr>
+          <td>性能事件</td>
+          <td>接口耗时、错误</td>
+          <td>api_latency, error_log</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">埋点数据格式：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">  &#34;event&#34;: &#34;order_create&#34;,
+</span></span><span class="line"><span class="cl">  &#34;timestamp&#34;: 1714400000000,
+</span></span><span class="line"><span class="cl">  &#34;user_id&#34;: &#34;10001&#34;,
+</span></span><span class="line"><span class="cl">  &#34;device_id&#34;: &#34;abc123&#34;,
+</span></span><span class="line"><span class="cl">  &#34;platform&#34;: &#34;iOS&#34;,
+</span></span><span class="line"><span class="cl">  &#34;params&#34;: {
+</span></span><span class="line"><span class="cl">    &#34;order_id&#34;: &#34;O2023001&#34;,
+</span></span><span class="line"><span class="cl">    &#34;amount&#34;: 199.00,
+</span></span><span class="line"><span class="cl">    &#34;category&#34;: &#34;electronics&#34;
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">}</span></span></code></pre></div></div>
+<h3 id="实时-vs-离线计算">实时 vs 离线计算</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>实时计算</th>
+          <th>离线计算</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>延迟</td>
+          <td>秒级~分钟级</td>
+          <td>小时级~天级</td>
+      </tr>
+      <tr>
+          <td>准确性</td>
+          <td>近似（可能丢数据）</td>
+          <td>精确（全量数据）</td>
+      </tr>
+      <tr>
+          <td>技术栈</td>
+          <td>Flink + Kafka</td>
+          <td>Spark + Hive</td>
+      </tr>
+      <tr>
+          <td>用途</td>
+          <td>实时监控、大屏</td>
+          <td>财务报表、对账</td>
+      </tr>
+      <tr>
+          <td>存储</td>
+          <td>Redis / Druid</td>
+          <td>Hive / ClickHouse</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="数据仓库分层">数据仓库分层</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">ODS（原始数据层）→ 埋点原始日志
+</span></span><span class="line"><span class="cl">  ↓ ETL清洗
+</span></span><span class="line"><span class="cl">DWD（明细数据层）→ 清洗后的业务明细
+</span></span><span class="line"><span class="cl">  ↓ 汇总
+</span></span><span class="line"><span class="cl">DWS（汇总数据层）→ 按维度汇总（日/周/月）
+</span></span><span class="line"><span class="cl">  ↓ 加工
+</span></span><span class="line"><span class="cl">ADS（应用数据层）→ 面向业务场景的报表数据</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1实时与离线数据不一致">问题1：实时与离线数据不一致</h3>
+<p><strong>根因</strong>：实时链路丢数据或计算逻辑差异
+<strong>解决</strong>：以离线为准，实时供参考，建立差异监控</p>]]></description></item><item><title>虚拟商城</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E8%99%9A%E6%8B%9F%E5%95%86%E5%9F%8E/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E8%99%9A%E6%8B%9F%E5%95%86%E5%9F%8E/</guid><description><![CDATA[<h1 id="虚拟商城">虚拟商城</h1>
+<blockquote>
+<p><strong>核心结论</strong>：虚拟商城与实物电商的核心差异在于无需物流履约，库存为虚拟数字，重点在于商品定价策略、库存预扣与发放、以及虚拟道具的账户化管理。</p>
+</blockquote>
+<hr>
+<h2 id="虚拟商城通过虚拟库存管理和即时发放机制实现商品购买到账户到账的闭环">虚拟商城通过虚拟库存管理和即时发放机制，实现商品购买到账户到账的闭环</h2>
+<h3 id="核心模块">核心模块</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模块</th>
+          <th>职责</th>
+          <th>特点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>商品管理</td>
+          <td>虚拟商品上架、定价、分类</td>
+          <td>无SKU，无物流属性</td>
+      </tr>
+      <tr>
+          <td>库存管理</td>
+          <td>虚拟库存预扣、发放、回滚</td>
+          <td>数字增减，无限可超卖</td>
+      </tr>
+      <tr>
+          <td>订单系统</td>
+          <td>下单、支付、发货（到账）</td>
+          <td>即时到账</td>
+      </tr>
+      <tr>
+          <td>账户系统</td>
+          <td>虚拟资产（道具、皮肤、会员）</td>
+          <td>账户内管理</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="库存管理设计">库存管理设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">下单流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 用户下单 → 预扣库存
+</span></span><span class="line"><span class="cl">   UPDATE goods SET stock = stock - 1 WHERE id = ? AND stock &gt; 0
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">2. 用户支付 → 确认扣减（已预扣，无需再扣）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 支付超时 → 回滚库存
+</span></span><span class="line"><span class="cl">   UPDATE goods SET stock = stock + 1 WHERE id = ?
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">虚拟商品特点：
+</span></span><span class="line"><span class="cl">- 可超卖（如限量商品可设置实际库存+候补）
+</span></span><span class="line"><span class="cl">- 发放即到账，无物流
+</span></span><span class="line"><span class="cl">- 支持组合包（Bundle）</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1高并发下库存超卖">问题1：高并发下库存超卖</h3>
+<p><strong>根因</strong>：并发扣减库存导致负数
+<strong>解决</strong>：数据库乐观锁（版本号）、Redis预扣、队列串行化</p>]]></description></item><item><title>用户系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%94%A8%E6%88%B7%E7%B3%BB%E7%BB%9F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%94%A8%E6%88%B7%E7%B3%BB%E7%BB%9F/</guid><description><![CDATA[<h1 id="用户系统">用户系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：用户系统是业务平台的基础，核心能力包括身份认证（注册登录）、权限管控、用户画像三层，通过OAuth2/OpenID标准化第三方登录，通过RBAC模型管理权限，通过标签体系构建画像。</p>
+</blockquote>
+<hr>
+<h2 id="用户系统通过身份认证权限管控用户画像三层构建用户管理能力">用户系统通过身份认证、权限管控、用户画像三层构建用户管理能力</h2>
+<h3 id="注册登录设计">注册登录设计</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方式</th>
+          <th>实现</th>
+          <th>安全考量</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>手机号+验证码</td>
+          <td>短信服务商 + 验证码缓存</td>
+          <td>防刷（图形验证码、频次限制）</td>
+      </tr>
+      <tr>
+          <td>用户名+密码</td>
+          <td>密码哈希（BCrypt）+ Salt</td>
+          <td>防暴力破解、密码强度要求</td>
+      </tr>
+      <tr>
+          <td>第三方登录</td>
+          <td>OAuth2授权码模式</td>
+          <td>Token安全存储、绑定手机</td>
+      </tr>
+      <tr>
+          <td>一键登录</td>
+          <td>运营商网关取号</td>
+          <td>本机号码校验</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Token机制：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">登录成功 → 生成Access Token（短效，如2小时）+ Refresh Token（长效，如30天）
+</span></span><span class="line"><span class="cl">   ↓
+</span></span><span class="line"><span class="cl">Access Token过期 → 用Refresh Token换取新的Access Token
+</span></span><span class="line"><span class="cl">   ↓
+</span></span><span class="line"><span class="cl">Refresh Token过期 → 重新登录</span></span></code></pre></div></div>
+<h3 id="权限模型rbac">权限模型：RBAC</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">RBAC（Role-Based Access Control）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">用户 ←→ 角色 ←→ 权限
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">User: user_001
+</span></span><span class="line"><span class="cl">Role: admin, editor
+</span></span><span class="line"><span class="cl">Permission: user:create, user:delete, article:publish
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">判断权限：用户是否有角色，角色是否包含权限</span></span></code></pre></div></div>
+<h3 id="用户画像">用户画像</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>标签示例</th>
+          <th>用途</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>基础属性</td>
+          <td>性别、年龄、地域</td>
+          <td>基础分析</td>
+      </tr>
+      <tr>
+          <td>行为属性</td>
+          <td>活跃时段、消费偏好</td>
+          <td>精准推荐</td>
+      </tr>
+      <tr>
+          <td>价值属性</td>
+          <td>RFM模型、LTV</td>
+          <td>分层运营</td>
+      </tr>
+      <tr>
+          <td>风险属性</td>
+          <td>黑名单、异常行为</td>
+          <td>风控</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1token被盗用">问题1：Token被盗用</h3>
+<p><strong>根因</strong>：Token存储不安全或传输被截获
+<strong>解决</strong>：HTTPS、Token绑定设备指纹、异常登录检测</p>]]></description></item><item><title>游戏对接系统</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%B8%B8%E6%88%8F%E6%8E%A5%E5%85%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%B8%B8%E6%88%8F%E6%8E%A5%E5%85%A5/</guid><description><![CDATA[<h1 id="游戏对接系统">游戏对接系统</h1>
+<blockquote>
+<p><strong>核心结论</strong>：游戏对接系统的核心是与第三方游戏服务商的协议对接，通过SDK集成实现用户互通，通过回调机制同步订单和角色数据，通过签名验签保障通信安全。</p>
+</blockquote>
+<hr>
+<h2 id="游戏对接通过sdk集成回调同步签名验签实现平台与游戏的数据互通">游戏对接通过SDK集成、回调同步、签名验签实现平台与游戏的数据互通</h2>
+<h3 id="对接模式">对接模式</h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>说明</th>
+          <th>适用场景</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>SDK集成</td>
+          <td>平台提供SDK，游戏方嵌入</td>
+          <td>强绑定，深度集成</td>
+      </tr>
+      <tr>
+          <td>H5对接</td>
+          <td>游戏以H5形式接入</td>
+          <td>轻量，快速上线</td>
+      </tr>
+      <tr>
+          <td>独立APP</td>
+          <td>游戏独立包，账号打通</td>
+          <td>大型游戏</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="核心接口">核心接口</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 登录验证
+</span></span><span class="line"><span class="cl">   游戏 → 平台：token校验 → 返回用户信息
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 支付下单
+</span></span><span class="line"><span class="cl">   游戏 → 平台：创建订单 → 返回平台订单号
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 支付回调
+</span></span><span class="line"><span class="cl">   平台 → 游戏：支付结果回调（带签名）
+</span></span><span class="line"><span class="cl">   游戏验签 → 发放道具
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">4. 角色上报
+</span></span><span class="line"><span class="cl">   游戏 → 平台：角色等级、战力等数据同步</span></span></code></pre></div></div>
+<h3 id="安全设计">安全设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">签名机制：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">参数排序 → 拼接字符串 → 加Secret → MD5/SHA256
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">回调防重：
+</span></span><span class="line"><span class="cl">  平台订单号唯一性校验，已处理回调直接返回成功
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">IP白名单：
+</span></span><span class="line"><span class="cl">  回调接口限制平台出口IP</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1回调丢失导致未到账">问题1：回调丢失导致未到账</h3>
+<p><strong>根因</strong>：网络问题或游戏方服务不可用
+<strong>解决</strong>：平台支持主动查询接口，游戏方定时对账</p>]]></description></item><item><title>支付业务</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%94%AF%E4%BB%98%E4%B8%9A%E5%8A%A1/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%94%AF%E4%BB%98%E4%B8%9A%E5%8A%A1/</guid><description><![CDATA[<h1 id="支付业务">支付业务</h1>
+<blockquote>
+<p><strong>核心结论</strong>：支付业务的核心挑战是资金安全和一致性，通过唯一订单号实现幂等，通过状态机管理支付生命周期，通过定时对账发现并修正差异，通过风控系统拦截可疑交易。</p>
+</blockquote>
+<hr>
+<h2 id="支付系统通过状态机幂等设计和日终对账保障资金安全和数据一致性">支付系统通过状态机、幂等设计和日终对账，保障资金安全和数据一致性</h2>
+<h3 id="支付核心流程">支付核心流程</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">支付状态机：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">INIT → 创建支付单
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">PENDING → 用户确认支付，调起渠道
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">PROCESSING → 渠道处理中
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">SUCCESS / FAIL / CLOSED
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">状态不可逆：
+</span></span><span class="line"><span class="cl">  SUCCESS不可变为FAIL
+</span></span><span class="line"><span class="cl">  需退款走独立退款流程</span></span></code></pre></div></div>
+<h3 id="幂等设计">幂等设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">支付请求：
+</span></span><span class="line"><span class="cl">  业务订单号 + 支付方式 + 金额 → 生成唯一支付流水号
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">重复请求处理：
+</span></span><span class="line"><span class="cl">  - 同一流水号重复请求 → 返回原结果
+</span></span><span class="line"><span class="cl">  - 不同流水号但同一订单 → 拒绝（防重复支付）
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">实现：
+</span></span><span class="line"><span class="cl">  数据库唯一索引（支付流水号）
+</span></span><span class="line"><span class="cl">  或 Redis SETNX 分布式锁</span></span></code></pre></div></div>
+<h3 id="对账机制">对账机制</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">日终对账流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 下载渠道对账单（微信/支付宝/银联）
+</span></span><span class="line"><span class="cl">2. 我方支付记录与渠道记录逐笔核对
+</span></span><span class="line"><span class="cl">   - 金额一致 + 状态一致 → 正常
+</span></span><span class="line"><span class="cl">   - 我方有，渠道无 → 渠道漏单，人工处理
+</span></span><span class="line"><span class="cl">   - 渠道有，我方无 → 我方漏单，补单
+</span></span><span class="line"><span class="cl">   - 金额不一致 → 异常，人工处理
+</span></span><span class="line"><span class="cl">3. 生成差异报表，人工确认
+</span></span><span class="line"><span class="cl">4. 差异处理（补单/退款/调账）</span></span></code></pre></div></div>
+<h3 id="风控策略">风控策略</h3>
+<table>
+  <thead>
+      <tr>
+          <th>策略</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>频次控制</td>
+          <td>同一账户短时间多次支付</td>
+      </tr>
+      <tr>
+          <td>金额限制</td>
+          <td>单笔/单日限额</td>
+      </tr>
+      <tr>
+          <td>黑名单</td>
+          <td>已知风险账户/设备/IP</td>
+      </tr>
+      <tr>
+          <td>行为分析</td>
+          <td>异常登录地、异常设备</td>
+      </tr>
+      <tr>
+          <td>3D验证</td>
+          <td>大额支付需额外验证</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1支付成功但订单状态未更新">问题1：支付成功但订单状态未更新</h3>
+<p><strong>根因</strong>：渠道回调失败或处理异常
+<strong>解决</strong>：主动轮询 + 对账兜底</p>]]></description></item></channel></rss>

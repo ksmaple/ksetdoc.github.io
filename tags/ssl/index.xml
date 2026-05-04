@@ -1,0 +1,113 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Ssl - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/ssl/</link><description>Ssl - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/ssl/" rel="self" type="application/rss+xml"/><item><title>HTTPS与TLS</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/https%E4%B8%8Etls/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/https%E4%B8%8Etls/</guid><description><![CDATA[<h1 id="https与tls">HTTPS与TLS</h1>
+<blockquote>
+<p><strong>核心结论</strong>：HTTPS通过TLS协议在HTTP之上提供加密、认证和完整性保护，TLS握手协商对称密钥，证书链验证服务端身份，是当前Web安全的基石。</p>
+</blockquote>
+<hr>
+<h2 id="https通过tls协议实现加密传输身份认证和数据完整性tls握手是性能和安全的关键">HTTPS通过TLS协议实现加密传输、身份认证和数据完整性，TLS握手是性能和安全的关键</h2>
+<h3 id="tlsssl演进从ssl到tls-13">TLS/SSL演进：从SSL到TLS 1.3</h3>
+<table>
+  <thead>
+      <tr>
+          <th>版本</th>
+          <th>年份</th>
+          <th>关键变化</th>
+          <th>现状</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>SSL 2.0</td>
+          <td>1995</td>
+          <td>首个公开发布版本</td>
+          <td>已废弃（严重安全漏洞）</td>
+      </tr>
+      <tr>
+          <td>SSL 3.0</td>
+          <td>1996</td>
+          <td>广泛应用</td>
+          <td>已废弃（POODLE攻击）</td>
+      </tr>
+      <tr>
+          <td>TLS 1.0</td>
+          <td>1999</td>
+          <td>标准化，与SSL 3.0几乎相同</td>
+          <td>已废弃</td>
+      </tr>
+      <tr>
+          <td>TLS 1.1</td>
+          <td>2006</td>
+          <td>引入显式IV防CBC攻击</td>
+          <td>已废弃</td>
+      </tr>
+      <tr>
+          <td>TLS 1.2</td>
+          <td>2008</td>
+          <td>支持AEAD、SHA-256、扩展</td>
+          <td>当前主流</td>
+      </tr>
+      <tr>
+          <td>TLS 1.3</td>
+          <td>2018</td>
+          <td>简化握手、删除弱算法、0-RTT</td>
+          <td>推荐部署</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="tls-12-握手2-rtt建立安全连接">TLS 1.2 握手：2-RTT建立安全连接</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">客户端                                               服务端
+</span></span><span class="line"><span class="cl">  |        ClientHello (支持的加密套件、随机数)        |
+</span></span><span class="line"><span class="cl">  |  ──────────────────────────────────────────────&gt;  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  ServerHello (选定加密套件、随机数)                 |
+</span></span><span class="line"><span class="cl">  |  Certificate (服务端证书链)                         |
+</span></span><span class="line"><span class="cl">  |  [ServerKeyExchange] (DHE/ECDHE参数)              |
+</span></span><span class="line"><span class="cl">  |  ServerHelloDone                                   |
+</span></span><span class="line"><span class="cl">  |  &lt;──────────────────────────────────────────────  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  ClientKeyExchange (预主密钥，用公钥加密)            |
+</span></span><span class="line"><span class="cl">  |  [ChangeCipherSpec]                                |
+</span></span><span class="line"><span class="cl">  |  Finished (验证握手完整性)                          |
+</span></span><span class="line"><span class="cl">  |  ──────────────────────────────────────────────&gt;  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  [ChangeCipherSpec]                                |
+</span></span><span class="line"><span class="cl">  |  Finished                                          |
+</span></span><span class="line"><span class="cl">  |  &lt;──────────────────────────────────────────────  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  ↓                                                   ↓
+</span></span><span class="line"><span class="cl">应用数据传输（对称加密）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">总耗时：2-RTT（ClientHello → ServerHello → Finished）</span></span></code></pre></div></div>
+<h3 id="tls-13-握手1-rtt首次-0-rtt重连">TLS 1.3 握手：1-RTT（首次）/ 0-RTT（重连）</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">首次连接（1-RTT）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">客户端                                               服务端
+</span></span><span class="line"><span class="cl">  |  ClientHello (密钥共享 + 支持的组)                 |
+</span></span><span class="line"><span class="cl">  |  ──────────────────────────────────────────────&gt;  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  ServerHello (选定密钥共享)                         |
+</span></span><span class="line"><span class="cl">  |  {EncryptedExtensions} (加密传输)                  |
+</span></span><span class="line"><span class="cl">  |  {Certificate}                                     |
+</span></span><span class="line"><span class="cl">  |  {CertificateVerify}                               |
+</span></span><span class="line"><span class="cl">  |  {Finished}                                        |
+</span></span><span class="line"><span class="cl">  |  &lt;──────────────────────────────────────────────  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  |  {Finished}                                        |
+</span></span><span class="line"><span class="cl">  |  ──────────────────────────────────────────────&gt;  |
+</span></span><span class="line"><span class="cl">  |                                                   |
+</span></span><span class="line"><span class="cl">  ↓                                                   ↓
+</span></span><span class="line"><span class="cl">应用数据传输
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">重连（0-RTT）：
+</span></span><span class="line"><span class="cl">  客户端发送早期数据（Early Data），使用上一次会话的PSK
+</span></span><span class="line"><span class="cl">  → 无需等待服务端响应即可发送应用数据</span></span></code></pre></div></div>
+<p><strong>TLS 1.3 的简化</strong>：</p>]]></description></item></channel></rss>

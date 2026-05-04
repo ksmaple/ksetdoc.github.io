@@ -1,0 +1,62 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>读写分离 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/</link><description>读写分离 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/" rel="self" type="application/rss+xml"/><item><title>MySQL瓶颈与扩展</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E6%89%A9%E5%B1%95/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql%E6%89%A9%E5%B1%95/</guid><description><![CDATA[<h1 id="mysql瓶颈与扩展">MySQL瓶颈与扩展</h1>
+<blockquote>
+<p><strong>核心结论</strong>：MySQL单库的瓶颈在CPU、内存、磁盘IO和连接数四个维度，扩展路径从读写分离到分库分表逐步递进，每种方案都在一致性、复杂度和成本之间做权衡。</p>
+</blockquote>
+<hr>
+<h2 id="mysql单库存在cpu内存磁盘连接数四重瓶颈扩展路径为读写分离垂直拆分水平分表分库分表">MySQL单库存在CPU、内存、磁盘、连接数四重瓶颈，扩展路径为读写分离→垂直拆分→水平分表→分库分表</h2>
+<h3 id="单库瓶颈分析">单库瓶颈分析</h3>
+<table>
+  <thead>
+      <tr>
+          <th>瓶颈</th>
+          <th>表现</th>
+          <th>临时解决</th>
+          <th>根本解决</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>CPU</td>
+          <td>慢查询多、计算密集</td>
+          <td>优化SQL、加缓存</td>
+          <td>读写分离、分库</td>
+      </tr>
+      <tr>
+          <td>内存</td>
+          <td>缓冲池不足、频繁换页</td>
+          <td>增大内存</td>
+          <td>分库分散压力</td>
+      </tr>
+      <tr>
+          <td>磁盘IO</td>
+          <td>iowait高、磁盘满</td>
+          <td>SSD、加索引</td>
+          <td>分表、归档</td>
+      </tr>
+      <tr>
+          <td>连接数</td>
+          <td>Too many connections</td>
+          <td>增大max_connections</td>
+          <td>连接池、分库</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="读写分离一主多从架构">读写分离：一主多从架构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">写请求 → 主库（Master）→ 异步复制 → 从库（Slave）
+</span></span><span class="line"><span class="cl">读请求 → 从库1 / 从库2 / 从库N
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">复制方式：
+</span></span><span class="line"><span class="cl">  - 异步复制：主库写完即返回，延迟小但可能丢数据
+</span></span><span class="line"><span class="cl">  - 半同步复制：至少一个从库确认收到binlog才返回
+</span></span><span class="line"><span class="cl">  - 组复制（MGR）：Paxos协议，强一致性
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">延迟问题：
+</span></span><span class="line"><span class="cl">  - 主从延迟导致读取旧数据
+</span></span><span class="line"><span class="cl">  - 解决方案：强制走主库（关键读）、延迟阈值告警</span></span></code></pre></div></div>
+<h3 id="分库分表水平与垂直拆分">分库分表：水平与垂直拆分</h3>
+<p><strong>垂直拆分</strong>：按业务模块拆分</p>]]></description></item></channel></rss>

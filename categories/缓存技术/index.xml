@@ -1,0 +1,614 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>缓存技术 - 分类 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/categories/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/</link><description>缓存技术 - 分类 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/categories/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/" rel="self" type="application/rss+xml"/><item><title>Redis持久化与高可用</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%8C%81%E4%B9%85%E5%8C%96%E4%B8%8E%E9%AB%98%E5%8F%AF%E7%94%A8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%8C%81%E4%B9%85%E5%8C%96%E4%B8%8E%E9%AB%98%E5%8F%AF%E7%94%A8/</guid><description><![CDATA[<h1 id="redis持久化与高可用">Redis持久化与高可用</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Redis通过RDB快照和AOF日志两种持久化方式保障数据安全，RDB适合全量备份和快速恢复，AOF适合实时持久化，生产环境通常同时使用；高可用通过主从复制、哨兵和集群三种架构逐级递进。</p>
+</blockquote>
+<hr>
+<h2 id="redis通过rdb快照aof日志实现持久化通过主从复制哨兵集群实现高可用扩展">Redis通过RDB快照+AOF日志实现持久化，通过主从复制+哨兵+集群实现高可用扩展</h2>
+<h3 id="持久化rdb与aof的权衡">持久化：RDB与AOF的权衡</h3>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>RDB</th>
+          <th>AOF</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>原理</td>
+          <td>定时快照，保存内存数据</td>
+          <td>记录每条写命令</td>
+      </tr>
+      <tr>
+          <td>文件大小</td>
+          <td>紧凑（二进制压缩）</td>
+          <td>较大（可重写压缩）</td>
+      </tr>
+      <tr>
+          <td>恢复速度</td>
+          <td>快（直接加载内存）</td>
+          <td>慢（重放命令）</td>
+      </tr>
+      <tr>
+          <td>数据安全</td>
+          <td>可能丢失最后一次快照</td>
+          <td>最多丢失1秒数据（每秒刷盘）</td>
+      </tr>
+      <tr>
+          <td>性能影响</td>
+          <td>快照时fork子进程，短暂阻塞</td>
+          <td>持续fsync开销</td>
+      </tr>
+      <tr>
+          <td>适用场景</td>
+          <td>全量备份、灾难恢复</td>
+          <td>实时持久化、误操作恢复</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">RDB触发条件（默认）：
+</span></span><span class="line"><span class="cl">- 900秒内至少1个key变化
+</span></span><span class="line"><span class="cl">- 300秒内至少10个key变化
+</span></span><span class="line"><span class="cl">- 60秒内至少10000个key变化
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">AOF刷盘策略：
+</span></span><span class="line"><span class="cl">- always：每条命令fsync（最安全，最慢）
+</span></span><span class="line"><span class="cl">- everysec：每秒fsync（默认，平衡）
+</span></span><span class="line"><span class="cl">- no：由OS决定（最快，最不安全）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">混合持久化（Redis 4.0+）：
+</span></span><span class="line"><span class="cl">- AOF文件包含RDB前缀 + 增量AOF命令
+</span></span><span class="line"><span class="cl">- 重写时先生成RDB，再追加后续命令
+</span></span><span class="line"><span class="cl">- 兼顾恢复速度和数据安全</span></span></code></pre></div></div>
+<h3 id="主从复制读写分离的基础">主从复制：读写分离的基础</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">主从复制流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 从节点发送 SYNC 命令
+</span></span><span class="line"><span class="cl">2. 主节点执行 BGSAVE，生成RDB文件
+</span></span><span class="line"><span class="cl">3. 主节点发送RDB文件给从节点
+</span></span><span class="line"><span class="cl">4. 从节点加载RDB，清空旧数据
+</span></span><span class="line"><span class="cl">5. 主节点将复制期间的写命令缓存到replication buffer
+</span></span><span class="line"><span class="cl">6. 发送buffer中的命令给从节点
+</span></span><span class="line"><span class="cl">7. 后续持续同步：主节点写命令异步发送给从节点
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">复制方式：
+</span></span><span class="line"><span class="cl">- 全量复制：初次同步或主从断开过久
+</span></span><span class="line"><span class="cl">- 部分复制（PSYNC 2.0+）：基于复制偏移量，只同步差异</span></span></code></pre></div></div>
+<h3 id="哨兵sentinel自动故障转移">哨兵（Sentinel）：自动故障转移</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Sentinel架构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">       ┌─────────┐
+</span></span><span class="line"><span class="cl">       │ Client  │
+</span></span><span class="line"><span class="cl">       └────┬────┘
+</span></span><span class="line"><span class="cl">            │ 连接Sentinel获取主节点地址
+</span></span><span class="line"><span class="cl">            ↓
+</span></span><span class="line"><span class="cl">    ┌───────┴───────┐
+</span></span><span class="line"><span class="cl">    │  Sentinel-1   │
+</span></span><span class="line"><span class="cl">    │  Sentinel-2   │  （至少3个，奇数个）
+</span></span><span class="line"><span class="cl">    │  Sentinel-3   │
+</span></span><span class="line"><span class="cl">    └───────┬───────┘
+</span></span><span class="line"><span class="cl">            │ 监控 + 自动故障转移
+</span></span><span class="line"><span class="cl">            ↓
+</span></span><span class="line"><span class="cl">    ┌───────┴───────┐
+</span></span><span class="line"><span class="cl">    │    Master     │  ← 主节点（写）
+</span></span><span class="line"><span class="cl">    └───────┬───────┘
+</span></span><span class="line"><span class="cl">            │ 复制
+</span></span><span class="line"><span class="cl">    ┌───────┴───────┐
+</span></span><span class="line"><span class="cl">    │   Slave-1     │  ← 从节点（读）
+</span></span><span class="line"><span class="cl">    │   Slave-2     │
+</span></span><span class="line"><span class="cl">    └───────────────┘
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Sentinel职责：
+</span></span><span class="line"><span class="cl">1. 监控：周期性检查主从节点健康
+</span></span><span class="line"><span class="cl">2. 通知：故障时通知管理员或其他应用
+</span></span><span class="line"><span class="cl">3. 自动故障转移：主节点宕机，选举从节点为新主
+</span></span><span class="line"><span class="cl">4. 配置提供者：客户端向Sentinel查询当前主节点地址</span></span></code></pre></div></div>
+<h3 id="集群cluster水平扩展">集群（Cluster）：水平扩展</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Redis Cluster架构：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">采用哈希槽（Hash Slot）分片，共16384个槽
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Master-A (0-5460)    Master-B (5461-10922)    Master-C (10923-16383)
+</span></span><span class="line"><span class="cl">    ↓                        ↓                         ↓
+</span></span><span class="line"><span class="cl"> Slave-A1                 Slave-B1                  Slave-C1
+</span></span><span class="line"><span class="cl"> Slave-A2                 Slave-B2                  Slave-C2
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Key路由：CRC16(key) % 16384 → 确定槽 → 确定节点
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Moved重定向：
+</span></span><span class="line"><span class="cl">  客户端请求Key到错误节点 → 返回MOVED slot ip:port
+</span></span><span class="line"><span class="cl">  客户端更新槽映射，重新请求</span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>架构</th>
+          <th>容量</th>
+          <th>可用性</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>缓存、可重建</td>
+          <td>单实例 + RDB</td>
+          <td>内存限制</td>
+          <td>低</td>
+      </tr>
+      <tr>
+          <td>读多写少</td>
+          <td>主从 + 哨兵</td>
+          <td>内存限制</td>
+          <td>高</td>
+      </tr>
+      <tr>
+          <td>大数据量</td>
+          <td>集群</td>
+          <td>线性扩展</td>
+          <td>高</td>
+      </tr>
+      <tr>
+          <td>跨机房</td>
+          <td>主从跨机房</td>
+          <td>内存限制</td>
+          <td>异地灾备</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1主从复制延迟导致数据不一致">问题1：主从复制延迟导致数据不一致</h3>
+<p><strong>根因</strong>：网络延迟、从节点处理慢
+<strong>解决</strong>：监控复制偏移量、强制读主库（关键读）、延迟阈值告警</p>]]></description></item><item><title>Redis核心数据结构</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</guid><description><![CDATA[<h1 id="redis核心数据结构">Redis核心数据结构</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Redis通过底层六种数据结构（SDS、双向链表、压缩列表、哈希表、跳表、整数数组）实现对外五种数据类型，每种类型针对特定场景优化，理解底层实现是选择正确数据结构和预估内存的关键。</p>
+</blockquote>
+<hr>
+<h2 id="redis对外提供五种数据类型底层通过六种内部数据结构实现每种类型针对特定场景优化">Redis对外提供五种数据类型，底层通过六种内部数据结构实现，每种类型针对特定场景优化</h2>
+<h3 id="string最基础的二进制安全字符串">String：最基础的二进制安全字符串</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">底层实现：SDS（Simple Dynamic String）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">struct sdshdr {
+</span></span><span class="line"><span class="cl">    int len;      // 已使用长度
+</span></span><span class="line"><span class="cl">    int free;     // 未使用长度
+</span></span><span class="line"><span class="cl">    char buf[];   // 字符数组
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">特点：
+</span></span><span class="line"><span class="cl">- 二进制安全（可存储图片、序列化对象）
+</span></span><span class="line"><span class="cl">- O(1)获取长度
+</span></span><span class="line"><span class="cl">- 预分配空间，减少扩容
+</span></span><span class="line"><span class="cl">- 最大512MB</span></span></code></pre></div></div>
+<p><strong>String的典型应用</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>命令</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>缓存对象</td>
+          <td>SET / GET</td>
+          <td>存储JSON/Protobuf序列化数据</td>
+      </tr>
+      <tr>
+          <td>计数器</td>
+          <td>INCR / DECR</td>
+          <td>原子加减，适合限流统计</td>
+      </tr>
+      <tr>
+          <td>分布式锁</td>
+          <td>SETNX + EXPIRE</td>
+          <td>原子获取锁</td>
+      </tr>
+      <tr>
+          <td>会话存储</td>
+          <td>SETEX</td>
+          <td>带过期时间的缓存</td>
+      </tr>
+      <tr>
+          <td>共享配置</td>
+          <td>GET / SET</td>
+          <td>全局配置中心</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 计数器应用</span>
+</span></span><span class="line"><span class="cl">INCR page:view:1001        <span class="c1"># 文章1001的浏览量+1</span>
+</span></span><span class="line"><span class="cl">INCRBY page:view:1001 <span class="m">10</span>   <span class="c1"># 批量增加</span>
+</span></span><span class="line"><span class="cl">GET page:view:1001
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 分布式锁</span>
+</span></span><span class="line"><span class="cl">SET lock:order:123 NX EX <span class="m">30</span>  <span class="c1"># 原子设置锁，30秒过期</span></span></span></code></pre></div></div>
+<h3 id="hash适合存储对象的键值对集合">Hash：适合存储对象的键值对集合</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">底层实现：
+</span></span><span class="line"><span class="cl">- 数据少：ziplist（压缩列表）
+</span></span><span class="line"><span class="cl">- 数据多：hashtable（哈希表）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ziplist条件（默认）：
+</span></span><span class="line"><span class="cl">  field-value数量 &lt; 512，且每个值长度 &lt; 64字节</span></span></code></pre></div></div>
+<p><strong>Hash vs String存储对象</strong>：</p>]]></description></item><item><title>本地缓存方案</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98/</guid><description><![CDATA[<h1 id="本地缓存方案">本地缓存方案</h1>
+<blockquote>
+<p><strong>核心结论</strong>：本地缓存通过避免网络IO和序列化开销提供纳秒级访问速度，Caffeine凭借W-TinyLFU算法和异步加载机制成为Java本地缓存的首选，与Redis配合使用形成多级缓存架构。</p>
+</blockquote>
+<hr>
+<h2 id="本地缓存通过避免网络开销提供极致性能caffeine基于w-tinylfu算法在命中率上领先与redis配合形成多级缓存">本地缓存通过避免网络开销提供极致性能，Caffeine基于W-TinyLFU算法在命中率上领先，与Redis配合形成多级缓存</h2>
+<h3 id="caffeine高性能本地缓存">Caffeine：高性能本地缓存</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Caffeine基本用法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">LoadingCache</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="n">userCache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Caffeine</span><span class="p">.</span><span class="na">newBuilder</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">maximumSize</span><span class="p">(</span><span class="n">10000</span><span class="p">)</span><span class="w">                          </span><span class="c1">// 最大条目数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">expireAfterWrite</span><span class="p">(</span><span class="n">10</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">MINUTES</span><span class="p">)</span><span class="w">      </span><span class="c1">// 写入后10分钟过期</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">refreshAfterWrite</span><span class="p">(</span><span class="n">1</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">MINUTES</span><span class="p">)</span><span class="w">      </span><span class="c1">// 1分钟后异步刷新</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">recordStats</span><span class="p">()</span><span class="w">                                </span><span class="c1">// 开启统计</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">loadUserFromDB</span><span class="p">(</span><span class="n">key</span><span class="p">));</span><span class="w">          </span><span class="c1">// 自动加载</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">userCache</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">&#34;user:1001&#34;</span><span class="p">);</span><span class="w">  </span><span class="o">//</span><span class="w"> </span><span class="n">存在则返回</span><span class="err">，</span><span class="n">不存在则自动加载</span></span></span></code></pre></div></div>
+<p><strong>Caffeine核心特性</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>W-TinyLFU淘汰策略</td>
+          <td>比LRU更高的命中率，适应访问频率变化</td>
+      </tr>
+      <tr>
+          <td>异步加载</td>
+          <td>缓存未命中时异步加载，不阻塞主线程</td>
+      </tr>
+      <tr>
+          <td>自动刷新</td>
+          <td>后台线程异步刷新过期缓存</td>
+      </tr>
+      <tr>
+          <td>弱引用支持</td>
+          <td>允许Key/Value被GC回收</td>
+      </tr>
+      <tr>
+          <td>事件监听</td>
+          <td>移除、过期事件回调</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>缓存淘汰策略对比</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>策略</th>
+          <th>原理</th>
+          <th>特点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>LRU</td>
+          <td>最近最少使用</td>
+          <td>实现简单，但对突发流量敏感</td>
+      </tr>
+      <tr>
+          <td>LFU</td>
+          <td>最少使用频率</td>
+          <td>历史频率高但不再访问的数据难以淘汰</td>
+      </tr>
+      <tr>
+          <td>W-TinyLFU</td>
+          <td>频率+时间窗口</td>
+          <td>兼顾历史频率和近期访问，自适应</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="guava-cachecaffeine的前身">Guava Cache：Caffeine的前身</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Guava Cache用法（与Caffeine类似）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">LoadingCache</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">User</span><span class="o">&gt;</span><span class="w"> </span><span class="n">cache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CacheBuilder</span><span class="p">.</span><span class="na">newBuilder</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">maximumSize</span><span class="p">(</span><span class="n">1000</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">expireAfterWrite</span><span class="p">(</span><span class="n">10</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">MINUTES</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">CacheLoader</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">User</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">loadUserFromDB</span><span class="p">(</span><span class="n">key</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">});</span></span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>维度</th>
+          <th>Guava Cache</th>
+          <th>Caffeine</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>维护状态</td>
+          <td>停止新特性开发</td>
+          <td>活跃维护</td>
+      </tr>
+      <tr>
+          <td>性能</td>
+          <td>好</td>
+          <td>更好（6倍吞吐）</td>
+      </tr>
+      <tr>
+          <td>淘汰算法</td>
+          <td>LRU</td>
+          <td>W-TinyLFU</td>
+      </tr>
+      <tr>
+          <td>异步支持</td>
+          <td>有限</td>
+          <td>完善</td>
+      </tr>
+      <tr>
+          <td>推荐度</td>
+          <td>遗留项目</td>
+          <td>新项目首选</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="多级缓存架构">多级缓存架构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">请求 → L1本地缓存（Caffeine）→ hit → 返回（~纳秒级）
+</span></span><span class="line"><span class="cl">              ↓ miss
+</span></span><span class="line"><span class="cl">        L2分布式缓存（Redis）→ hit → 写L1 → 返回（~微秒级）
+</span></span><span class="line"><span class="cl">              ↓ miss
+</span></span><span class="line"><span class="cl">        DB → 写L2 → 写L1 → 返回（~毫秒级）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">一致性保障：
+</span></span><span class="line"><span class="cl">  - 写操作：先写DB，删Redis，广播通知各节点删本地缓存
+</span></span><span class="line"><span class="cl">  - 本地缓存TTL设置短于Redis（如Redis 10分钟，本地2分钟）</span></span></code></pre></div></div>
+<hr>
+<h2 id="实际应用中的决策与权衡">实际应用中的决策与权衡</h2>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>方案</th>
+          <th>原因</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>单节点应用</td>
+          <td>Caffeine</td>
+          <td>简单高效</td>
+      </tr>
+      <tr>
+          <td>微服务多节点</td>
+          <td>Caffeine + Redis</td>
+          <td>本地+分布式结合</td>
+      </tr>
+      <tr>
+          <td>需要持久化</td>
+          <td>Ehcache（磁盘缓存）</td>
+          <td>重启后数据不丢失</td>
+      </tr>
+      <tr>
+          <td>大对象缓存</td>
+          <td>软引用/弱引用</td>
+          <td>内存不足时自动回收</td>
+      </tr>
+      <tr>
+          <td>Spring生态</td>
+          <td>@Cacheable + Caffeine/Redis</td>
+          <td>注解驱动，解耦</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1本地缓存多节点不一致">问题1：本地缓存多节点不一致</h3>
+<p><strong>根因</strong>：每个节点独立管理缓存，更新后其他节点未感知
+<strong>解决</strong>：Redis Pub/Sub广播刷新、本地缓存设置短TTL、接受最终一致性</p>]]></description></item><item><title>缓存设计模式</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/%E7%BC%93%E5%AD%98%E6%A8%A1%E5%BC%8F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/%E7%BC%93%E5%AD%98%E6%A8%A1%E5%BC%8F/</guid><description><![CDATA[<h1 id="缓存设计模式">缓存设计模式</h1>
+<blockquote>
+<p><strong>核心结论</strong>：缓存面临的三大经典问题——穿透、击穿、雪崩——本质分别是查询不存在数据、热点Key过期、大量Key同时过期，解决方案分别从布隆过滤器、互斥锁、随机过期时间三个方向入手。</p>
+</blockquote>
+<hr>
+<h2 id="缓存穿透击穿雪崩是生产环境三大经典问题分别从过滤加锁分散三个维度解决">缓存穿透、击穿、雪崩是生产环境三大经典问题，分别从过滤、加锁、分散三个维度解决</h2>
+<h3 id="缓存穿透查询不存在的数据">缓存穿透：查询不存在的数据</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">场景：恶意请求大量不存在的Key
+</span></span><span class="line"><span class="cl">      请求Key → 缓存未命中 → DB查询（也不存在）→ 返回空
+</span></span><span class="line"><span class="cl">      重复上述过程，DB被大量无效查询压垮
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">解决方案：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 布隆过滤器（推荐）
+</span></span><span class="line"><span class="cl">   预热时将所有有效Key加入布隆过滤器
+</span></span><span class="line"><span class="cl">   查询时先查布隆过滤器：
+</span></span><span class="line"><span class="cl">     - 判断不存在 → 直接返回，不走缓存和DB
+</span></span><span class="line"><span class="cl">     - 判断可能存在 → 查缓存 → 查DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 缓存空值
+</span></span><span class="line"><span class="cl">   即使DB不存在，也在缓存中存空值（短过期时间，如30秒）
+</span></span><span class="line"><span class="cl">   SET key &#34;&#34; EX 30
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">   风险：大量不存在的Key会占用缓存内存</span></span></code></pre></div></div>
+<h3 id="缓存击穿热点key过期瞬间">缓存击穿：热点Key过期瞬间</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">场景：热点Key刚好过期，大量请求同时打到DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      Thread-1: Key过期 → 查DB → 重建缓存（耗时1秒）
+</span></span><span class="line"><span class="cl">      Thread-2: Key过期 → 查DB → 重建缓存
+</span></span><span class="line"><span class="cl">      Thread-3: Key过期 → 查DB → 重建缓存
+</span></span><span class="line"><span class="cl">      ... 大量线程同时查DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">解决方案：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 互斥锁（分布式锁）
+</span></span><span class="line"><span class="cl">   只允许一个线程重建缓存：
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">   public String getData(String key) {
+</span></span><span class="line"><span class="cl">       String value = redis.get(key);
+</span></span><span class="line"><span class="cl">       if (value == null) {
+</span></span><span class="line"><span class="cl">           // 获取分布式锁
+</span></span><span class="line"><span class="cl">           if (redis.setnx(&#34;lock:&#34; + key, &#34;1&#34;, 60)) {
+</span></span><span class="line"><span class="cl">               try {
+</span></span><span class="line"><span class="cl">                   value = db.query(key);
+</span></span><span class="line"><span class="cl">                   redis.setex(key, 3600, value);
+</span></span><span class="line"><span class="cl">               } finally {
+</span></span><span class="line"><span class="cl">                   redis.del(&#34;lock:&#34; + key);
+</span></span><span class="line"><span class="cl">               }
+</span></span><span class="line"><span class="cl">           } else {
+</span></span><span class="line"><span class="cl">               // 其他线程等待后重试
+</span></span><span class="line"><span class="cl">               Thread.sleep(100);
+</span></span><span class="line"><span class="cl">               return getData(key);
+</span></span><span class="line"><span class="cl">           }
+</span></span><span class="line"><span class="cl">       }
+</span></span><span class="line"><span class="cl">       return value;
+</span></span><span class="line"><span class="cl">   }
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 逻辑过期（永不过期）
+</span></span><span class="line"><span class="cl">   不设置TTL，在Value中存储逻辑过期时间
+</span></span><span class="line"><span class="cl">   发现过期后异步重建，旧数据继续返回
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">   数据结构：{ &#34;data&#34;: &#34;xxx&#34;, &#34;expireAt&#34;: 1714400000 }</span></span></code></pre></div></div>
+<h3 id="缓存雪崩大量key同时过期">缓存雪崩：大量Key同时过期</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">场景：缓存重启、批量导入、固定过期时间导致大量Key同时失效
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      10:00:00  key1过期, key2过期, key3过期 ... key10000过期
+</span></span><span class="line"><span class="cl">      大量请求同时打到DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">解决方案：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 随机过期时间
+</span></span><span class="line"><span class="cl">   基础过期时间 + 随机偏移：
+</span></span><span class="line"><span class="cl">   EXPIRE key (3600 + random(0, 300))
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">2. 多级缓存
+</span></span><span class="line"><span class="cl">   L1：本地缓存（Caffeine）→ L2：Redis → DB
+</span></span><span class="line"><span class="cl">   本地缓存兜底，防止全部穿透到DB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 高可用架构
+</span></span><span class="line"><span class="cl">   Redis集群 + 哨兵，避免单点故障</span></span></code></pre></div></div>
+<h3 id="缓存与数据库一致性">缓存与数据库一致性</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方案</th>
+          <th>写操作</th>
+          <th>读操作</th>
+          <th>一致性</th>
+          <th>复杂度</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Cache Aside</td>
+          <td>先更新DB，再删缓存</td>
+          <td>先读缓存，miss则读DB写缓存</td>
+          <td>最终一致</td>
+          <td>低</td>
+      </tr>
+      <tr>
+          <td>Read/Write Through</td>
+          <td>读写都走缓存，缓存同步更新DB</td>
+          <td>同左</td>
+          <td>强一致</td>
+          <td>中</td>
+      </tr>
+      <tr>
+          <td>Write Behind</td>
+          <td>只写缓存，异步批量写DB</td>
+          <td>读缓存</td>
+          <td>弱一致</td>
+          <td>高</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Cache Aside（最常用）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">读：
+</span></span><span class="line"><span class="cl">  读缓存 → hit → 返回
+</span></span><span class="line"><span class="cl">        → miss → 读DB → 写缓存 → 返回
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">写：
+</span></span><span class="line"><span class="cl">  写DB → 删缓存（不是更新缓存）
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  为什么删不是更新？
+</span></span><span class="line"><span class="cl">  - 并发写可能导致缓存脏数据
+</span></span><span class="line"><span class="cl">  - 删缓存简单，下次读自然重建
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">延迟双删（进一步优化）：
+</span></span><span class="line"><span class="cl">  1. 删缓存
+</span></span><span class="line"><span class="cl">  2. 更新DB
+</span></span><span class="line"><span class="cl">  3. 睡眠500ms（等待主从同步）
+</span></span><span class="line"><span class="cl">  4. 再次删缓存</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1先删缓存还是先更新db">问题1：先删缓存还是先更新DB？</h3>
+<p><strong>根因</strong>：并发时序导致数据不一致
+<strong>分析</strong>：</p>]]></description></item></channel></rss>

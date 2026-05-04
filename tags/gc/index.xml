@@ -1,25 +1,245 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>GC - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/gc/</link><description>GC - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Fri, 10 Apr 2026 16:30:00 +0800</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/gc/" rel="self" type="application/rss+xml"/><item><title>Java 核心特性详解：从基础到进阶</title><link>https://ksmaple.github.io/posts/java-features-guide/</link><pubDate>Fri, 10 Apr 2026 16:30:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-features-guide/</guid><description>&lt;p>Java 作为一门历经二十余年依然活跃的编程语言，其设计理念和技术特性值得每一位开发者深入理解。本文将从核心特性出发，详细解析 Java 的技术优势与实现原理。&lt;/p></description></item><item><title>JVM 垃圾回收机制详解</title><link>https://ksmaple.github.io/posts/java-jvm-gc/</link><pubDate>Thu, 09 Apr 2026 12:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-jvm-gc/</guid><description><![CDATA[<h2 id="什么是垃圾回收">什么是垃圾回收</h2>
-<p>垃圾回收（Garbage Collection，GC）是 Java 虚拟机自动管理内存的机制，负责回收不再使用的对象，释放内存空间。</p>
-<h2 id="jvm-内存结构">JVM 内存结构</h2>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Gc - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/gc/</link><description>Gc - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/gc/" rel="self" type="application/rss+xml"/><item><title>JVM与系统问题排查</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/jvm%E7%B3%BB%E7%BB%9F%E6%8E%92%E6%9F%A5/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/jvm%E7%B3%BB%E7%BB%9F%E6%8E%92%E6%9F%A5/</guid><description><![CDATA[<h1 id="jvm与系统问题排查">JVM与系统问题排查</h1>
+<blockquote>
+<p><strong>核心结论</strong>：JVM问题排查遵循&quot;监控发现→日志定位→工具分析→验证修复&quot;的流程，CPU高通常与热点代码或死循环有关，内存泄漏需通过堆dump分析对象引用链，GC问题需结合日志和可视化工具判断。</p>
+</blockquote>
+<hr>
+<h2 id="jvm问题排查遵循从监控到工具分析的系统化流程cpu内存gc是三大核心排查方向">JVM问题排查遵循从监控到工具分析的系统化流程，CPU、内存、GC是三大核心排查方向</h2>
+<h3 id="cpu高排查流程">CPU高排查流程</h3>
 <div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
     <div class="code-header language-">
         <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
         <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
         <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">JVM 内存区域
-</span></span><span class="line"><span class="cl">├── 堆（Heap）
-</span></span><span class="line"><span class="cl">│   ├── 年轻代（Young Generation）
-</span></span><span class="line"><span class="cl">│   │   ├── Eden 区
-</span></span><span class="line"><span class="cl">│   │   ├── Survivor From
-</span></span><span class="line"><span class="cl">│   │   └── Survivor To
-</span></span><span class="line"><span class="cl">│   └── 老年代（Old Generation）
-</span></span><span class="line"><span class="cl">├── 方法区（Method Area）/ 元空间（Metaspace）
-</span></span><span class="line"><span class="cl">├── 虚拟机栈（VM Stack）
-</span></span><span class="line"><span class="cl">├── 本地方法栈（Native Method Stack）
-</span></span><span class="line"><span class="cl">└── 程序计数器（Program Counter）</span></span></code></pre></div></div>
-<h2 id="判断对象是否可回收">判断对象是否可回收</h2>
-<h3 id="1-引用计数法">1. 引用计数法</h3>
-<p>每个对象维护一个引用计数器，引用为 0 时回收。</p>
-<p><strong>缺点</strong>：无法解决循环引用问题。</p>
-<h3 id="2-可达性分析算法java-采用">2. 可达性分析算法（Java 采用）</h3>
-<p>从 GC Roots 出发，不可达的对象可被回收。</p>]]></description></item></channel></rss>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 定位高CPU进程
+</span></span><span class="line"><span class="cl">   top / htop → 找到PID
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 定位高CPU线程
+</span></span><span class="line"><span class="cl">   top -Hp PID → 找到TID
+</span></span><span class="line"><span class="cl">   printf &#34;%x\n&#34; TID → 转换为十六进制
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 查看线程堆栈
+</span></span><span class="line"><span class="cl">   jstack PID | grep TID_HEX -A 30
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">4. 分析热点代码
+</span></span><span class="line"><span class="cl">   - 某方法执行时间长 → 优化算法
+</span></span><span class="line"><span class="cl">   - 频繁GC → 调整GC参数或内存
+</span></span><span class="line"><span class="cl">   - 死循环 → 修复代码</span></span></code></pre></div></div>
+<h3 id="内存泄漏排查">内存泄漏排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 发现内存增长
+</span></span><span class="line"><span class="cl">   jstat -gcutil PID 1000 → 观察老年代增长
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">2. 生成堆dump
+</span></span><span class="line"><span class="cl">   jmap -dump:format=b,file=heap.hprof PID
+</span></span><span class="line"><span class="cl">   或 -XX:+HeapDumpOnOutOfMemoryError
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 分析dump文件
+</span></span><span class="line"><span class="cl">   MAT（Eclipse Memory Analyzer）
+</span></span><span class="line"><span class="cl">   - Dominator Tree：查看大对象
+</span></span><span class="line"><span class="cl">   - Path to GC Roots：查看引用链
+</span></span><span class="line"><span class="cl">   - Leak Suspects：自动泄漏报告
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">常见泄漏源：
+</span></span><span class="line"><span class="cl">- 静态集合缓存未清理
+</span></span><span class="line"><span class="cl">- ThreadLocal未remove
+</span></span><span class="line"><span class="cl">- 未关闭的资源（流、连接）
+</span></span><span class="line"><span class="cl">- 监听器未注销</span></span></code></pre></div></div>
+<h3 id="gc问题排查">GC问题排查</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 启用GC日志
+</span></span><span class="line"><span class="cl">   -Xlog:gc*:file=gc.log:time:filecount=5,filesize=100m
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2. 分析GC日志
+</span></span><span class="line"><span class="cl">   - GCeasy（在线工具）
+</span></span><span class="line"><span class="cl">   - gceasy.io
+</span></span><span class="line"><span class="cl">   - GCViewer（本地工具）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">3. 关键指标
+</span></span><span class="line"><span class="cl">   - GC频率：多久一次
+</span></span><span class="line"><span class="cl">   - GC耗时：STW时间
+</span></span><span class="line"><span class="cl">   - 内存回收率：每次回收多少
+</span></span><span class="line"><span class="cl">   - 晋升速率：对象进入老年代速度
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">调优方向：
+</span></span><span class="line"><span class="cl">- 堆太小 → 频繁GC → 增大堆
+</span></span><span class="line"><span class="cl">- 年轻代太小 → 对象过早晋升 → 增大新生代
+</span></span><span class="line"><span class="cl">- 大对象多 → 分配失败 → 调整大对象阈值</span></span></code></pre></div></div>
+<hr>
+<h2 id="常用排查命令速查">常用排查命令速查</h2>
+<table>
+  <thead>
+      <tr>
+          <th>问题</th>
+          <th>命令</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>CPU高</td>
+          <td>top + jstack</td>
+          <td>定位线程和热点代码</td>
+      </tr>
+      <tr>
+          <td>内存占用</td>
+          <td>jmap -heap</td>
+          <td>堆内存分布</td>
+      </tr>
+      <tr>
+          <td>内存泄漏</td>
+          <td>jmap -dump + MAT</td>
+          <td>分析对象引用</td>
+      </tr>
+      <tr>
+          <td>GC情况</td>
+          <td>jstat -gcutil</td>
+          <td>实时GC统计</td>
+      </tr>
+      <tr>
+          <td>线程死锁</td>
+          <td>jstack -l</td>
+          <td>查看死锁信息</td>
+      </tr>
+      <tr>
+          <td>类加载</td>
+          <td>jcmd PID VM.classloader_stats</td>
+          <td>类加载器统计</td>
+      </tr>
+      <tr>
+          <td>系统调用</td>
+          <td>strace -p PID</td>
+          <td>跟踪系统调用</td>
+      </tr>
+      <tr>
+          <td>网络连接</td>
+          <td>netstat -anp / ss -s</td>
+          <td>连接状态统计</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e7%bc%96%e7%a8%8b%e8%af%ad%e8%a8%80/JVM%e5%8e%9f%e7%90%86.md" rel="">JVM原理</a></li>
+<li><a href="../../%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86/%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f/CPU%e8%b0%83%e5%ba%a6.md" rel="">CPU调度与上下文切换</a></li>
+<li><a href="./CAT%e7%9b%91%e6%8e%a7.md" rel="">CAT分布式监控</a></li>
+</ul>]]></description></item><item><title>JVM原理</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/jvm%E5%8E%9F%E7%90%86/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/jvm%E5%8E%9F%E7%90%86/</guid><description><![CDATA[<h1 id="jvm原理">JVM原理</h1>
+<blockquote>
+<p><strong>核心结论</strong>：JVM通过类加载机制将字节码转换为运行时结构，在堆/栈/方法区组成的内存模型中执行，GC自动管理堆内存生命周期，理解这三者的交互是JVM调优的基础。</p>
+</blockquote>
+<hr>
+<h2 id="jvm由类加载子系统运行时数据区执行引擎三部分组成共同完成字节码到机器码的执行">JVM由类加载子系统、运行时数据区、执行引擎三部分组成，共同完成字节码到机器码的执行</h2>
+<h3 id="类加载机制双亲委派模型保证核心类库安全">类加载机制：双亲委派模型保证核心类库安全</h3>
+<p>类加载过程分七个阶段，其中<strong>加载、验证、准备、解析、初始化</strong>五个阶段是核心：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">加载 → 验证 → 准备 → 解析 → 初始化 → 使用 → 卸载</span></span></code></pre></div></div>
+<p><strong>双亲委派模型</strong>：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">自定义类加载器
+</span></span><span class="line"><span class="cl">    ↑ 委派
+</span></span><span class="line"><span class="cl">应用类加载器 (AppClassLoader)    - classpath
+</span></span><span class="line"><span class="cl">    ↑ 委派
+</span></span><span class="line"><span class="cl">扩展类加载器 (ExtClassLoader)    - ext目录
+</span></span><span class="line"><span class="cl">    ↑ 委派
+</span></span><span class="line"><span class="cl">启动类加载器 (Bootstrap)         - &lt;JAVA_HOME&gt;/lib</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 打破双亲委派：自定义类加载器直接加载</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CustomClassLoader</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">ClassLoader</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">protected</span><span class="w"> </span><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">loadClass</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">resolve</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">ClassNotFoundException</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 先自己尝试加载，找不到再委派给父类</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">clazz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">findLoadedClass</span><span class="p">(</span><span class="n">name</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">clazz</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">clazz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">findClass</span><span class="p">(</span><span class="n">name</span><span class="p">);</span><span class="w">  </span><span class="c1">// 自定义加载逻辑</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">clazz</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">clazz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">super</span><span class="p">.</span><span class="na">loadClass</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">resolve</span><span class="p">);</span><span class="w">  </span><span class="c1">// 委派父类</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">clazz</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="运行时数据区堆存对象栈存帧方法区存元数据">运行时数据区：堆存对象、栈存帧、方法区存元数据</h3>
+<table>
+  <thead>
+      <tr>
+          <th>区域</th>
+          <th>线程共享</th>
+          <th>存储内容</th>
+          <th>溢出表现</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>堆（Heap）</td>
+          <td>是</td>
+          <td>对象实例、数组</td>
+          <td><code>OutOfMemoryError: Java heap space</code></td>
+      </tr>
+      <tr>
+          <td>虚拟机栈</td>
+          <td>否</td>
+          <td>栈帧（局部变量、操作数栈）</td>
+          <td><code>StackOverflowError</code></td>
+      </tr>
+      <tr>
+          <td>本地方法栈</td>
+          <td>否</td>
+          <td>Native方法执行</td>
+          <td>同虚拟机栈</td>
+      </tr>
+      <tr>
+          <td>程序计数器</td>
+          <td>否</td>
+          <td>当前执行字节码地址</td>
+          <td>不会溢出</td>
+      </tr>
+      <tr>
+          <td>方法区（Metaspace）</td>
+          <td>是</td>
+          <td>类元数据、常量池</td>
+          <td><code>OutOfMemoryError: Metaspace</code></td>
+      </tr>
+      <tr>
+          <td>直接内存</td>
+          <td>是</td>
+          <td>NIO的Buffer</td>
+          <td><code>OutOfMemoryError: Direct buffer memory</code></td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// 栈帧结构示意</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">methodA</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">10</span><span class="p">;</span><span class="w">              </span><span class="c1">// 局部变量表</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">methodB</span><span class="p">();</span><span class="w">               </span><span class="c1">// 操作数栈压入返回地址</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">methodB</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Object</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Object</span><span class="p">();</span><span class="w">  </span><span class="c1">// obj引用在栈，对象在堆</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="gc垃圾回收分代收集基于弱分代假设">GC垃圾回收：分代收集基于&quot;弱分代假设&quot;</h3>
+<p><strong>弱分代假设</strong>：大部分对象朝生夕死，熬过越多次GC的对象越可能长期存活。</p>]]></description></item></channel></rss>

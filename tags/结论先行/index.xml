@@ -1,0 +1,128 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>结论先行 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E7%BB%93%E8%AE%BA%E5%85%88%E8%A1%8C/</link><description>结论先行 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E7%BB%93%E8%AE%BA%E5%85%88%E8%A1%8C/" rel="self" type="application/rss+xml"/><item><title>金字塔原理</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E6%96%87%E6%A1%A3%E4%B8%8E%E8%A1%A8%E8%BE%BE/%E9%87%91%E5%AD%97%E5%A1%94%E5%8E%9F%E7%90%86/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E6%96%87%E6%A1%A3%E4%B8%8E%E8%A1%A8%E8%BE%BE/%E9%87%91%E5%AD%97%E5%A1%94%E5%8E%9F%E7%90%86/</guid><description><![CDATA[<h1 id="金字塔原理">金字塔原理</h1>
+<blockquote>
+<p><strong>核心结论</strong>：金字塔原理通过&quot;结论先行、以上统下、归类分组、逻辑递进&quot;四个原则组织信息，让受众在最短时间内理解核心观点，是技术写作和口头表达的基础方法论。</p>
+</blockquote>
+<hr>
+<h2 id="金字塔结构通过纵向概括和横向分组将复杂信息系统化呈现">金字塔结构通过纵向概括和横向分组，将复杂信息系统化呈现</h2>
+<h3 id="核心四原则">核心四原则</h3>
+<table>
+  <thead>
+      <tr>
+          <th>原则</th>
+          <th>含义</th>
+          <th>实践方式</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>结论先行</td>
+          <td>先说结论，再说依据</td>
+          <td>首句点明观点，不绕弯子</td>
+      </tr>
+      <tr>
+          <td>以上统下</td>
+          <td>上层是下层的概括</td>
+          <td>标题是段落的总结，能单独读懂</td>
+      </tr>
+      <tr>
+          <td>归类分组（MECE）</td>
+          <td>相互独立，完全穷尽</td>
+          <td>检查分类是否有遗漏和重叠</td>
+      </tr>
+      <tr>
+          <td>逻辑递进</td>
+          <td>按顺序排列</td>
+          <td>时间、结构、重要性、演绎</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="金字塔结构示例">金字塔结构示例</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">                    核心结论
+</span></span><span class="line"><span class="cl">                   （电梯演讲）
+</span></span><span class="line"><span class="cl">                        |
+</span></span><span class="line"><span class="cl">        +---------------+---------------+
+</span></span><span class="line"><span class="cl">        |               |               |
+</span></span><span class="line"><span class="cl">    论点A           论点B           论点C
+</span></span><span class="line"><span class="cl">    （Why）        （What）        （How）
+</span></span><span class="line"><span class="cl">        |               |               |
+</span></span><span class="line"><span class="cl">    证据A1          证据B1          证据C1
+</span></span><span class="line"><span class="cl">    证据A2          证据B2          证据C2</span></span></code></pre></div></div>
+<h3 id="技术文档中的应用">技术文档中的应用</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-markdown">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl"><span class="gh"># 性能优化方案
+</span></span></span><span class="line"><span class="cl"><span class="k">
+</span></span></span><span class="line"><span class="cl"><span class="k">&gt; </span><span class="ge">核心结论：通过连接池优化+SQL索引+缓存三层策略，
+</span></span></span><span class="line"><span class="cl"><span class="k">&gt; </span><span class="ge">预期接口P99从800ms降至150ms。
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 一、连接池优化（解决获取连接慢）
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 当前问题：HikariCP最大连接数200，频繁等待
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 优化方案：调整至500，增加连接超时检测
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 二、SQL索引优化（解决查询慢）
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 当前问题：订单表全表扫描
+</span></span><span class="line"><span class="cl"><span class="k">-</span> 优化方案：联合索引 (user_id, create_time)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## 三、本地缓存（解决热点数据重复查询）
+</span></span></span><span class="line"><span class="cl"><span class="k">-</span> 当前问题：商品基础信息每次查库
+</span></span><span class="line"><span class="cl">- 优化方案：Caffeine缓存，TTL 5分钟</span></span></code></pre></div></div>
+<h3 id="逻辑递进四种方式">逻辑递进四种方式</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方式</th>
+          <th>说明</th>
+          <th>示例</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>时间顺序</td>
+          <td>按步骤或阶段</td>
+          <td>先…再…最后…</td>
+      </tr>
+      <tr>
+          <td>结构顺序</td>
+          <td>按组成部分</td>
+          <td>架构分接入层、服务层、存储层</td>
+      </tr>
+      <tr>
+          <td>重要性顺序</td>
+          <td>按优先级</td>
+          <td>高优/中优/低优</td>
+      </tr>
+      <tr>
+          <td>演绎顺序</td>
+          <td>大前提→小前提→结论</td>
+          <td>所有A是B，C是A，所以C是B</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="mece检查方法">MECE检查方法</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">分类是否MECE？
+</span></span><span class="line"><span class="cl">├── 是否有遗漏？（漏了移动端适配问题）
+</span></span><span class="line"><span class="cl">└── 是否有重叠？（性能问题和慢查询问题其实是一回事）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">修正后：
+</span></span><span class="line"><span class="cl">├── 功能缺陷
+</span></span><span class="line"><span class="cl">├── 性能问题
+</span></span><span class="line"><span class="cl">├── 安全漏洞
+</span></span><span class="line"><span class="cl">└── 兼容性问题</span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1罗列细节没有结论">问题1：罗列细节没有结论</h3>
+<p><strong>根因</strong>：怕说错，不敢下结论
+<strong>解决</strong>：即使不确定，也给出倾向性结论并标注风险点</p>]]></description></item></channel></rss>

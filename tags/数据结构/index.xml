@@ -1,36 +1,222 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>数据结构 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</link><description>数据结构 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 09 Apr 2026 10:00:00 +0800</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="self" type="application/rss+xml"/><item><title>Java 集合框架详解</title><link>https://ksmaple.github.io/posts/java-collections/</link><pubDate>Thu, 09 Apr 2026 10:00:00 +0800</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/java-collections/</guid><description><![CDATA[<h2 id="概述">概述</h2>
-<p>Java 集合框架（Java Collections Framework）是 Java 提供的一套用于存储和操作一组数据的类和接口。它是 Java 编程中最常用的工具之一。</p>
-<h2 id="集合体系结构">集合体系结构</h2>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>数据结构 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</link><description>数据结构 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="self" type="application/rss+xml"/><item><title>Hash表</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%93%88%E5%B8%8C%E8%A1%A8/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%93%88%E5%B8%8C%E8%A1%A8/</guid><description><![CDATA[<h1 id="hash表">Hash表</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Hash表通过哈希函数将键映射到数组索引，实现O(1)的平均查找效率，冲突解决和扩容机制是工程实现的关键，一致性Hash则解决了分布式环境下的数据分布问题。</p>
+</blockquote>
+<hr>
+<h2 id="hash表通过哈希函数数组实现o1查找冲突解决和动态扩容是工程实现的核心机制">Hash表通过哈希函数+数组实现O(1)查找，冲突解决和动态扩容是工程实现的核心机制</h2>
+<h3 id="核心原理哈希函数将任意键映射到有限数组空间">核心原理：哈希函数将任意键映射到有限数组空间</h3>
 <div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
     <div class="code-header language-">
         <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
         <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
         <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Collection
-</span></span><span class="line"><span class="cl">├── List（有序、可重复）
-</span></span><span class="line"><span class="cl">│   ├── ArrayList
-</span></span><span class="line"><span class="cl">│   ├── LinkedList
-</span></span><span class="line"><span class="cl">│   └── Vector
-</span></span><span class="line"><span class="cl">│       └── Stack
-</span></span><span class="line"><span class="cl">├── Set（无序、不可重复）
-</span></span><span class="line"><span class="cl">│   ├── HashSet
-</span></span><span class="line"><span class="cl">│   │   └── LinkedHashSet
-</span></span><span class="line"><span class="cl">│   └── TreeSet
-</span></span><span class="line"><span class="cl">└── Queue（队列）
-</span></span><span class="line"><span class="cl">    ├── LinkedList
-</span></span><span class="line"><span class="cl">    ├── PriorityQueue
-</span></span><span class="line"><span class="cl">    └── Deque
-</span></span><span class="line"><span class="cl">        ├── ArrayDeque
-</span></span><span class="line"><span class="cl">        └── LinkedList
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">键(Key) ──→ 哈希函数 ──→ 哈希值 ──→ 取模 ──→ 数组索引
+</span></span><span class="line"><span class="cl">                                
+</span></span><span class="line"><span class="cl">&#34;apple&#34;    hashCode()    93029231    % 16     → 15
+</span></span><span class="line"><span class="cl">&#34;banana&#34;   hashCode()    63595437    % 16     → 13
+</span></span><span class="line"><span class="cl">&#34;cherry&#34;   hashCode()    12345678    % 16     → 14</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// Java HashMap 的扰动函数：高16位与低16位异或，减少低位的规律性</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">hash</span><span class="p">(</span><span class="n">Object</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">h</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">0</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="na">hashCode</span><span class="p">())</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">&gt;&gt;&gt;</span><span class="w"> </span><span class="n">16</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 数组索引计算：(n-1) &amp; hash 等价于 hash % n，当n为2的幂时</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span><span class="w"> </span><span class="n">n</span><span class="o">=</span><span class="n">16</span><span class="p">:</span><span class="w">  </span><span class="p">(</span><span class="n">16</span><span class="o">-</span><span class="n">1</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">hash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0b1111</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">hash</span><span class="w">  </span><span class="err">→</span><span class="w"> </span><span class="n">取低4位</span></span></span></code></pre></div></div>
+<h3 id="冲突解决链地址法-vs-开放寻址法">冲突解决：链地址法 vs 开放寻址法</h3>
+<table>
+  <thead>
+      <tr>
+          <th>方法</th>
+          <th>原理</th>
+          <th>优点</th>
+          <th>缺点</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>链地址法</td>
+          <td>冲突元素组成链表/树</td>
+          <td>实现简单、删除方便</td>
+          <td>缓存不友好、链表过长退化</td>
+      </tr>
+      <tr>
+          <td>开放寻址法</td>
+          <td>冲突时探测下一个空位</td>
+          <td>缓存友好、无指针开销</td>
+          <td>删除复杂、装填因子受限</td>
+      </tr>
+      <tr>
+          <td>再哈希法</td>
+          <td>多个哈希函数依次尝试</td>
+          <td>分布均匀</td>
+          <td>计算开销大</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>链地址法（Java HashMap采用）</strong>：</p>]]></description></item><item><title>Redis核心数据结构</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E7%BC%93%E5%AD%98%E6%8A%80%E6%9C%AF/redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</guid><description><![CDATA[<h1 id="redis核心数据结构">Redis核心数据结构</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Redis通过底层六种数据结构（SDS、双向链表、压缩列表、哈希表、跳表、整数数组）实现对外五种数据类型，每种类型针对特定场景优化，理解底层实现是选择正确数据结构和预估内存的关键。</p>
+</blockquote>
+<hr>
+<h2 id="redis对外提供五种数据类型底层通过六种内部数据结构实现每种类型针对特定场景优化">Redis对外提供五种数据类型，底层通过六种内部数据结构实现，每种类型针对特定场景优化</h2>
+<h3 id="string最基础的二进制安全字符串">String：最基础的二进制安全字符串</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">底层实现：SDS（Simple Dynamic String）
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">Map（键值对）
-</span></span><span class="line"><span class="cl">├── HashMap
-</span></span><span class="line"><span class="cl">│   └── LinkedHashMap
-</span></span><span class="line"><span class="cl">├── TreeMap
-</span></span><span class="line"><span class="cl">├── Hashtable
-</span></span><span class="line"><span class="cl">│   └── Properties
-</span></span><span class="line"><span class="cl">└── ConcurrentHashMap</span></span></code></pre></div></div>
-<h2 id="list-详解">List 详解</h2>
-<h3 id="arraylist-vs-linkedlist">ArrayList vs LinkedList</h3>
-<h3 id="arraylist">ArrayList</h3>
-<p>基于动态数组实现，查询快、插入删除慢。</p>]]></description></item></channel></rss>
+</span></span><span class="line"><span class="cl">struct sdshdr {
+</span></span><span class="line"><span class="cl">    int len;      // 已使用长度
+</span></span><span class="line"><span class="cl">    int free;     // 未使用长度
+</span></span><span class="line"><span class="cl">    char buf[];   // 字符数组
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">特点：
+</span></span><span class="line"><span class="cl">- 二进制安全（可存储图片、序列化对象）
+</span></span><span class="line"><span class="cl">- O(1)获取长度
+</span></span><span class="line"><span class="cl">- 预分配空间，减少扩容
+</span></span><span class="line"><span class="cl">- 最大512MB</span></span></code></pre></div></div>
+<p><strong>String的典型应用</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>场景</th>
+          <th>命令</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>缓存对象</td>
+          <td>SET / GET</td>
+          <td>存储JSON/Protobuf序列化数据</td>
+      </tr>
+      <tr>
+          <td>计数器</td>
+          <td>INCR / DECR</td>
+          <td>原子加减，适合限流统计</td>
+      </tr>
+      <tr>
+          <td>分布式锁</td>
+          <td>SETNX + EXPIRE</td>
+          <td>原子获取锁</td>
+      </tr>
+      <tr>
+          <td>会话存储</td>
+          <td>SETEX</td>
+          <td>带过期时间的缓存</td>
+      </tr>
+      <tr>
+          <td>共享配置</td>
+          <td>GET / SET</td>
+          <td>全局配置中心</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 计数器应用</span>
+</span></span><span class="line"><span class="cl">INCR page:view:1001        <span class="c1"># 文章1001的浏览量+1</span>
+</span></span><span class="line"><span class="cl">INCRBY page:view:1001 <span class="m">10</span>   <span class="c1"># 批量增加</span>
+</span></span><span class="line"><span class="cl">GET page:view:1001
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 分布式锁</span>
+</span></span><span class="line"><span class="cl">SET lock:order:123 NX EX <span class="m">30</span>  <span class="c1"># 原子设置锁，30秒过期</span></span></span></code></pre></div></div>
+<h3 id="hash适合存储对象的键值对集合">Hash：适合存储对象的键值对集合</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">底层实现：
+</span></span><span class="line"><span class="cl">- 数据少：ziplist（压缩列表）
+</span></span><span class="line"><span class="cl">- 数据多：hashtable（哈希表）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ziplist条件（默认）：
+</span></span><span class="line"><span class="cl">  field-value数量 &lt; 512，且每个值长度 &lt; 64字节</span></span></code></pre></div></div>
+<p><strong>Hash vs String存储对象</strong>：</p>]]></description></item><item><title>树结构</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%A0%91%E7%BB%93%E6%9E%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%A0%91%E7%BB%93%E6%9E%84/</guid><description><![CDATA[<h1 id="树结构">树结构</h1>
+<blockquote>
+<p><strong>核心结论</strong>：红黑树通过颜色约束维持近似平衡保证O(log n)操作，B+树通过多叉结构降低磁盘IO成为数据库索引首选，跳表用概率平衡替代严格平衡实现简单高效的并发有序结构。</p>
+</blockquote>
+<hr>
+<h2 id="红黑树b树跳表分别通过颜色约束多叉节点和概率层级三种不同机制实现高效查找">红黑树、B+树、跳表分别通过颜色约束、多叉节点和概率层级三种不同机制实现高效查找</h2>
+<h3 id="红黑树近似平衡的二叉搜索树">红黑树：近似平衡的二叉搜索树</h3>
+<p><strong>红黑树的五条性质</strong>：</p>
+<ol>
+<li>节点是红色或黑色</li>
+<li>根节点是黑色</li>
+<li>所有叶子（NIL）是黑色</li>
+<li>红色节点的子节点必须是黑色（不能有两个连续红色）</li>
+<li>从任一节点到其叶子的所有路径包含相同数目的黑色节点</li>
+</ol>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">性质5的推论：最长路径不超过最短路径的2倍
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">最短路径：全黑节点        最长路径：红黑交替
+</span></span><span class="line"><span class="cl">    B                       B
+</span></span><span class="line"><span class="cl">   / \                     / \
+</span></span><span class="line"><span class="cl">  B   B                   R   B
+</span></span><span class="line"><span class="cl"> / \                     / \   \
+</span></span><span class="line"><span class="cl">B   B                   B   R   B
+</span></span><span class="line"><span class="cl">                            /
+</span></span><span class="line"><span class="cl">                           B
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">黑高=3，最短路径3，最长路径5（不超过2倍）</span></span></code></pre></div></div>
+<p><strong>红黑树的平衡调整</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>情况</th>
+          <th>触发条件</th>
+          <th>调整操作</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>左旋/右旋</td>
+          <td>局部不平衡</td>
+          <td>旋转节点，调整父子关系</td>
+      </tr>
+      <tr>
+          <td>变色</td>
+          <td>双红冲突</td>
+          <td>父、叔、祖父节点颜色翻转</td>
+      </tr>
+      <tr>
+          <td>LR/RL双旋</td>
+          <td>折线关系</td>
+          <td>先左旋/右旋，再右旋/左旋</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">插入调整示例（父节点红色，叔节点黑色）：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    G(黑)              P(黑)
+</span></span><span class="line"><span class="cl">   /                  /    \
+</span></span><span class="line"><span class="cl">  P(红)    →        N(红)  G(红)
+</span></span><span class="line"><span class="cl">   \                       /
+</span></span><span class="line"><span class="cl">   N(红)                S(黑)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">情况：父红、叔黑、新节点是父的右孩子（折线）
+</span></span><span class="line"><span class="cl">调整：先对P左旋 → 再对G右旋 → 变色</span></span></code></pre></div></div>
+<p><strong>红黑树 vs AVL树</strong>：</p>]]></description></item></channel></rss>

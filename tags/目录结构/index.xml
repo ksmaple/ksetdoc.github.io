@@ -1,0 +1,43 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>目录结构 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84/</link><description>目录结构 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84/" rel="self" type="application/rss+xml"/><item><title>文件系统与目录结构</title><link>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/</guid><description><![CDATA[<h1 id="文件系统与目录结构">文件系统与目录结构</h1>
+<blockquote>
+<p><strong>核心结论</strong>：文件系统通过inode管理文件元数据，通过目录项建立文件名到inode的映射，Linux的目录结构遵循FHS标准，理解inode、文件描述符和VFS抽象层是排查磁盘和文件相关问题的关键。</p>
+</blockquote>
+<hr>
+<h2 id="linux文件系统通过inode管理元数据vfs提供统一抽象目录结构遵循fhs标准">Linux文件系统通过inode管理元数据，VFS提供统一抽象，目录结构遵循FHS标准</h2>
+<h3 id="inode文件的元数据结构">inode：文件的元数据结构</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">文件名只是目录项的别名，真正的文件身份是inode号
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">文件名 ──→ 目录项（dentry）──→ inode ──→ 数据块
+</span></span><span class="line"><span class="cl">                          
+</span></span><span class="line"><span class="cl">inode内容（元数据）：
+</span></span><span class="line"><span class="cl">  - 文件类型（普通文件/目录/链接/设备）
+</span></span><span class="line"><span class="cl">  - 权限（rwxrwxrwx）
+</span></span><span class="line"><span class="cl">  - 所有者UID、所属组GID
+</span></span><span class="line"><span class="cl">  - 文件大小
+</span></span><span class="line"><span class="cl">  - 时间戳（atime/mtime/ctime）
+</span></span><span class="line"><span class="cl">  - 数据块指针（直接/间接/双重间接/三重间接）
+</span></span><span class="line"><span class="cl">  - 链接计数</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 查看文件inode号</span>
+</span></span><span class="line"><span class="cl">ls -i filename
+</span></span><span class="line"><span class="cl"><span class="c1"># 输出: 131074 filename</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 查看inode详细信息</span>
+</span></span><span class="line"><span class="cl">stat filename
+</span></span><span class="line"><span class="cl"><span class="c1"># File: filename</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Size: 1024       Blocks: 8          IO Block: 4096   regular file</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Device: 801h/2049d Inode: 131074     Links: 1</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Access: (0644/-rw-r--r--)  Uid: ( 1000/   user)   Gid: ( 1000/   user)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Access: 2026-04-30 10:00:00.000000000 +0800</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Modify: 2026-04-30 09:00:00.000000000 +0800</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Change: 2026-04-30 09:00:00.000000000 +0800</span></span></span></code></pre></div></div>
+<p><strong>硬链接 vs 软链接</strong>：</p>]]></description></item></channel></rss>

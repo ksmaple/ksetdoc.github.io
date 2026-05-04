@@ -1,0 +1,114 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>事务 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E4%BA%8B%E5%8A%A1/</link><description>事务 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E4%BA%8B%E5%8A%A1/" rel="self" type="application/rss+xml"/><item><title>事务机制</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E4%BA%8B%E5%8A%A1/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E4%BA%8B%E5%8A%A1/</guid><description><![CDATA[<h1 id="事务机制">事务机制</h1>
+<blockquote>
+<p><strong>核心结论</strong>：事务通过ACID特性保证数据一致性，隔离级别在一致性和并发性能之间权衡，Spring通过声明式事务简化编程，分布式事务通过2PC、TCC、Saga等模式解决跨服务一致性。</p>
+</blockquote>
+<hr>
+<h2 id="事务通过acid保证数据一致性隔离级别控制并发副作用分布式事务通过补偿机制实现最终一致性">事务通过ACID保证数据一致性，隔离级别控制并发副作用，分布式事务通过补偿机制实现最终一致性</h2>
+<h3 id="acid与隔离级别一致性与并发的权衡">ACID与隔离级别：一致性与并发的权衡</h3>
+<p><strong>ACID特性</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>说明</th>
+          <th>实现机制</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Atomicity（原子性）</td>
+          <td>要么全成功，要么全回滚</td>
+          <td>Undo Log</td>
+      </tr>
+      <tr>
+          <td>Consistency（一致性）</td>
+          <td>数据状态合法</td>
+          <td>约束+触发器+应用逻辑</td>
+      </tr>
+      <tr>
+          <td>Isolation（隔离性）</td>
+          <td>事务间互不干扰</td>
+          <td>MVCC + 锁</td>
+      </tr>
+      <tr>
+          <td>Durability（持久性）</td>
+          <td>提交后数据不丢失</td>
+          <td>Redo Log + 磁盘写入</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>隔离级别与并发问题</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>隔离级别</th>
+          <th>脏读</th>
+          <th>不可重复读</th>
+          <th>幻读</th>
+          <th>实现</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>READ UNCOMMITTED</td>
+          <td>✗允许</td>
+          <td>✗允许</td>
+          <td>✗允许</td>
+          <td>无锁</td>
+      </tr>
+      <tr>
+          <td>READ COMMITTED</td>
+          <td>✓禁止</td>
+          <td>✗允许</td>
+          <td>✗允许</td>
+          <td>MVCC</td>
+      </tr>
+      <tr>
+          <td>REPEATABLE READ</td>
+          <td>✓禁止</td>
+          <td>✓禁止</td>
+          <td>✗允许（MySQL Innodb禁止）</td>
+          <td>MVCC + 间隙锁</td>
+      </tr>
+      <tr>
+          <td>SERIALIZABLE</td>
+          <td>✓禁止</td>
+          <td>✓禁止</td>
+          <td>✓禁止</td>
+          <td>所有操作加锁</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">并发问题示例：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">脏读（Dirty Read）：
+</span></span><span class="line"><span class="cl">  事务A读取 → 事务B修改但未提交 → 事务A读取到未提交数据 → 事务B回滚
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">不可重复读（Non-repeatable Read）：
+</span></span><span class="line"><span class="cl">  事务A读取 → 事务B修改并提交 → 事务A再次读取，数据变化
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">幻读（Phantom Read）：
+</span></span><span class="line"><span class="cl">  事务A查询（返回3条）→ 事务B插入新数据并提交 → 事务A再次查询，返回4条</span></span></code></pre></div></div>
+<h3 id="spring声明式事务transactional">Spring声明式事务：@Transactional</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Transactional</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">propagation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Propagation</span><span class="p">.</span><span class="na">REQUIRED</span><span class="p">,</span><span class="w">   </span><span class="c1">// 传播行为</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">isolation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Isolation</span><span class="p">.</span><span class="na">READ_COMMITTED</span><span class="p">,</span><span class="w"> </span><span class="c1">// 隔离级别</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">30</span><span class="p">,</span><span class="w">                          </span><span class="c1">// 超时时间（秒）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">readOnly</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">                      </span><span class="c1">// 是否只读</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">rollbackFor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Exception</span><span class="p">.</span><span class="na">class</span><span class="w">          </span><span class="c1">// 哪些异常触发回滚</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">transfer</span><span class="p">(</span><span class="n">Long</span><span class="w"> </span><span class="n">fromId</span><span class="p">,</span><span class="w"> </span><span class="n">Long</span><span class="w"> </span><span class="n">toId</span><span class="p">,</span><span class="w"> </span><span class="n">BigDecimal</span><span class="w"> </span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">accountDao</span><span class="p">.</span><span class="na">decrease</span><span class="p">(</span><span class="n">fromId</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">accountDao</span><span class="p">.</span><span class="na">increase</span><span class="p">(</span><span class="n">toId</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<p><strong>传播行为</strong>：</p>]]></description></item></channel></rss>

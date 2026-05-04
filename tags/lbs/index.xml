@@ -1,0 +1,95 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Lbs - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/lbs/</link><description>Lbs - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/lbs/" rel="self" type="application/rss+xml"/><item><title>网关架构</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/%E7%BD%91%E5%85%B3%E6%9E%B6%E6%9E%84/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E8%BF%90%E7%BB%B4%E9%83%A8%E7%BD%B2/%E7%BD%91%E5%85%B3%E6%9E%B6%E6%9E%84/</guid><description><![CDATA[<h1 id="网关架构">网关架构</h1>
+<blockquote>
+<p><strong>核心结论</strong>：生产环境的网关通常采用LBS云网关、Nginx分发网关、业务网关三层架构，每层负责不同粒度的流量管理，共同实现高可用、高性能、安全的流量入口。</p>
+</blockquote>
+<hr>
+<h2 id="三层网关架构分层处理流量从外到内职责逐步聚焦">三层网关架构分层处理流量，从外到内职责逐步聚焦</h2>
+<h3 id="三层网关职责划分">三层网关职责划分</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">用户请求
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">LBS云网关（第一层）
+</span></span><span class="line"><span class="cl">  - 全局负载均衡（DNS/GSLB）
+</span></span><span class="line"><span class="cl">  - DDoS防护
+</span></span><span class="line"><span class="cl">  - SSL卸载
+</span></span><span class="line"><span class="cl">  - 边缘缓存（CDN）
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">Nginx分发网关（第二层）
+</span></span><span class="line"><span class="cl">  - 七层负载均衡
+</span></span><span class="line"><span class="cl">  - 静态资源服务
+</span></span><span class="line"><span class="cl">  - 限流（连接数/速率）
+</span></span><span class="line"><span class="cl">  - 灰度发布
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">业务网关（第三层）
+</span></span><span class="line"><span class="cl">  - 鉴权认证
+</span></span><span class="line"><span class="cl">  - 路由转发
+</span></span><span class="line"><span class="cl">  - API治理
+</span></span><span class="line"><span class="cl">  - 熔断降级
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">业务服务集群</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>层级</th>
+          <th>代表产品</th>
+          <th>核心能力</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>LBS</td>
+          <td>阿里云SLB、AWS ALB</td>
+          <td>四层负载均衡、健康检查</td>
+      </tr>
+      <tr>
+          <td>Nginx</td>
+          <td>OpenResty、Nginx Plus</td>
+          <td>七层路由、Lua扩展</td>
+      </tr>
+      <tr>
+          <td>业务网关</td>
+          <td>Spring Cloud Gateway、Kong</td>
+          <td>API治理、微服务路由</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="nginx核心配置">Nginx核心配置</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-nginx">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-nginx" data-lang="nginx"><span class="line"><span class="cl"><span class="k">upstream</span> <span class="s">backend</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">least_conn</span><span class="p">;</span>                    <span class="c1"># 最少连接算法
+</span></span></span><span class="line"><span class="cl">    <span class="kn">server</span> <span class="n">10.0.1.10</span><span class="p">:</span><span class="mi">8080</span> <span class="s">weight=5</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server</span> <span class="n">10.0.1.11</span><span class="p">:</span><span class="mi">8080</span> <span class="s">weight=5</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server</span> <span class="n">10.0.1.12</span><span class="p">:</span><span class="mi">8080</span> <span class="s">backup</span><span class="p">;</span>  <span class="c1"># 备用节点
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">server</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">listen</span> <span class="mi">80</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server_name</span> <span class="s">api.example.com</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">limit_req</span> <span class="s">zone=api_limit</span> <span class="s">burst=20</span> <span class="s">nodelay</span><span class="p">;</span>  <span class="c1"># 限流
+</span></span></span><span class="line"><span class="cl">        <span class="kn">proxy_pass</span> <span class="s">http://backend</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_set_header</span> <span class="s">Host</span> <span class="nv">$host</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_set_header</span> <span class="s">X-Real-IP</span> <span class="nv">$remote_addr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_connect_timeout</span> <span class="s">5s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_read_timeout</span> <span class="s">10s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="kn">location</span> <span class="s">/static</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">alias</span> <span class="s">/var/www/static</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">expires</span> <span class="s">30d</span><span class="p">;</span>               <span class="c1"># 静态缓存
+</span></span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1单点网关故障">问题1：单点网关故障</h3>
+<p><strong>根因</strong>：网关未集群部署
+<strong>解决</strong>：网关多实例+Keepalived VIP、云厂商负载均衡</p>]]></description></item></channel></rss>

@@ -1,0 +1,93 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>对账 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/%E5%AF%B9%E8%B4%A6/</link><description>对账 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/%E5%AF%B9%E8%B4%A6/" rel="self" type="application/rss+xml"/><item><title>支付业务</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%94%AF%E4%BB%98%E4%B8%9A%E5%8A%A1/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E6%94%AF%E4%BB%98%E4%B8%9A%E5%8A%A1/</guid><description><![CDATA[<h1 id="支付业务">支付业务</h1>
+<blockquote>
+<p><strong>核心结论</strong>：支付业务的核心挑战是资金安全和一致性，通过唯一订单号实现幂等，通过状态机管理支付生命周期，通过定时对账发现并修正差异，通过风控系统拦截可疑交易。</p>
+</blockquote>
+<hr>
+<h2 id="支付系统通过状态机幂等设计和日终对账保障资金安全和数据一致性">支付系统通过状态机、幂等设计和日终对账，保障资金安全和数据一致性</h2>
+<h3 id="支付核心流程">支付核心流程</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">支付状态机：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">INIT → 创建支付单
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">PENDING → 用户确认支付，调起渠道
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">PROCESSING → 渠道处理中
+</span></span><span class="line"><span class="cl">  ↓
+</span></span><span class="line"><span class="cl">SUCCESS / FAIL / CLOSED
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">状态不可逆：
+</span></span><span class="line"><span class="cl">  SUCCESS不可变为FAIL
+</span></span><span class="line"><span class="cl">  需退款走独立退款流程</span></span></code></pre></div></div>
+<h3 id="幂等设计">幂等设计</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">支付请求：
+</span></span><span class="line"><span class="cl">  业务订单号 + 支付方式 + 金额 → 生成唯一支付流水号
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">重复请求处理：
+</span></span><span class="line"><span class="cl">  - 同一流水号重复请求 → 返回原结果
+</span></span><span class="line"><span class="cl">  - 不同流水号但同一订单 → 拒绝（防重复支付）
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">实现：
+</span></span><span class="line"><span class="cl">  数据库唯一索引（支付流水号）
+</span></span><span class="line"><span class="cl">  或 Redis SETNX 分布式锁</span></span></code></pre></div></div>
+<h3 id="对账机制">对账机制</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">日终对账流程：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">1. 下载渠道对账单（微信/支付宝/银联）
+</span></span><span class="line"><span class="cl">2. 我方支付记录与渠道记录逐笔核对
+</span></span><span class="line"><span class="cl">   - 金额一致 + 状态一致 → 正常
+</span></span><span class="line"><span class="cl">   - 我方有，渠道无 → 渠道漏单，人工处理
+</span></span><span class="line"><span class="cl">   - 渠道有，我方无 → 我方漏单，补单
+</span></span><span class="line"><span class="cl">   - 金额不一致 → 异常，人工处理
+</span></span><span class="line"><span class="cl">3. 生成差异报表，人工确认
+</span></span><span class="line"><span class="cl">4. 差异处理（补单/退款/调账）</span></span></code></pre></div></div>
+<h3 id="风控策略">风控策略</h3>
+<table>
+  <thead>
+      <tr>
+          <th>策略</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>频次控制</td>
+          <td>同一账户短时间多次支付</td>
+      </tr>
+      <tr>
+          <td>金额限制</td>
+          <td>单笔/单日限额</td>
+      </tr>
+      <tr>
+          <td>黑名单</td>
+          <td>已知风险账户/设备/IP</td>
+      </tr>
+      <tr>
+          <td>行为分析</td>
+          <td>异常登录地、异常设备</td>
+      </tr>
+      <tr>
+          <td>3D验证</td>
+          <td>大额支付需额外验证</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1支付成功但订单状态未更新">问题1：支付成功但订单状态未更新</h3>
+<p><strong>根因</strong>：渠道回调失败或处理异常
+<strong>解决</strong>：主动轮询 + 对账兜底</p>]]></description></item></channel></rss>

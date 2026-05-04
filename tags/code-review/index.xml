@@ -1,0 +1,164 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Code Review - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/code-review/</link><description>Code Review - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/code-review/" rel="self" type="application/rss+xml"/><item><title>AI研发流程思考</title><link>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/ai%E7%A0%94%E5%8F%91%E6%B5%81%E7%A8%8B/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/ai%E7%9B%B8%E5%85%B3/ai%E7%A0%94%E5%8F%91%E6%B5%81%E7%A8%8B/</guid><description><![CDATA[<h1 id="ai研发流程思考">AI研发流程思考</h1>
+<blockquote>
+<p><strong>核心结论</strong>：AI不是替代开发者的工具，而是放大开发者能力的杠杆——在需求分析、编码实现、测试验证各阶段合理运用AI，可显著提升交付效率，但关键决策和最终质量把控仍需人负责。</p>
+</blockquote>
+<hr>
+<h2 id="ai辅助研发通过人机协作重塑开发流程将重复性工作自动化让人聚焦创造性和判断性工作">AI辅助研发通过人机协作重塑开发流程，将重复性工作自动化，让人聚焦创造性和判断性工作</h2>
+<h3 id="ai在研发各阶段的应用">AI在研发各阶段的应用</h3>
+<table>
+  <thead>
+      <tr>
+          <th>阶段</th>
+          <th>传统方式</th>
+          <th>AI辅助方式</th>
+          <th>效率提升</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>需求分析</td>
+          <td>人工梳理、写文档</td>
+          <td>AI辅助梳理边界案例、生成PRD草稿</td>
+          <td>30-50%</td>
+      </tr>
+      <tr>
+          <td>技术方案</td>
+          <td>人工画图、写设计</td>
+          <td>AI生成方案对比、补充遗漏点</td>
+          <td>20-40%</td>
+      </tr>
+      <tr>
+          <td>编码实现</td>
+          <td>手敲代码</td>
+          <td>AI生成模板代码、自动补全、重构建议</td>
+          <td>40-70%</td>
+      </tr>
+      <tr>
+          <td>代码审查</td>
+          <td>人工逐行Review</td>
+          <td>AI预检常见问题、人工聚焦架构</td>
+          <td>30-50%</td>
+      </tr>
+      <tr>
+          <td>测试</td>
+          <td>手写用例</td>
+          <td>AI生成边界用例、自动化测试脚本</td>
+          <td>40-60%</td>
+      </tr>
+      <tr>
+          <td>问题排查</td>
+          <td>日志翻阅、复现</td>
+          <td>AI分析日志模式、定位异常根因</td>
+          <td>30-50%</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="人机协作最佳实践">人机协作最佳实践</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">高效模式：人定义问题 → AI生成方案 → 人评估选择 → AI细化实现 → 人验证把关
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">低效模式：完全依赖AI生成 → 不验证直接提交 → 线上故障</span></span></code></pre></div></div>
+<table>
+  <thead>
+      <tr>
+          <th>策略</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>分而治之</td>
+          <td>将大任务拆分为AI可独立完成的子任务</td>
+      </tr>
+      <tr>
+          <td>迭代精修</td>
+          <td>先让AI生成初稿，再逐步提出修改意见</td>
+      </tr>
+      <tr>
+          <td>示例驱动</td>
+          <td>提供具体示例（few-shot）让AI理解预期风格</td>
+      </tr>
+      <tr>
+          <td>边界约束</td>
+          <td>明确告诉AI什么不能做，避免过度发挥</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="ai辅助code-review">AI辅助Code Review</h3>
+<table>
+  <thead>
+      <tr>
+          <th>Review维度</th>
+          <th>AI能力</th>
+          <th>人工补充</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>语法规范</td>
+          <td>自动检查命名、格式、空指针</td>
+          <td>业务语义正确性</td>
+      </tr>
+      <tr>
+          <td>安全漏洞</td>
+          <td>SQL注入、XSS、硬编码密钥</td>
+          <td>业务逻辑漏洞</td>
+      </tr>
+      <tr>
+          <td>性能隐患</td>
+          <td>N+1查询、大对象创建</td>
+          <td>架构层面的性能设计</td>
+      </tr>
+      <tr>
+          <td>测试覆盖</td>
+          <td>检查分支覆盖、边界用例</td>
+          <td>复杂业务场景验证</td>
+      </tr>
+      <tr>
+          <td>设计模式</td>
+          <td>识别反模式、建议重构</td>
+          <td>领域模型合理性</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="风险与应对">风险与应对</h3>
+<table>
+  <thead>
+      <tr>
+          <th>风险</th>
+          <th>表现</th>
+          <th>应对</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>幻觉代码</td>
+          <td>AI生成不存在的方法或API</td>
+          <td>始终编译验证、单元测试</td>
+      </tr>
+      <tr>
+          <td>安全泄露</td>
+          <td>AI建议硬编码密钥或暴露敏感信息</td>
+          <td>安全扫描工具兜底、人工审计</td>
+      </tr>
+      <tr>
+          <td>过度设计</td>
+          <td>AI生成复杂抽象应对简单场景</td>
+          <td>保持简单原则、YAGNI</td>
+      </tr>
+      <tr>
+          <td>知识过时</td>
+          <td>AI训练数据有截止日期</td>
+          <td>提供最新文档作为上下文</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="常见问题与误区">常见问题与误区</h2>
+<h3 id="问题1用ai写代码后不再理解实现">问题1：用AI写代码后不再理解实现</h3>
+<p><strong>根因</strong>：复制粘贴AI输出而不深入理解
+<strong>解决</strong>：要求AI解释关键逻辑，自己复述一遍，确保能独立维护</p>]]></description></item></channel></rss>

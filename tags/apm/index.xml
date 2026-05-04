@@ -1,0 +1,55 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Apm - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/apm/</link><description>Apm - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/apm/" rel="self" type="application/rss+xml"/><item><title>SkyWalking链路追踪</title><link>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/skywalking/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E7%B3%BB%E7%BB%9F%E7%9B%91%E6%8E%A7/skywalking/</guid><description><![CDATA[<h1 id="skywalking链路追踪">SkyWalking链路追踪</h1>
+<blockquote>
+<p><strong>核心结论</strong>：SkyWalking通过探针自动采集调用链数据，通过OAP服务端分析聚合，通过UI可视化展示，支持无侵入式接入，是云原生环境下应用性能监控的标准方案。</p>
+</blockquote>
+<hr>
+<h2 id="skywalking通过探针自动采集oap分析ui可视化实现无侵入式全链路追踪">SkyWalking通过探针自动采集、OAP分析、UI可视化，实现无侵入式全链路追踪</h2>
+<h3 id="核心架构探针-oap-存储-ui">核心架构：探针-OAP-存储-UI</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">┌──────────┐      ┌─────────┐      ┌──────────┐      ┌────────┐
+</span></span><span class="line"><span class="cl">│  Agent   │ ───→ │   OAP   │ ───→ │ Storage  │ ←──→ │   UI   │
+</span></span><span class="line"><span class="cl">│ (探针)    │ gRPC │ (分析)   │      │ (ES/H2)  │      │ (可视化)│
+</span></span><span class="line"><span class="cl">└──────────┘      └─────────┘      └──────────┘      └────────┘
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">探针类型：
+</span></span><span class="line"><span class="cl">- Java Agent：字节码增强，无侵入
+</span></span><span class="line"><span class="cl">- Sidecar：Envoy/Service Mesh集成
+</span></span><span class="line"><span class="cl">- 语言探针：Go/Node.js/Python等</span></span></code></pre></div></div>
+<p><strong>自动采集的Span类型</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>Span类型</th>
+          <th>说明</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Entry Span</td>
+          <td>请求入口（HTTP/RPC接收）</td>
+      </tr>
+      <tr>
+          <td>Exit Span</td>
+          <td>请求出口（HTTP/RPC发送）</td>
+      </tr>
+      <tr>
+          <td>Local Span</td>
+          <td>本地方法</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="java-agent接入">Java Agent接入</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># JVM启动参数</span>
+</span></span><span class="line"><span class="cl">-javaagent:/path/to/skywalking-agent.jar
+</span></span><span class="line"><span class="cl">-DSW_AGENT_NAME<span class="o">=</span>order-service
+</span></span><span class="line"><span class="cl">-DSW_AGENT_COLLECTOR_BACKEND_SERVICES<span class="o">=</span>127.0.0.1:11800</span></span></code></pre></div></div>
+<p><strong>自动拦截的组件</strong>：</p>]]></description></item></channel></rss>

@@ -1,0 +1,148 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Bean生命周期 - 标签 - 咔咔不太卡的博客</title><link>https://ksmaple.github.io/tags/bean%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</link><description>Bean生命周期 - 标签 - 咔咔不太卡的博客</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 30 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://ksmaple.github.io/tags/bean%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/" rel="self" type="application/rss+xml"/><item><title>Spring核心机制</title><link>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/spring%E6%A0%B8%E5%BF%83/</link><pubDate>Thu, 30 Apr 2026 00:00:00 +0000</pubDate><author>咔咔</author><guid>https://ksmaple.github.io/posts/%E8%BF%9B%E9%98%B6%E5%B1%82/java%E6%8A%80%E6%9C%AF%E6%A1%86%E6%9E%B6/spring%E6%A0%B8%E5%BF%83/</guid><description><![CDATA[<h1 id="spring核心机制">Spring核心机制</h1>
+<blockquote>
+<p><strong>核心结论</strong>：Spring通过IoC容器管理对象生命周期，通过AOP在不修改源码的情况下增强功能，二者共同构成了Spring框架的基石，理解Bean的创建过程和代理机制是排查Spring问题的关键。</p>
+</blockquote>
+<hr>
+<h2 id="spring通过ioc容器解耦对象依赖通过aop解耦横切关注点二者共同实现非侵入式编程">Spring通过IoC容器解耦对象依赖，通过AOP解耦横切关注点，二者共同实现非侵入式编程</h2>
+<h3 id="ioc控制反转依赖注入替代直接创建">IoC控制反转：依赖注入替代直接创建</h3>
+<p>传统编程：对象主动创建依赖</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">UserService</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">UserDao</span><span class="w"> </span><span class="n">userDao</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UserDao</span><span class="p">();</span><span class="w">  </span><span class="c1">// 强耦合</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<p>IoC编程：容器注入依赖</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">UserService</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Autowired</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">UserDao</span><span class="w"> </span><span class="n">userDao</span><span class="p">;</span><span class="w">  </span><span class="c1">// 容器运行时注入</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<p><strong>IoC容器的核心职责</strong>：</p>
+<table>
+  <thead>
+      <tr>
+          <th>职责</th>
+          <th>说明</th>
+          <th>对应接口</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>实例化Bean</td>
+          <td>根据配置创建对象</td>
+          <td>BeanFactory</td>
+      </tr>
+      <tr>
+          <td>依赖注入</td>
+          <td>装配Bean之间的依赖关系</td>
+          <td>AutowireCapableBeanFactory</td>
+      </tr>
+      <tr>
+          <td>生命周期管理</td>
+          <td>初始化和销毁回调</td>
+          <td>InitializingBean / DisposableBean</td>
+      </tr>
+      <tr>
+          <td>作用域控制</td>
+          <td>Singleton / Prototype / Request / Session</td>
+          <td>Scope</td>
+      </tr>
+  </tbody>
+</table>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">BeanFactory层级：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">BeanFactory（根接口）
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">HierarchicalBeanFactory（支持层级）
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">AutowireCapableBeanFactory（支持自动装配）
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">ConfigurableBeanFactory（支持配置）
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">DefaultListableBeanFactory（完整实现）
+</span></span><span class="line"><span class="cl">    ↓
+</span></span><span class="line"><span class="cl">ApplicationContext（应用上下文，扩展了事件、资源、国际化）</span></span></code></pre></div></div>
+<h3 id="bean生命周期从定义到销毁的完整过程">Bean生命周期：从定义到销毁的完整过程</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">1. 实例化（Instantiation）
+</span></span><span class="line"><span class="cl">   ↓ 反射或CGLIB创建对象
+</span></span><span class="line"><span class="cl">2. 属性赋值（Population）
+</span></span><span class="line"><span class="cl">   ↓ @Autowired、@Value注入
+</span></span><span class="line"><span class="cl">3. 初始化（Initialization）
+</span></span><span class="line"><span class="cl">   ↓ BeanNameAware.setBeanName()
+</span></span><span class="line"><span class="cl">   ↓ BeanFactoryAware.setBeanFactory()
+</span></span><span class="line"><span class="cl">   ↓ ApplicationContextAware.setApplicationContext()
+</span></span><span class="line"><span class="cl">   ↓ @PostConstruct方法
+</span></span><span class="line"><span class="cl">   ↓ InitializingBean.afterPropertiesSet()
+</span></span><span class="line"><span class="cl">   ↓ 自定义init-method
+</span></span><span class="line"><span class="cl">4. 使用（In Use）
+</span></span><span class="line"><span class="cl">5. 销毁（Destruction）
+</span></span><span class="line"><span class="cl">   ↓ @PreDestroy方法
+</span></span><span class="line"><span class="cl">   ↓ DisposableBean.destroy()
+</span></span><span class="line"><span class="cl">   ↓ 自定义destroy-method</span></span></code></pre></div></div>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-java">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Component</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">MyBean</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">InitializingBean</span><span class="p">,</span><span class="w"> </span><span class="n">DisposableBean</span><span class="p">,</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">ApplicationContextAware</span><span class="p">,</span><span class="w"> </span><span class="n">BeanNameAware</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@PostConstruct</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">postConstruct</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;1. @PostConstruct&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">afterPropertiesSet</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;2. InitializingBean.afterPropertiesSet()&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">initMethod</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;3. 自定义init-method&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@PreDestroy</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">preDestroy</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;1. @PreDestroy&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">destroy</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;2. DisposableBean.destroy()&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
+<h3 id="aop面向切面编程横向抽离通用逻辑">AOP面向切面编程：横向抽离通用逻辑</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-">
+        <span class="code-title"><i class="arrow fas fa-angle-right" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h" aria-hidden="true"></i></span>
+        <span class="copy" title="复制到剪贴板"><i class="far fa-copy" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">业务代码：
+</span></span><span class="line"><span class="cl">  [校验] → [事务开始] → [业务逻辑] → [日志] → [事务提交]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">AOP分离后：
+</span></span><span class="line"><span class="cl">  核心业务：  [业务逻辑]
+</span></span><span class="line"><span class="cl">  横切关注点：[校验] [事务] [日志]
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  运行时编织：
+</span></span><span class="line"><span class="cl">    Proxy → [Before校验] → [业务逻辑] → [AfterReturning日志] → [After事务]</span></span></code></pre></div></div>
+<p><strong>AOP核心概念</strong>：</p>]]></description></item></channel></rss>

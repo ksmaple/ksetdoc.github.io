@@ -1,0 +1,157 @@
+<!doctype html><html lang=zh-CN><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>倒排索引 - 咔咔不太卡的博客</title><meta name=Description content="技术博客，记录学习与生活"><meta property="og:title" content="倒排索引 - 咔咔不太卡的博客"><meta property="og:description" content="技术博客，记录学习与生活"><meta property="og:type" content="article"><meta property="og:url" content="https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/"><meta property="article:published_time" content="2026-04-30T00:00:00+00:00"><meta property="article:modified_time" content="2026-04-30T00:00:00+00:00"><meta property="article:tag" content="倒排索引"><meta property="article:tag" content="搜索引擎"><meta property="article:tag" content="elasticsearch"><meta property="article:tag" content="信息检索"><meta name=twitter:title content="倒排索引 - 咔咔不太卡的博客"><meta name=twitter:description content="技术博客，记录学习与生活"><meta name=twitter:card content="summary"><meta name=application-name content="咔咔不太卡的技术博客"><meta name=apple-mobile-web-app-title content="咔咔不太卡的技术博客"><meta name=referrer content="no-referrer"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel=icon href=/favicon.svg><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/><link rel=prev href=https://ksmaple.github.io/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%8E%A5%E5%85%A5/><link rel=next href=https://ksmaple.github.io/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%9B%A2%E9%98%9F%E4%B8%8E%E7%AE%A1%E7%90%86/%E6%96%B0%E4%BA%BA%E5%85%A5%E8%81%8C/><link rel=stylesheet href=/css/style.min.css><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"倒排索引","inLanguage":"zh-CN","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/ksmaple.github.io\/posts\/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86\/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95\/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95\/"},"genre":"posts","keywords":"倒排索引, 搜索引擎, elasticsearch, 信息检索","wordcount":472,"url":"https:\/\/ksmaple.github.io\/posts\/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86\/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95\/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95\/","datePublished":"2026-04-30T00:00:00+00:00","dateModified":"2026-04-30T00:00:00+00:00","publisher":{"@type":"Organization","name":""},"author":{"@type":"Person","name":"咔咔"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script>const query=window.matchMedia("(prefers-color-scheme: dark)");function applyTheme(){let e=window.localStorage?.getItem("theme")||"auto",t=e==="dark"||e==="auto"&&query.matches;document.body.setAttribute("theme",t?"dark":"light"),document.body.setAttribute("cfg-theme",e)}applyTheme(),query.addEventListener("change",applyTheme)</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title=咔咔不太卡的博客>咔咔不太卡的技术博客</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/>首页 </a><a class=menu-item href=/posts/>文章 </a><a class=menu-item href=/tags/>标签 </a><a class=menu-item href=/categories/>分类 </a><a class=menu-item href=/tech-stack/>技术栈 </a><a class=menu-item href=/about/>关于 </a><a class=menu-item href=/recommend/>推荐 </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder=搜索... id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=搜索><i class="fas fa-search" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=清空><i class="fas fa-times-circle" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-spin" aria-hidden=true></i>
+</span></span><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题><i class="fas fa-adjust" aria-hidden=true></i></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title=咔咔不太卡的博客>咔咔不太卡的技术博客</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder=搜索... id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=搜索><i class="fas fa-search" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=清空><i class="fas fa-times-circle" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>取消</a></div><a class=menu-item href=/ title>首页</a><a class=menu-item href=/posts/ title>文章</a><a class=menu-item href=/tags/ title>标签</a><a class=menu-item href=/categories/ title>分类</a><a class=menu-item href=/tech-stack/ title>技术栈</a><a class=menu-item href=/about/ title>关于</a><a class=menu-item href=/recommend/ title>推荐</a><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题>
+<i class="fas fa-adjust" aria-hidden=true></i></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class=toc id=toc-auto><h2 class=toc-title>目录</h2><div class=toc-content id=toc-content-auto></div></div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">倒排索引</h1><div class=post-meta><div class=post-meta-line><span class=post-author><a href=/ title=Author rel=author class=author><i class="fas fa-user-circle" aria-hidden=true></i>咔咔</a></span>&nbsp;<span class=post-category>收录于 <a href=/categories/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/><i class="far fa-folder" aria-hidden=true></i>基础知识</a>&nbsp;<a href=/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/><i class="far fa-folder" aria-hidden=true></i>数据结构与算法</a></span></div><div class=post-meta-line><i class="far fa-calendar-alt" aria-hidden=true></i>&nbsp;<time datetime=2026-04-30>2026-04-30</time>&nbsp;<i class="fas fa-pencil-alt" aria-hidden=true></i>&nbsp;约 472 字&nbsp;
+<i class="far fa-clock" aria-hidden=true></i>&nbsp;预计阅读 3 分钟&nbsp;</div></div><div class="details toc" id=toc-static data-kept><div class="details-summary toc-title"><span>目录</span>
+<span><i class="details-icon fas fa-angle-right" aria-hidden=true></i></span></div><div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents><ul><li><a href=#倒排索引将文档包含哪些词反转为词出现在哪些文档实现关键词快速定位>倒排索引将"文档包含哪些词"反转为"词出现在哪些文档"，实现关键词快速定位</a><ul><li><a href=#核心结构词典--倒排列表>核心结构：词典 + 倒排列表</a></li><li><a href=#索引构建流程>索引构建流程</a></li><li><a href=#查询处理从关键词到结果列表>查询处理：从关键词到结果列表</a></li></ul></li><li><a href=#实现原理与关键机制>实现原理与关键机制</a><ul><li><a href=#tf-idf经典相关性评分>TF-IDF：经典相关性评分</a></li><li><a href=#倒排列表压缩技术>倒排列表压缩技术</a></li><li><a href=#词典的数据结构演进>词典的数据结构演进</a></li></ul></li><li><a href=#实际应用中的决策与权衡>实际应用中的决策与权衡</a></li><li><a href=#常见问题与误区>常见问题与误区</a><ul><li><a href=#问题1倒排索引为什么不适合模糊查询>问题1：倒排索引为什么不适合模糊查询？</a></li><li><a href=#问题2索引更新为什么慢>问题2：索引更新为什么慢？</a></li><li><a href=#问题3为什么搜索引擎返回结果有相关性分数>问题3：为什么搜索引擎返回结果有相关性分数？</a></li></ul></li><li><a href=#参考>参考</a></li></ul></nav></div></div><div class=content id=content><h1 id=倒排索引>倒排索引</h1><blockquote><p><strong>核心结论</strong>：倒排索引将文档-词项的正向关系反转存储为词项-文档列表，使关键词查询从O(n)扫描降为O(1)查找，是搜索引擎和全文检索系统的核心数据结构。</p></blockquote><hr><h2 id=倒排索引将文档包含哪些词反转为词出现在哪些文档实现关键词快速定位>倒排索引将"文档包含哪些词"反转为"词出现在哪些文档"，实现关键词快速定位</h2><h3 id=核心结构词典--倒排列表>核心结构：词典 + 倒排列表</h3><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right" aria-hidden=true></i></span>
+<span class=ellipses><i class="fas fa-ellipsis-h" aria-hidden=true></i></span>
+<span class=copy title=复制到剪贴板><i class="far fa-copy" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>文档集合：
+</span></span><span class=line><span class=cl>Doc1: &#34;Java is a programming language&#34;
+</span></span><span class=line><span class=cl>Doc2: &#34;Python is also a programming language&#34;
+</span></span><span class=line><span class=cl>Doc3: &#34;Java and Python are popular&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>正向索引（文档 → 词）：
+</span></span><span class=line><span class=cl>Doc1 → [Java, is, a, programming, language]
+</span></span><span class=line><span class=cl>Doc2 → [Python, is, also, a, programming, language]
+</span></span><span class=line><span class=cl>Doc3 → [Java, and, Python, are, popular]
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>倒排索引（词 → 文档列表）：
+</span></span><span class=line><span class=cl>Java         → [Doc1, Doc3]
+</span></span><span class=line><span class=cl>Python       → [Doc2, Doc3]
+</span></span><span class=line><span class=cl>programming  → [Doc1, Doc2]
+</span></span><span class=line><span class=cl>language     → [Doc1, Doc2]
+</span></span><span class=line><span class=cl>is           → [Doc1, Doc2]
+</span></span><span class=line><span class=cl>popular      → [Doc3]
+</span></span><span class=line><span class=cl>...</span></span></code></pre></div></div><p><strong>倒排索引的存储结构</strong>：</p><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right" aria-hidden=true></i></span>
+<span class=ellipses><i class="fas fa-ellipsis-h" aria-hidden=true></i></span>
+<span class=copy title=复制到剪贴板><i class="far fa-copy" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌─────────────────────────────────────────────────┐
+</span></span><span class=line><span class=cl>│                 词典（Term Dictionary）           │
+</span></span><span class=line><span class=cl>│  （排序数组/B+树/前缀树/FST）                      │
+</span></span><span class=line><span class=cl>│                                                 │
+</span></span><span class=line><span class=cl>│  Java ──→ 倒排列表指针                            │
+</span></span><span class=line><span class=cl>│  Python → 倒排列表指针                            │
+</span></span><span class=line><span class=cl>│  ...                                            │
+</span></span><span class=line><span class=cl>└─────────────────────────────────────────────────┘
+</span></span><span class=line><span class=cl>                        ↓
+</span></span><span class=line><span class=cl>┌─────────────────────────────────────────────────┐
+</span></span><span class=line><span class=cl>│              倒排列表（Posting List）              │
+</span></span><span class=line><span class=cl>│                                                 │
+</span></span><span class=line><span class=cl>│  Java: [(Doc1, pos:1), (Doc3, pos:1)]           │
+</span></span><span class=line><span class=cl>│  Python: [(Doc2, pos:1), (Doc3, pos:3)]         │
+</span></span><span class=line><span class=cl>│                                                 │
+</span></span><span class=line><span class=cl>│  压缩存储：Frame Of Reference / Roaring Bitmap    │
+</span></span><span class=line><span class=cl>└─────────────────────────────────────────────────┘</span></span></code></pre></div></div><h3 id=索引构建流程>索引构建流程</h3><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right" aria-hidden=true></i></span>
+<span class=ellipses><i class="fas fa-ellipsis-h" aria-hidden=true></i></span>
+<span class=copy title=复制到剪贴板><i class="far fa-copy" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>1. 文档预处理
+</span></span><span class=line><span class=cl>   - 分词（Tokenization）：&#34;Java编程&#34; → [&#34;Java&#34;, &#34;编程&#34;]
+</span></span><span class=line><span class=cl>   - 标准化（Normalization）：大写转小写、去除停用词
+</span></span><span class=line><span class=cl>   - 词干提取（Stemming）：&#34;running&#34; → &#34;run&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>2. 生成倒排记录
+</span></span><span class=line><span class=cl>   遍历每个文档的每个词项，记录 (文档ID, 词频, 位置)
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>3. 排序与合并
+</span></span><span class=line><span class=cl>   按词项排序，相同词项的记录合并为倒排列表
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>4. 索引优化
+</span></span><span class=line><span class=cl>   - 词典压缩：前缀共享、FST有限状态转换
+</span></span><span class=line><span class=cl>   - 倒排列表压缩：差值编码、变长编码</span></span></code></pre></div></div><h3 id=查询处理从关键词到结果列表>查询处理：从关键词到结果列表</h3><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right" aria-hidden=true></i></span>
+<span class=ellipses><i class="fas fa-ellipsis-h" aria-hidden=true></i></span>
+<span class=copy title=复制到剪贴板><i class="far fa-copy" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>单关键词查询 &#34;Java&#34;：
+</span></span><span class=line><span class=cl>  词典查找 &#34;Java&#34; → 获取倒排列表 [Doc1, Doc3] → 返回结果
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>多关键词查询 &#34;Java programming&#34;：
+</span></span><span class=line><span class=cl>  查找 &#34;Java&#34; → [Doc1, Doc3]
+</span></span><span class=line><span class=cl>  查找 &#34;programming&#34; → [Doc1, Doc2]
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  AND查询（交集）：[Doc1, Doc3] ∩ [Doc1, Doc2] = [Doc1]
+</span></span><span class=line><span class=cl>  OR查询（并集）：[Doc1, Doc3] ∪ [Doc1, Doc2] = [Doc1, Doc2, Doc3]
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  交集算法（跳表指针优化）：
+</span></span><span class=line><span class=cl>    Doc1 Doc3      Doc1 Doc2
+</span></span><span class=line><span class=cl>     ↑              ↑
+</span></span><span class=line><span class=cl>    相等 → 输出Doc1，双指针前进
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    Doc3           Doc2
+</span></span><span class=line><span class=cl>     ↑              ↑
+</span></span><span class=line><span class=cl>    Doc3 &gt; Doc2 → Doc2指针前进
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    Doc3           结束
+</span></span><span class=line><span class=cl>    Doc2指针到底 → 结束</span></span></code></pre></div></div><hr><h2 id=实现原理与关键机制>实现原理与关键机制</h2><h3 id=tf-idf经典相关性评分>TF-IDF：经典相关性评分</h3><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right" aria-hidden=true></i></span>
+<span class=ellipses><i class="fas fa-ellipsis-h" aria-hidden=true></i></span>
+<span class=copy title=复制到剪贴板><i class="far fa-copy" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>TF (Term Frequency): 词项在文档中的频率
+</span></span><span class=line><span class=cl>  TF(t,d) = (词t在文档d中出现次数) / (文档d的总词数)
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>IDF (Inverse Document Frequency): 词项的稀有程度
+</span></span><span class=line><span class=cl>  IDF(t) = log(总文档数 / 包含词t的文档数)
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>TF-IDF = TF * IDF
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>词t对文档d的相关性得分：词出现越多、越稀有，得分越高
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>示例：
+</span></span><span class=line><span class=cl>  总文档数：1000
+</span></span><span class=line><span class=cl>  &#34;Java&#34;出现在100篇文档中 → IDF = log(1000/100) = log(10) ≈ 2.3
+</span></span><span class=line><span class=cl>  &#34;the&#34;出现在990篇文档中 → IDF = log(1000/990) ≈ 0.004</span></span></code></pre></div></div><h3 id=倒排列表压缩技术>倒排列表压缩技术</h3><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right" aria-hidden=true></i></span>
+<span class=ellipses><i class="fas fa-ellipsis-h" aria-hidden=true></i></span>
+<span class=copy title=复制到剪贴板><i class="far fa-copy" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>原始文档ID列表：[10, 11, 12, 15, 16, 20, 25]
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>差值编码（Delta Encoding）：
+</span></span><span class=line><span class=cl>  [10, 1, 1, 3, 1, 4, 5]  （相邻差值）
+</span></span><span class=line><span class=cl>  小整数更容易压缩
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>变长编码（Variable Byte / Gamma编码）：
+</span></span><span class=line><span class=cl>  小数值用更少bit存储
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Frame Of Reference（FOR）：
+</span></span><span class=line><span class=cl>  分块（如128个一组），每块记录最小值，其余存偏移
+</span></span><span class=line><span class=cl>  适合密集型文档ID
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Roaring Bitmap：
+</span></span><span class=line><span class=cl>  稀疏时用数组，密集时用位图，自动切换
+</span></span><span class=line><span class=cl>  现代搜索引擎（Lucene 5+）采用</span></span></code></pre></div></div><h3 id=词典的数据结构演进>词典的数据结构演进</h3><table><thead><tr><th>结构</th><th>查询复杂度</th><th>空间</th><th>适用场景</th></tr></thead><tbody><tr><td>排序数组</td><td>O(log n) 二分</td><td>小</td><td>静态索引</td></tr><tr><td>B+树</td><td>O(log n)</td><td>中</td><td>动态索引</td></tr><tr><td>前缀树（Trie）</td><td>O(k) k为词长</td><td>大</td><td>前缀匹配、自动补全</td></tr><tr><td>FST（有限状态转换）</td><td>O(k)</td><td>极小</td><td>Lucene采用，前缀共享</td></tr></tbody></table><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right" aria-hidden=true></i></span>
+<span class=ellipses><i class="fas fa-ellipsis-h" aria-hidden=true></i></span>
+<span class=copy title=复制到剪贴板><i class="far fa-copy" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>FST 压缩示例：
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>普通前缀树存储 [&#34;car&#34;, &#34;cat&#34;, &#34;dog&#34;]：
+</span></span><span class=line><span class=cl>      root
+</span></span><span class=line><span class=cl>     /    \
+</span></span><span class=line><span class=cl>    c      d
+</span></span><span class=line><span class=cl>   / \      \
+</span></span><span class=line><span class=cl>  a   a      o
+</span></span><span class=line><span class=cl> /     \      \
+</span></span><span class=line><span class=cl>r       t      g
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>FST 共享前缀并最小化状态：
+</span></span><span class=line><span class=cl>  c → a → [r|t]  （共享&#34;ca&#34;前缀）
+</span></span><span class=line><span class=cl>  d → o → g</span></span></code></pre></div></div><hr><h2 id=实际应用中的决策与权衡>实际应用中的决策与权衡</h2><table><thead><tr><th>场景</th><th>索引策略</th><th>原因</th></tr></thead><tbody><tr><td>搜索引擎</td><td>分片倒排索引 + 分布式查询</td><td>数据量大，单机无法承载</td></tr><tr><td>电商商品搜索</td><td>倒排 + 属性过滤 + 评分排序</td><td>多维度查询需求</td></tr><tr><td>日志检索</td><td>时间分片 + 列式存储</td><td>按时间范围查询为主</td></tr><tr><td>站内搜索</td><td>轻量级倒排（如Lucene）</td><td>中等数据量，快速部署</td></tr><tr><td>实时搜索</td><td>内存索引 + 定期合并磁盘索引</td><td>平衡实时性与持久性</td></tr></tbody></table><p><strong>Elasticsearch的索引架构</strong>：</p><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right" aria-hidden=true></i></span>
+<span class=ellipses><i class="fas fa-ellipsis-h" aria-hidden=true></i></span>
+<span class=copy title=复制到剪贴板><i class="far fa-copy" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>索引分片结构：
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Index: &#34;articles&#34;
+</span></span><span class=line><span class=cl>├── Primary Shard 0 (Lucene索引)
+</span></span><span class=line><span class=cl>│   ├── Segment 1 (不可变)
+</span></span><span class=line><span class=cl>│   ├── Segment 2 (不可变)
+</span></span><span class=line><span class=cl>│   └── Segment 3 (正在写入)
+</span></span><span class=line><span class=cl>├── Primary Shard 1 (Lucene索引)
+</span></span><span class=line><span class=cl>│   └── ...
+</span></span><span class=line><span class=cl>├── Replica Shard 0 (Shard 0的副本)
+</span></span><span class=line><span class=cl>└── Replica Shard 1 (Shard 1的副本)
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>写入流程：
+</span></span><span class=line><span class=cl>  文档 → 内存缓冲区 → 刷新为Segment → 合并Segment
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>Segment不可变特性：
+</span></span><span class=line><span class=cl>  - 写入新Segment而非修改旧Segment
+</span></span><span class=line><span class=cl>  - 删除标记为逻辑删除（.del文件）
+</span></span><span class=line><span class=cl>  - 定期Merge回收空间</span></span></code></pre></div></div><hr><h2 id=常见问题与误区>常见问题与误区</h2><h3 id=问题1倒排索引为什么不适合模糊查询>问题1：倒排索引为什么不适合模糊查询？</h3><p><strong>根因</strong>：倒排索引按精确词项组织，前缀匹配可用Trie，但通配符中间匹配（如 *ava）需要扫描全词典
+<strong>解决</strong>：N-gram分词、布隆过滤器辅助、正则索引</p><h3 id=问题2索引更新为什么慢>问题2：索引更新为什么慢？</h3><p><strong>根因</strong>：倒排列表是有序结构，插入新文档需要修改多个词项的列表，Segment合并开销大
+<strong>解决</strong>：近实时搜索（1秒刷新）、异步合并、内存索引缓冲</p><h3 id=问题3为什么搜索引擎返回结果有相关性分数>问题3：为什么搜索引擎返回结果有相关性分数？</h3><p><strong>根因</strong>：单纯返回包含关键词的文档数量可能巨大，需要排序
+<strong>方法</strong>：TF-IDF、BM25（考虑文档长度归一化）、向量相似度（语义搜索）</p><hr><h2 id=参考>参考</h2><ul><li><a href=./%e5%93%88%e5%b8%8c%e8%a1%a8.md rel>Hash表</a></li><li><a href=./%e6%a0%91%e7%bb%93%e6%9e%84.md rel>树结构</a></li><li><a href=../../%e8%bf%9b%e9%98%b6%e5%b1%82/%e6%90%9c%e7%b4%a2%e6%8e%a8%e8%8d%90%e7%9b%b8%e5%85%b3/Elasticsearch%e6%a0%b8%e5%bf%83.md rel>搜索推荐相关</a></li></ul></div><div class=post-footer id=post-footer><div class=post-info><div class=post-info-line><div class=post-info-mod><span>更新于 2026-04-30</span></div></div><div class=post-info-line><div class=post-info-md></div><div class=post-info-share><span><a href=javascript:void(0); title="分享到 X" data-sharer=x data-url=https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/ data-title=倒排索引 data-hashtags=倒排索引,搜索引擎,elasticsearch,信息检索><i class="fab fa-x-twitter" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Threads" data-sharer=threads data-url=https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/ data-title=倒排索引><i class="fab fa-threads" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Facebook" data-sharer=facebook data-url=https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/ data-hashtag=倒排索引><i class="fab fa-facebook-square" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Hacker News" data-sharer=hackernews data-url=https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/ data-title=倒排索引><i class="fab fa-hacker-news" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Line" data-sharer=line data-url=https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/ data-title=倒排索引><i data-svg-src=https://cdn.jsdelivr.net/npm/simple-icons@16.9.0/icons/line.svg aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 微博" data-sharer=weibo data-url=https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/ data-title=倒排索引><i class="fab fa-weibo" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Diaspora" data-sharer=diaspora data-url=https://ksmaple.github.io/posts/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/ data-title=倒排索引 data-description><i class="fab fa-diaspora" aria-hidden=true></i></a><a href="https://t.me/share/url?url=https%3a%2f%2fksmaple.github.io%2fposts%2f%25E5%259F%25BA%25E7%25A1%2580%25E7%259F%25A5%25E8%25AF%2586%2f%25E6%2595%25B0%25E6%258D%25AE%25E7%25BB%2593%25E6%259E%2584%25E4%25B8%258E%25E7%25AE%2597%25E6%25B3%2595%2f%25E5%2580%2592%25E6%258E%2592%25E7%25B4%25A2%25E5%25BC%2595%2f&amp;text=%e5%80%92%e6%8e%92%e7%b4%a2%e5%bc%95" target=_blank title="分享到 Telegram"><i class="fab fa-telegram" aria-hidden=true></i></a></span></div></div></div><div class=post-info-more><section class=post-tags><i class="fas fa-tags" aria-hidden=true></i>&nbsp;<a href=/tags/%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95/>倒排索引</a>,&nbsp;<a href=/tags/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/>搜索引擎</a>,&nbsp;<a href=/tags/elasticsearch/>Elasticsearch</a>,&nbsp;<a href=/tags/%E4%BF%A1%E6%81%AF%E6%A3%80%E7%B4%A2/>信息检索</a></section><section><span><a href=javascript:void(0); onclick=window.history.back()>返回</a></span>&nbsp;|&nbsp;<span><a href=/>主页</a></span></section></div><div class=post-nav><a href=/posts/%E5%B7%A5%E7%A8%8B%E5%B1%82/%E4%B8%9A%E5%8A%A1%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%8E%A5%E5%85%A5/ class=prev rel=prev title=第三方系统交互设计><i class="fas fa-angle-left" aria-hidden=true></i>第三方系统交互设计</a>
+<a href=/posts/%E8%BD%AF%E6%8A%80%E8%83%BD%E5%B1%82/%E5%9B%A2%E9%98%9F%E4%B8%8E%E7%AE%A1%E7%90%86/%E6%96%B0%E4%BA%BA%E5%85%A5%E8%81%8C/ class=next rel=next title=带新人>带新人<i class="fas fa-angle-right" aria-hidden=true></i></a></div></div><div id=comments><div id=utterances class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://utteranc.es/>utterances</a>.</noscript></div></article></div></main><footer class=footer><div class=footer-container><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright" aria-hidden=true></i><span itemprop=copyrightYear>2020 - 2026</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=/ target=_blank>咔咔</a></span></div></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title=回到顶部><i class="fas fa-arrow-up" aria-hidden=true></i></a></div><div id=fixed-buttons-hidden><a href=# id=view-comments class=fixed-button title=查看评论><i class="fas fa-comment" aria-hidden=true></i></a></div><script src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script src=https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js></script><script src=/lib/lunr/lunr.stemmer.support.min.js></script><script src=/lib/lunr/lunr.zh.min.js></script><script src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.2/sharer.min.js></script><script>window.config={comment:{utterances:{darkTheme:"github-dark",issueTerm:"pathname",label:"comment",lightTheme:"github-light",repo:"ksmaple/ksmaple.github.io"}},search:{highlightTag:"em",lunrIndexURL:"/index.json",lunrLanguageCode:"zh",lunrSegmentitURL:"/lib/lunr/lunr.segmentit.js",maxResultLength:10,noResultsFound:"没有找到结果",snippetLength:50,type:"lunr"}}</script><script src=/js/theme.js></script></body></html>
